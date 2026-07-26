@@ -1,0 +1,810 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>701 導師管理中心</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 引入 Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <!-- 引入 SheetJS 用於解析 Excel -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; }
+        .sidebar { background-color: #1e293b; border-right: 1px solid #334155; }
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        .menu-item.active { background-color: #3b82f6; color: white; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        /* 隱藏原生數字輸入框的上下箭頭 */
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden">
+
+    <aside class="sidebar w-64 h-full flex flex-col transition-all duration-300 z-20">
+        <div class="p-6 border-b border-slate-700 flex items-center space-x-3">
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
+                701
+            </div>
+            <span class="text-xl font-bold tracking-wider">導師後台</span>
+        </div>
+        
+        <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
+                <i class="fas fa-chart-pie w-5"></i><span>今日班級總覽</span>
+            </button>
+            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
+                <i class="fas fa-broadcast-tower w-5"></i><span>大屏廣播遙控</span>
+            </button>
+            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-orange-400 hover:bg-slate-700 transition">
+                <i class="fas fa-id-card w-5"></i><span>LINE@ 綁定管理</span>
+            </button>
+            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
+                <i class="fas fa-users-cog w-5"></i><span>幹部權限管理</span>
+            </button>
+            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-emerald-400 hover:bg-slate-700 transition">
+                <i class="fas fa-file-excel w-5"></i><span>LINE@ 成績系統</span>
+            </button>
+            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-purple-400 hover:bg-slate-700 transition">
+                <i class="fas fa-calendar-check w-5"></i><span>每週結算與推播</span>
+            </button>
+            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-pink-400 hover:bg-slate-700 transition">
+                <i class="fas fa-comments w-5"></i><span>LINE@ 溝通紀錄</span>
+            </button>
+        </nav>
+        
+        <div class="p-4 border-t border-slate-700 text-xs text-slate-500 text-center">
+            智慧班級管理系統 v1.1<br>Teacher Admin Panel
+        </div>
+    </aside>
+
+    <main class="flex-1 h-full overflow-y-auto bg-[#0f172a] p-8">
+        
+        <!-- ==================== 1. 今日班級總覽 ==================== -->
+        <section id="tab-dashboard" class="tab-content active space-y-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2">班級狀況總覽</h2>
+                    <p class="text-slate-400">掌握今日 701 班出缺勤、常規與幹部回報狀況</p>
+                </div>
+                <div id="db-status" class="text-slate-400 text-sm bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
+                    <i class="fas fa-sync-alt mr-2 animate-spin-slow"></i> 連線中...
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="glass-panel p-6 rounded-xl border-l-4 border-l-blue-500">
+                    <div class="text-slate-400 text-sm mb-1">今日出席狀況</div>
+                    <div class="text-3xl font-bold text-white mb-2"><span id="dash-present">--</span><span class="text-lg text-slate-500 font-normal"> /24 人</span></div>
+                    <div class="text-sm text-yellow-400 space-y-1" id="dash-absent-list">讀取中...</div>
+                </div>
+                <div class="glass-panel p-6 rounded-xl border-l-4 border-l-red-500">
+                    <div class="text-slate-400 text-sm mb-1">作業缺交警示</div>
+                    <div class="text-3xl font-bold text-white mb-2"><span id="dash-missing-hw">--</span><span class="text-lg text-slate-500 font-normal"> 人次未繳</span></div>
+                    <div class="text-sm text-slate-300 space-y-1 mt-2" id="dash-missing-list">讀取中...</div>
+                </div>
+                <div class="glass-panel p-6 rounded-xl border-l-4 border-l-emerald-500">
+                    <div class="text-slate-400 text-sm mb-1">常規待改進</div>
+                    <div class="text-3xl font-bold text-white mb-2"><span id="dash-discipline">--</span><span class="text-lg text-slate-500 font-normal"> 人次</span></div>
+                    <div class="text-sm text-slate-300" id="dash-discipline-list">讀取中...</div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-6 rounded-xl">
+                <h3 class="text-lg font-bold text-emerald-400 mb-4"><i class="fas fa-comment-dots mr-2"></i> 班長 / 幹部回報留言</h3>
+                <div class="bg-slate-800 p-4 rounded border border-slate-700 min-h-[100px] text-slate-300" id="dash-monitor-msg">
+                    等待讀取中...
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="glass-panel p-6 rounded-xl">
+                    <h3 class="text-lg font-bold text-blue-400 mb-4"><i class="fab fa-line mr-2"></i> LINE@ 家長請假單</h3>
+                    <div class="space-y-3">
+                        <div class="bg-slate-800 p-3 rounded border border-slate-700 flex justify-between items-center">
+                            <div>
+                                <span class="font-bold text-white mr-2">08號 學生家長</span>
+                                <span class="text-xs bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded">事假</span>
+                                <div class="text-sm text-slate-400 mt-1">家裡有事需回南部一趟 (今日 07:30 申請)</div>
+                            </div>
+                            <button class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-sm transition font-bold shadow">核准</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-panel p-6 rounded-xl">
+                    <h3 class="text-lg font-bold text-slate-300 mb-4"><i class="fas fa-history mr-2"></i> 幹部系統操作日誌</h3>
+                    <div class="space-y-3 text-sm h-32 overflow-y-auto pr-2" id="audit-log-container">
+                        <div class="text-slate-500 italic">日誌資料同步中...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 2. 大屏廣播遙控 ==================== -->
+        <section id="tab-broadcast" class="tab-content space-y-6">
+            <div>
+                <h2 class="text-3xl font-bold text-white mb-2">大屏廣播遙控器</h2>
+                <p class="text-slate-400">修改此處內容將立刻推播至教室前方的大黑板跑馬燈</p>
+            </div>
+            <div class="glass-panel p-6 rounded-xl">
+                <label class="block text-slate-300 mb-2 font-bold">當前廣播內容 (跑馬燈)</label>
+                <div class="flex space-x-4">
+                    <input type="text" id="marquee-input" class="flex-1 bg-slate-900 text-white px-4 py-3 rounded border border-slate-600 focus:outline-none focus:border-blue-500 text-lg">
+                    <button onclick="sendMarquee()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded font-bold shadow-lg transition flex items-center whitespace-nowrap">
+                        <i class="fas fa-paper-plane mr-2"></i> 送出廣播
+                    </button>
+                </div>
+                
+                <!-- 新增：常用預設廣播按鈕 -->
+                <div class="mt-5 pt-4 border-t border-slate-700">
+                    <span class="text-sm text-slate-400 mb-3 block"><i class="fas fa-magic mr-1"></i> 常用預設廣播 (點擊文字直接套用至上方輸入框)：</span>
+                    <div class="flex flex-wrap gap-2">
+                        <button onclick="setMarqueePreset('請各股長現在開始點名，未到請記黑板。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
+                            <i class="fas fa-tasks mr-1"></i> 開始點名
+                        </button>
+                        <button onclick="setMarqueePreset('請立刻回到座位，保持安靜，準備上課。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
+                            <i class="fas fa-bell mr-1"></i> 準備上課
+                        </button>
+                        <button onclick="setMarqueePreset('放學時間，請記得帶走個人物品及垃圾，並將椅子靠上。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
+                            <i class="fas fa-door-open mr-1"></i> 放學提醒
+                        </button>
+                        <button onclick="setMarqueePreset('今日有發放重要通知單，請務必帶回給家長簽名。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
+                            <i class="fas fa-file-alt mr-1"></i> 簽名通知單
+                        </button>
+                        <button onclick="setMarqueePreset('請衛生股長帶領打掃同學確實完成環境整潔。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
+                            <i class="fas fa-broom mr-1"></i> 打掃時間
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-4 text-emerald-400 text-sm hidden bg-emerald-900/30 p-2 rounded border border-emerald-800" id="marquee-success">
+                    <i class="fas fa-check-circle mr-1"></i> 已成功同步至教室大黑板！
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 3. LINE@ 帳號綁定管理 ==================== -->
+        <section id="tab-binding" class="tab-content space-y-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2 text-orange-400"><i class="fas fa-id-card mr-2"></i>LINE@ 帳號綁定管理 (身分證驗證)</h2>
+                    <p class="text-slate-400">設定學生的「身分證後六碼」。家長與學生在 LINE 機器人輸入正確密碼綁定後，才能查詢成績或請假。</p>
+                </div>
+                <!-- 修改：綁定批次匯入 Modal 開啟事件 -->
+                <button onclick="openBatchImportModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded transition border border-slate-600 flex items-center shadow">
+                    <i class="fas fa-clipboard-list mr-2"></i> 批次匯入名單
+                </button>
+            </div>
+            
+            <div class="bg-orange-900/20 border border-orange-500/30 p-4 rounded-xl flex items-start space-x-3 mb-6 text-orange-200 text-sm">
+                <i class="fas fa-shield-alt text-orange-400 text-2xl mt-0.5"></i>
+                <div>
+                    <strong class="text-orange-400 block mb-1">資安防護機制運作說明：</strong>
+                    家長初次加好友時，系統將提示：「請輸入『座號+身分證後六碼』綁定身分 (例: 05123456)」。驗證成功後，該 LINE 帳號將永久綁定對應座號，防止成績外洩。
+                </div>
+            </div>
+
+            <div class="glass-panel rounded-xl overflow-hidden">
+                <table class="w-full text-center text-sm">
+                    <thead class="bg-slate-800 text-slate-300 border-b border-slate-700">
+                        <tr>
+                            <th class="p-4 font-semibold w-20">座號</th>
+                            <th class="p-4 font-semibold text-left">身分證後六碼 (綁定密碼)</th>
+                            <th class="p-4 font-semibold">家長 LINE 綁定狀態</th>
+                            <th class="p-4 font-semibold">學生 LINE 綁定狀態</th>
+                            <th class="p-4 font-semibold w-24">操作</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700 text-slate-300" id="binding-table-body">
+                        <!-- JS 動態生成 24 人的綁定清單 -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==================== 4. 幹部權限管理 ==================== -->
+        <section id="tab-cadre" class="tab-content space-y-6">
+            <div>
+                <h2 class="text-3xl font-bold text-white mb-2">幹部密碼管理</h2>
+                <p class="text-slate-400">設定教室大黑板各項幹部登入的專屬密碼 (可設定身分證後六碼，預設為 1234)</p>
+            </div>
+            <div class="glass-panel rounded-xl overflow-hidden">
+                <table class="w-full text-left">
+                    <thead class="bg-slate-800 text-slate-300">
+                        <tr><th class="p-4 font-semibold">職位</th><th class="p-4 font-semibold">擁有權限</th><th class="p-4 font-semibold">目前密碼</th><th class="p-4 font-semibold">操作</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700 text-slate-300">
+                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-emerald-400"><i class="fas fa-edit mr-2"></i> 編輯聯絡簿</td><td class="p-4 text-sm">修改所有黑板內容、刪除/新增作業</td><td class="p-4"><input type="text" id="pwd-edit_board" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('edit_board')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-yellow-400"><i class="fas fa-crown mr-2"></i> 班長</td><td class="p-4 text-sm">修改頂部看板、週目標檢核、傳送留言</td><td class="p-4"><input type="text" id="pwd-monitor" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('monitor')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-blue-400"><i class="fas fa-clipboard-list mr-2"></i> 副班長</td><td class="p-4 text-sm">全班出缺勤 (到校/請假/遲到) 登記</td><td class="p-4"><input type="text" id="pwd-vice" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('vice')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-red-400"><i class="fas fa-user-shield mr-2"></i> 風紀股長</td><td class="p-4 text-sm">課堂秩序三階評定登記</td><td class="p-4"><input type="text" id="pwd-discipline" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('discipline')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-green-400"><i class="fas fa-broom mr-2"></i> 衛生股長</td><td class="p-4 text-sm">打掃狀況三階評定登記</td><td class="p-4"><input type="text" id="pwd-health" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('health')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-purple-400"><i class="fas fa-book-reader mr-2"></i> 各科小老師</td><td class="p-4 text-sm">檢核並批次登記作業繳交狀況</td><td class="p-4"><input type="text" id="pwd-academic" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('academic')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==================== 5. LINE@ 成績系統 ==================== -->
+        <section id="tab-scores" class="tab-content space-y-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2 text-emerald-400"><i class="fab fa-line mr-2"></i>LINE@ 家長查成績系統 (資料庫)</h2>
+                    <p class="text-slate-400">手動輸入或匯入學校 Excel 檔成績。存檔後將同步至雲端，供家長透過 LINE 機器人自動查詢。</p>
+                </div>
+                <div class="flex space-x-3">
+                    <!-- 隱藏的檔案上傳輸入框 -->
+                    <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
+                    
+                    <button onclick="document.getElementById('excel-file-input').click()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-bold transition flex items-center border border-slate-500 shadow">
+                        <i class="fas fa-file-excel mr-2 text-emerald-400"></i> Excel 匯入
+                    </button>
+                    
+                    <button onclick="saveScoresToCloud()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded font-bold shadow-lg transition flex items-center">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布
+                    </button>
+                </div>
+            </div>
+            
+            <div class="bg-emerald-900/20 border border-emerald-500/30 p-3 rounded-lg flex items-center space-x-3 text-emerald-200 text-sm mb-2">
+                <i class="fas fa-info-circle text-emerald-400 text-lg"></i>
+                <span><strong>Excel 匯入說明：</strong> 系統會自動抓取前 8 個欄位，建議格式依序為：<strong>座號, 國文, 英文, 數學, 自然, 社會, 平均, PR值</strong>。第一行若為標題會自動略過。</span>
+            </div>
+
+            <div class="glass-panel rounded-xl overflow-x-auto">
+                <table class="w-full text-center text-sm whitespace-nowrap">
+                    <thead class="bg-slate-800 text-slate-300">
+                        <tr>
+                            <th class="p-3 font-semibold w-16">座號</th>
+                            <th class="p-3 font-semibold text-red-300">國文</th>
+                            <th class="p-3 font-semibold text-blue-300">英文</th>
+                            <th class="p-3 font-semibold text-yellow-300">數學</th>
+                            <th class="p-3 font-semibold text-green-300">自然</th>
+                            <th class="p-3 font-semibold text-purple-300">社會</th>
+                            <!-- 新增平均與 PR 值欄位 -->
+                            <th class="p-3 font-semibold text-pink-300">平均</th>
+                            <th class="p-3 font-semibold text-orange-300">校排PR值</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700 text-slate-300" id="score-table-body">
+                        <!-- JS 生成，增加 ID 以便對應 Excel 資料 -->
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- ==================== 6. 每週結算與推播 ==================== -->
+        <section id="tab-weekly" class="tab-content space-y-6">
+            <div class="flex justify-between items-end">
+                <div>
+                    <h2 class="text-3xl font-bold text-white mb-2 text-purple-400"><i class="fas fa-calendar-check mr-2"></i>每週表現結算與推播</h2>
+                    <p class="text-slate-400">自動統計本週各項常規數據，並一鍵推播「榮譽榜」與「個人週報」給 LINE@ 家長群。</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="alert('已自動抓取本週 (週一至週五) 每日紀錄並完成統計！')" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-bold transition flex items-center border border-slate-500"><i class="fas fa-sync-alt mr-2"></i> 重新結算本週數據</button>
+                    <button onclick="alert('已發送本週榮譽榜及個人報表至家長 LINE@！')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold shadow-lg transition flex items-center"><i class="fab fa-line mr-2"></i> 發送 LINE@ 週報</button>
+                </div>
+            </div>
+            
+            <div class="glass-panel rounded-xl overflow-hidden">
+                <table class="w-full text-center text-sm">
+                    <thead class="bg-slate-800 text-slate-300">
+                        <tr><th class="p-4 font-semibold w-16">座號</th><th class="p-4 font-semibold text-red-300">遲到/未到</th><th class="p-4 font-semibold text-yellow-300">作業缺交總數</th><th class="p-4 font-semibold text-blue-300">打掃待改進</th><th class="p-4 font-semibold text-emerald-300">目標達成天數</th><th class="p-4 font-semibold text-white">本週綜合評級</th></tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-700 text-slate-300" id="weekly-table-body">
+                        <tr><td colspan="6" class="p-6 text-slate-500">正在統計全班 24 人資料，請稍候...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="glass-panel p-6 rounded-xl border-l-4 border-l-purple-500">
+                <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-crown text-yellow-400 mr-2"></i>本週榮譽榜 (推播預覽)</h3>
+                <p class="text-slate-400 text-sm mb-4">以下名單將於點擊「發送 LINE@ 週報」時，自動生成精美圖文公告於家長群：</p>
+                <div class="flex flex-wrap gap-2" id="honor-list-container">
+                    <span class="text-slate-500 text-sm">計算中...</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- ==================== 7. LINE@ 溝通紀錄 ==================== -->
+        <section id="tab-chat" class="tab-content space-y-6">
+            <div class="flex flex-col h-[75vh]">
+                <div class="mb-4">
+                    <h2 class="text-3xl font-bold text-white mb-2 text-pink-400"><i class="fas fa-comments mr-2"></i>LINE@ 親師 / 師生對話紀錄 (永久備份)</h2>
+                    <p class="text-slate-400">雙帳號管理中心：不僅突破官方 6 個月紀錄限制，更能直接於此夾帶檔案並回覆訊息。</p>
+                </div>
+                
+                <div class="flex-1 glass-panel rounded-xl overflow-hidden flex border border-slate-700 shadow-xl">
+                    <div class="w-1/3 bg-slate-900 border-r border-slate-700 flex flex-col">
+                        <div class="flex border-b border-slate-700">
+                            <button class="flex-1 py-3 bg-pink-900/30 text-pink-400 font-bold border-b-2 border-pink-500 transition"><i class="fas fa-user-friends mr-2"></i>家長群</button>
+                            <button class="flex-1 py-3 text-slate-400 hover:bg-slate-800 transition"><i class="fas fa-user-graduate mr-2"></i>學生群</button>
+                        </div>
+                        <div class="flex-1 overflow-y-auto">
+                            <div class="p-3 border-b border-slate-800 hover:bg-slate-800 cursor-pointer transition flex items-center space-x-3 bg-slate-800/50">
+                                <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold">01</div>
+                                <div class="flex-1">
+                                    <div class="text-white font-bold text-sm">01號 家長</div>
+                                    <div class="text-xs text-slate-400 truncate">老師，請問這週的作業...</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="flex-1 bg-slate-800 flex flex-col">
+                        <div class="p-4 border-b border-slate-700 bg-slate-900/50 flex justify-between items-center">
+                            <div class="font-bold text-white"><i class="fas fa-user-circle text-pink-400 mr-2 text-xl"></i> 01號 同學家長</div>
+                        </div>
+                        <div class="flex-1 p-6 overflow-y-auto space-y-4">
+                            <div class="flex justify-start">
+                                <div class="bg-slate-700 text-white px-4 py-2 rounded-lg rounded-tl-none max-w-[70%] text-sm shadow">
+                                    老師您好，01號昨天因為感冒所以國文作業沒有寫完，想請問今天可以補交嗎？
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <div class="bg-pink-600 text-white px-4 py-2 rounded-lg rounded-tr-none max-w-[70%] text-sm shadow">
+                                    沒問題的！我會在系統上先註記，請他明天帶來給小老師檢查就可以了。
+                                </div>
+                            </div>
+                        </div>
+                        <div class="p-4 bg-slate-900 border-t border-slate-700 flex space-x-3 items-center">
+                            <input type="text" placeholder="輸入訊息回覆給家長..." class="flex-1 bg-slate-800 text-white px-4 py-2 rounded-full border border-slate-600 focus:outline-none focus:border-pink-500 text-sm">
+                            <button class="bg-pink-600 hover:bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fas fa-paper-plane"></i></button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ==================== Modals 區塊 ==================== -->
+    
+    <!-- LINE@ 綁定 批次匯入 Modal -->
+    <div id="modal-batch-import" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-800 rounded-xl border border-slate-600 shadow-2xl w-full max-w-md flex flex-col">
+            <div class="px-4 py-3 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 rounded-t-xl">
+                <h3 class="text-white font-bold"><i class="fas fa-file-import text-orange-400 mr-2"></i>批次匯入身分證後六碼</h3>
+                <button onclick="closeModal('modal-batch-import')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-5">
+                <p class="text-sm text-slate-300 mb-3 leading-relaxed">
+                    請從 Excel 複製「身分證後六碼」整欄資料<br>
+                    <span class="text-orange-400 text-xs">（共 24 筆，必須依座號 1~24 順序排列）</span>，並直接貼上於下方：
+                </p>
+                <textarea id="batch-import-data" rows="10" class="w-full bg-slate-900 text-white p-3 rounded border border-slate-600 focus:border-orange-500 outline-none font-mono text-sm placeholder-slate-600" placeholder="範例格式：&#10;123456 (1號)&#10;654321 (2號)&#10;...貼上 24 行數字..."></textarea>
+            </div>
+            <div class="px-5 py-4 border-t border-slate-700 bg-slate-900/50 flex justify-end space-x-3 rounded-b-xl">
+                <button onclick="closeModal('modal-batch-import')" class="px-4 py-2 text-slate-300 hover:text-white transition">取消</button>
+                <button onclick="executeBatchImport()" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded font-bold transition shadow">確認並更新資料庫</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 初始化成績表格 (新增了 ID 與 平均/PR 欄位)
+        window.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('score-table-body');
+            let html = '';
+            for(let i=1; i<=24; i++) {
+                html += `
+                <tr class="hover:bg-slate-800/30 transition">
+                    <td class="p-2 font-bold text-white bg-slate-800/50">${String(i).padStart(2,'0')}</td>
+                    <td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
+                    <td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
+                    <td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
+                    <td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
+                    <td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
+                    <td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-slate-900 border border-pink-700/50 rounded text-center px-1 py-1 focus:border-pink-500 text-pink-200"></td>
+                    <td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-slate-900 border border-orange-700/50 rounded text-center px-1 py-1 focus:border-orange-500 text-orange-200"></td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        });
+
+        // 頁籤切換
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(el => {
+                el.classList.remove('active', 'bg-blue-600', 'text-white');
+                if(el.id === 'nav-binding') el.classList.add('text-orange-400');
+                else if(el.id === 'nav-scores') el.classList.add('text-emerald-400');
+                else if(el.id === 'nav-weekly') el.classList.add('text-purple-400');
+                else if(el.id === 'nav-chat') el.classList.add('text-pink-400');
+                else el.classList.add('text-slate-300');
+            });
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            const navBtn = document.getElementById(`nav-${tabId}`);
+            navBtn.classList.add('active', 'bg-blue-600', 'text-white');
+        }
+
+        // Modal 控制
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function openBatchImportModal() { 
+            document.getElementById('batch-import-data').value = '';
+            document.getElementById('modal-batch-import').classList.remove('hidden'); 
+        }
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA",
+            authDomain: "smart-class-system-a1645.firebaseapp.com",
+            projectId: "smart-class-system-a1645",
+            storageBucket: "smart-class-system-a1645.firebasestorage.app",
+            messagingSenderId: "236576763126",
+            appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+        const todayStr = new Date().toISOString().split('T')[0];
+        let globalHWMap = {};
+        let globalStudentsData = null;
+
+        function markConnected() {
+            const st = document.getElementById('db-status');
+            st.className = "text-emerald-400 text-sm bg-slate-800 px-4 py-2 rounded-lg border border-emerald-900/50";
+            st.innerHTML = '<i class="fas fa-check-circle mr-2"></i> 雲端資料庫已連線';
+        }
+
+        // 監聽綁定設定 (LINE@ 綁定管理)
+        db.collection("class_settings").doc("bindings").onSnapshot((doc) => {
+            let bindData = doc.exists ? doc.data().studentBindings : null;
+            const tbody = document.getElementById('binding-table-body');
+            let html = '';
+            for(let i=1; i<=24; i++) {
+                let sId = String(i).padStart(2,'0');
+                let id6 = (bindData && bindData[i] && bindData[i].id6) ? bindData[i].id6 : '未設定';
+                let pBound = (bindData && bindData[i] && bindData[i].parentBound) ? '<i class="fas fa-check-circle text-emerald-400 text-lg"></i>' : '<i class="fas fa-times-circle text-red-500 opacity-50"></i>';
+                let sBound = (bindData && bindData[i] && bindData[i].studentBound) ? '<i class="fas fa-check-circle text-emerald-400 text-lg"></i>' : '<i class="fas fa-times-circle text-red-500 opacity-50"></i>';
+                
+                html += `
+                <tr class="hover:bg-slate-800/30 transition">
+                    <td class="p-3 font-bold text-white bg-slate-800/50 text-center">${sId}</td>
+                    <td class="p-3">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="bind-id-${i}" value="${id6 === '未設定' ? '' : id6}" placeholder="未設定" class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 tracking-widest text-white focus:border-orange-500 outline-none">
+                        </div>
+                    </td>
+                    <td class="p-3 text-center">${pBound}</td>
+                    <td class="p-3 text-center">${sBound}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="updateBinding(${i})" class="text-orange-400 hover:text-orange-300 text-xs border border-orange-500/50 px-2 py-1 rounded transition"><i class="fas fa-save mr-1"></i>儲存</button>
+                    </td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        });
+
+        
+        // 執行批次匯入身分證後六碼
+        function executeBatchImport() {
+            const lines = document.getElementById('batch-import-data').value.trim().split('\n').filter(l => l.trim() !== '');
+            if(lines.length === 0) return alert('請貼上資料後再點擊匯入！');
+            
+            let updates = {};
+            let count = 0;
+            // 取最多 24 筆資料對應座號
+            for(let i=0; i<Math.min(lines.length, 24); i++) {
+                let seat = i + 1;
+                // 過濾掉可能不小心複製到的空白或非數字字符 (保留數字)
+                let id6 = lines[i].replace(/\D/g, '').trim(); 
+                if(id6) {
+                    updates[seat] = { id6: id6 };
+                    count++;
+                }
+            }
+            
+            if(count === 0) return alert('未能解析出有效的數字資料，請檢查格式。');
+
+            db.collection("class_settings").doc("bindings").set({
+                studentBindings: updates
+            }, { merge: true }).then(() => {
+                alert(`成功匯入 ${count} 筆密碼資料！`);
+                closeModal('modal-batch-import');
+            }).catch(e => alert("匯入失敗: " + e));
+        }
+
+        // 單筆更新身分證
+        function updateBinding(seat) {
+            const val = document.getElementById(`bind-id-${seat}`).value.trim();
+            if(!val) return alert('請輸入身分證後六碼！');
+            db.collection("class_settings").doc("bindings").set({
+                studentBindings: { [seat]: { id6: val } }
+            }, { merge: true }).then(() => {
+                alert(`${String(seat).padStart(2,'0')} 號 密碼設定成功！`);
+            }).catch(e => alert("錯誤: " + e));
+        }
+
+        // 設定大屏廣播預設文字
+        function setMarqueePreset(text) {
+            document.getElementById('marquee-input').value = text;
+            // 選擇性：若希望點擊預設後直接送出，可以取消註解下一行
+            // sendMarquee(); 
+        }
+
+        function sendMarquee() {
+            const val = document.getElementById('marquee-input').value;
+            if(!val) return alert('請輸入廣播內容！');
+            db.collection('board_settings').doc('current').set({
+                topBoardInfo: { marqueeText: val }
+            }, { merge: true }).then(() => {
+                const msg = document.getElementById('marquee-success');
+                msg.classList.remove('hidden');
+                setTimeout(() => msg.classList.add('hidden'), 3000);
+            }).catch(err => alert('寫入失敗: ' + err.message));
+        }
+
+        // 處理 Excel 成績匯入
+        function handleExcelUpload(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(evt) {
+                try {
+                    const data = new Uint8Array(evt.target.result);
+                    const workbook = XLSX.read(data, {type: 'array'});
+                    const firstSheetName = workbook.SheetNames[0];
+                    const worksheet = workbook.Sheets[firstSheetName];
+                    // 解析成二維陣列
+                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1}); 
+                    
+                    let successCount = 0;
+                    // 假設第 1 列 (index 0) 是標題列，資料從 index 1 開始
+                    for(let r = 1; r < json.length; r++) {
+                        const row = json[r];
+                        if(!row || row.length === 0) continue;
+                        
+                        // 假設第 1 欄 (index 0) 是座號
+                        let seatNum = parseInt(row[0]);
+                        if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue;
+                        
+                        // 依序填入對應的 input：國, 英, 數, 自, 社, 平均, PR
+                        if(row[1] !== undefined) { const el = document.getElementById(`score-chi-${seatNum}`); if(el) el.value = row[1]; }
+                        if(row[2] !== undefined) { const el = document.getElementById(`score-eng-${seatNum}`); if(el) el.value = row[2]; }
+                        if(row[3] !== undefined) { const el = document.getElementById(`score-math-${seatNum}`); if(el) el.value = row[3]; }
+                        if(row[4] !== undefined) { const el = document.getElementById(`score-sci-${seatNum}`); if(el) el.value = row[4]; }
+                        if(row[5] !== undefined) { const el = document.getElementById(`score-soc-${seatNum}`); if(el) el.value = row[5]; }
+                        if(row[6] !== undefined) { const el = document.getElementById(`score-avg-${seatNum}`); if(el) el.value = row[6]; }
+                        if(row[7] !== undefined) { const el = document.getElementById(`score-pr-${seatNum}`); if(el) el.value = row[7]; }
+                        
+                        successCount++;
+                    }
+                    
+                    if(successCount > 0) {
+                        alert(`✅ 成功解析並匯入 ${successCount} 筆學生成績！\n請確認表格數據無誤後，點擊「儲存發布」按鈕上傳至雲端。`);
+                    } else {
+                        alert('⚠️ 匯入失敗。請檢查 Excel 格式是否正確 (需包含座號及成績)。');
+                    }
+                } catch(error) {
+                    alert('讀取 Excel 檔案發生錯誤: ' + error);
+                } finally {
+                    document.getElementById('excel-file-input').value = ''; // 重置 input 以便下次能選同一個檔案
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // 儲存成績至雲端
+        function saveScoresToCloud() {
+            let scoreData = {};
+            for(let i=1; i<=24; i++) {
+                scoreData[i] = {
+                    chi: document.getElementById(`score-chi-${i}`)?.value || "",
+                    eng: document.getElementById(`score-eng-${i}`)?.value || "",
+                    math: document.getElementById(`score-math-${i}`)?.value || "",
+                    sci: document.getElementById(`score-sci-${i}`)?.value || "",
+                    soc: document.getElementById(`score-soc-${i}`)?.value || "",
+                    avg: document.getElementById(`score-avg-${i}`)?.value || "",
+                    pr: document.getElementById(`score-pr-${i}`)?.value || "",
+                };
+            }
+            
+            db.collection("class_settings").doc("scores").set({
+                latestExam: scoreData,
+                updatedAt: new Date().toISOString()
+            }, { merge: true }).then(() => {
+                alert('🎉 成績已成功上傳至雲端資料庫！\n已綁定的家長現在可透過 LINE 機器人查詢。');
+            }).catch(e => alert('上傳失敗: ' + e));
+        }
+
+        db.collection("board_settings").doc("current").onSnapshot((doc) => {
+            markConnected();
+            if (doc.exists) {
+                const data = doc.data();
+                if(data.topBoardInfo) {
+                    document.getElementById('marquee-input').value = data.topBoardInfo.marqueeText || '';
+                    if(data.topBoardInfo.monitorMsg) {
+                        document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-slate-500 mt-2 block">- 班長即時回報</span>`;
+                    }
+                }
+                if(data.passwords) {
+                    ['edit_board', 'monitor', 'vice', 'discipline', 'health', 'academic'].forEach(role => {
+                        if(document.getElementById(`pwd-${role}`)) {
+                            document.getElementById(`pwd-${role}`).value = data.passwords[role] || '1234';
+                        }
+                    });
+                }
+                if(data.boardData && data.boardData.homework) {
+                    globalHWMap = {};
+                    data.boardData.homework.forEach(h => globalHWMap[h.id] = h.text);
+                }
+                renderDashboardHW(); 
+            }
+        });
+
+        db.collection("daily_records").doc(todayStr).onSnapshot((doc) => {
+            if (doc.exists) {
+                globalStudentsData = doc.data().studentsData;
+                const sData = globalStudentsData;
+                
+                let present = 0;
+                let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] };
+                let disciplineCount = 0;
+                let disciplineList = [];
+
+                for(let i=1; i<=24; i++) {
+                    let st = sData[i].attendance;
+                    if(st === '到校' || st === '遲到') present++;
+                    if (st !== '到校' && absentGroups[st]) absentGroups[st].push(String(i).padStart(2,'0'));
+
+                    let issues = [];
+                    if(sData[i].discipline === '待改進') issues.push('秩序');
+                    if(sData[i].clean === '待改進') issues.push('打掃');
+                    if(issues.length > 0) {
+                        disciplineCount++;
+                        disciplineList.push(`${String(i).padStart(2,'0')}(${issues.join(',')})`);
+                    }
+                }
+
+                document.getElementById('dash-present').innerText = present;
+                let absentHtmlArr = [];
+                for (let type in absentGroups) {
+                    if (absentGroups[type].length > 0) {
+                        let colorClass = type === '病假' ? 'text-yellow-400' : (type === '事假' ? 'text-blue-400' : (type === '公假' ? 'text-purple-400' : 'text-red-400'));
+                        absentHtmlArr.push(`<div><span class="${colorClass}">${type}:</span> ${absentGroups[type].join(', ')}</div>`);
+                    }
+                }
+                document.getElementById('dash-absent-list').innerHTML = absentHtmlArr.length > 0 ? absentHtmlArr.join('') : '<i class="fas fa-check-circle mr-1 text-emerald-400"></i> 全員到齊';
+                
+                document.getElementById('dash-discipline').innerText = disciplineCount;
+                document.getElementById('dash-discipline-list').innerText = disciplineList.length > 0 ? `待改進座號: ${disciplineList.join(', ')}` : '常規表現良好';
+                
+                renderDashboardHW(); 
+                renderWeeklyReport(); 
+            }
+        });
+
+        function renderDashboardHW() {
+            if(!globalStudentsData) return;
+            let missingTotalItemsCount = 0;
+            let hwMissingMap = {}; 
+            let studentMissingCounts = {}; 
+
+            for(let i=1; i<=24; i++) {
+                let missingArr = globalStudentsData[i].missingHW || [];
+                if(missingArr.length > 0) {
+                    studentMissingCounts[i] = missingArr.length;
+                    missingTotalItemsCount += missingArr.length;
+                    missingArr.forEach(hwId => {
+                        if(!hwMissingMap[hwId]) hwMissingMap[hwId] = [];
+                        hwMissingMap[hwId].push(String(i).padStart(2, '0'));
+                    });
+                }
+            }
+            let topOffender = null;
+            let maxMissing = 0;
+            for(let seat in studentMissingCounts) {
+                if(studentMissingCounts[seat] > maxMissing) {
+                    maxMissing = studentMissingCounts[seat];
+                    topOffender = seat;
+                }
+            }
+
+            document.getElementById('dash-missing-hw').innerText = missingTotalItemsCount;
+            let detailHtml = '';
+            if(missingTotalItemsCount === 0) {
+                detailHtml = '<div class="text-emerald-400 font-bold"><i class="fas fa-check-circle"></i> 全班作業已繳齊</div>';
+            } else {
+                for(let hwId in hwMissingMap) {
+                    let hwName = globalHWMap[hwId] || '臨時/已刪除作業';
+                    detailHtml += `<div><span class="text-white font-bold">${hwName}：</span><span class="text-red-300 ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`;
+                }
+                if(topOffender) {
+                    detailHtml += `<div class="mt-3 pt-2 border-t border-red-500/30 text-yellow-300 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> 缺交最多：${String(topOffender).padStart(2,'0')} 號 (${maxMissing} 項)</div>`;
+                }
+            }
+            document.getElementById('dash-missing-list').innerHTML = detailHtml;
+        }
+
+        function renderWeeklyReport() {
+            if(!globalStudentsData) return;
+            const tbody = document.getElementById('weekly-table-body');
+            let html = '';
+            let honorList = [];
+
+            for(let i=1; i<=24; i++) {
+                let st = globalStudentsData[i];
+                let lateCount = (st.attendance === '遲到' || st.attendance === '未到') ? 1 : 0; 
+                let missingCount = st.missingHW ? st.missingHW.length : 0;
+                let cleanBad = st.clean === '待改進' ? 1 : 0;
+                let goalDays = (st.goal === '已經做到' || st.goal === '表現優良') ? 5 : 4; 
+
+                let rating = '';
+                let ratingColor = '';
+
+                if(lateCount > 0 || missingCount > 0 || cleanBad > 0 || goalDays < 5) {
+                    rating = missingCount >= 2 ? '需留意作業' : '一般';
+                    ratingColor = missingCount >= 2 ? 'text-yellow-400' : 'text-slate-400';
+                } else {
+                    rating = '<i class="fas fa-medal mr-1"></i> 表現優良';
+                    ratingColor = 'text-emerald-400 font-bold';
+                    honorList.push(String(i).padStart(2,'0'));
+                }
+
+                html += `
+                <tr class="hover:bg-slate-800/30 transition">
+                    <td class="p-3 font-bold text-white bg-slate-800/50">${String(i).padStart(2,'0')}</td>
+                    <td class="p-3 ${lateCount > 0 ? 'text-red-400 font-bold' : ''}">${lateCount}</td>
+                    <td class="p-3 ${missingCount > 0 ? 'text-red-400 font-bold' : ''}">${missingCount}</td>
+                    <td class="p-3 ${cleanBad > 0 ? 'text-blue-400 font-bold' : ''}">${cleanBad}</td>
+                    <td class="p-3 ${goalDays === 5 ? 'text-emerald-400 font-bold' : ''}">${goalDays}/5</td>
+                    <td class="p-3 ${ratingColor}">${rating}</td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+
+            const honorContainer = document.getElementById('honor-list-container');
+            if(honorList.length > 0) {
+                honorContainer.innerHTML = honorList.map(seat => `<span class="bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 px-3 py-1 rounded-full text-sm font-bold">${seat} 號</span>`).join('');
+            } else {
+                honorContainer.innerHTML = '<span class="text-slate-400 text-sm">本週尚無符合資格的同學</span>';
+            }
+        }
+
+        db.collection("audit_logs").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
+            const container = document.getElementById('audit-log-container');
+            if(snapshot.empty) {
+                container.innerHTML = `<div class="text-slate-500 italic">今日目前尚無幹部操作紀錄。</div>`;
+                return;
+            }
+            let html = '';
+            const colorMap = { '班長': 'text-yellow-400', '副班長': 'text-blue-400', '風紀': 'text-red-400', '衛生': 'text-green-400', '小老師': 'text-purple-400', '編輯聯絡簿': 'text-emerald-400' };
+            
+            snapshot.forEach((doc) => {
+                const log = doc.data();
+                const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'}) : '--:--';
+                const roleColor = colorMap[log.role] || 'text-slate-400';
+                html += `
+                <div class="flex items-start space-x-2 border-b border-slate-700 pb-2">
+                    <span class="text-slate-500 whitespace-nowrap">${timeStr}</span>
+                    <span class="${roleColor} whitespace-nowrap">[${log.role}]</span>
+                    <span class="text-slate-300">${log.action}</span>
+                </div>`;
+            });
+            container.innerHTML = html;
+        });
+
+        function updatePassword(role) {
+            const input = document.getElementById(`pwd-${role}`);
+            const newVal = input.value.trim();
+            if(!newVal) return alert('密碼不能為空！');
+            db.collection('board_settings').doc('current').set({
+                passwords: { [role]: newVal }
+            }, { merge: true }).then(() => {
+                alert('密碼已成功更新，大黑板密碼鎖已連動生效！');
+            }).catch(err => alert('更新失敗: ' + err.message));
+        }
+    </script>
+</body>
+</html>
