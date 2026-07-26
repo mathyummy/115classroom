@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>班級線上請假單</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- 引入 Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+</head>
+<body class="bg-slate-100 min-h-screen p-4 flex flex-col items-center pt-6 font-sans">
+
+    <div class="w-full max-w-md bg-white rounded-3xl shadow-xl overflow-hidden relative">
+        <!-- 頂部裝飾 -->
+        <div class="bg-blue-600 p-6 text-white text-center rounded-b-[40px] shadow-sm relative z-10">
+            <div class="w-16 h-16 bg-white/20 rounded-full flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+                <i class="fas fa-notes-medical text-3xl"></i>
+            </div>
+            <h1 class="text-2xl font-bold mb-1 tracking-wider">線上請假單</h1>
+            <p class="text-blue-100 text-sm">送出後，導師將於系統後台即時收到通知</p>
+        </div>
+
+        <!-- 成功送出的遮罩 -->
+        <div id="success-overlay" class="hidden absolute inset-0 bg-white z-50 flex flex-col items-center justify-center p-6 text-center">
+            <div class="w-20 h-20 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center text-4xl mb-4">
+                <i class="fas fa-check"></i>
+            </div>
+            <h2 class="text-2xl font-bold text-slate-800 mb-2">請假單已送出！</h2>
+            <p class="text-slate-500 mb-6">導師已收到您的申請。<br>您可以點擊右上角「X」關閉此視窗。</p>
+        </div>
+
+        <!-- 表單內容 -->
+        <div class="p-6 pt-8 space-y-5 relative z-0">
+            <div>
+                <label class="block text-slate-500 text-sm font-bold mb-1.5 pl-1"><i class="fas fa-user-graduate mr-1"></i> 學生座號</label>
+                <input type="text" id="input-seat" readonly class="w-full bg-slate-100 text-slate-700 font-bold px-4 py-3 rounded-xl border border-slate-200 outline-none">
+            </div>
+
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-slate-500 text-sm font-bold mb-1.5 pl-1"><i class="fas fa-calendar-alt mr-1"></i> 請假日期</label>
+                    <input type="date" id="input-date" required class="w-full bg-white px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+                </div>
+                <div>
+                    <label class="block text-slate-500 text-sm font-bold mb-1.5 pl-1"><i class="fas fa-tag mr-1"></i> 假別</label>
+                    <select id="input-type" class="w-full bg-white px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition appearance-none">
+                        <option value="病假">🤒 病假</option>
+                        <option value="事假">📝 事假</option>
+                        <option value="喪假">🕊️ 喪假</option>
+                        <option value="公假">🏆 公假</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-slate-500 text-sm font-bold mb-1.5 pl-1"><i class="fas fa-clock mr-1"></i> 請假節次 / 時間</label>
+                <select id="input-duration" class="w-full bg-white px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition appearance-none">
+                    <option value="全天">全天</option>
+                    <option value="上午">僅上午 (半天)</option>
+                    <option value="下午">僅下午 (半天)</option>
+                    <option value="特定節次 (請於事由說明)">特定節次 (請於下方說明)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-slate-500 text-sm font-bold mb-1.5 pl-1"><i class="fas fa-comment-dots mr-1"></i> 請假事由 / 備註說明</label>
+                <textarea id="input-reason" rows="3" placeholder="例如：今日發燒看醫生需在家休養..." required class="w-full bg-white px-4 py-3 rounded-xl border border-slate-300 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition resize-none"></textarea>
+            </div>
+
+            <button id="btn-submit" onclick="submitForm()" class="w-full bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold py-4 rounded-xl shadow-lg transition mt-4 flex justify-center items-center">
+                <i class="fas fa-paper-plane mr-2"></i> 確認送出請假單
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 1. 初始化 Firebase (與您的系統一致)
+        const firebaseConfig = {
+            apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA",
+            authDomain: "smart-class-system-a1645.firebaseapp.com",
+            projectId: "smart-class-system-a1645",
+            storageBucket: "smart-class-system-a1645.firebasestorage.app",
+            messagingSenderId: "236576763126",
+            appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7"
+        };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
+
+        // 2. 自動抓取網址上的座號並填入
+        const urlParams = new URLSearchParams(window.location.search);
+        const seatNo = urlParams.get('seat');
+        if(seatNo) {
+            document.getElementById('input-seat').value = String(seatNo).padStart(2, '0');
+        } else {
+            document.getElementById('input-seat').value = "未指定座號";
+        }
+
+        // 自動將日期預設為今天
+        const today = new Date();
+        const tzOffset = today.getTimezoneOffset() * 60000;
+        document.getElementById('input-date').value = (new Date(today - tzOffset)).toISOString().split('T')[0];
+
+        // 3. 送出表單的邏輯
+        function submitForm() {
+            const date = document.getElementById('input-date').value;
+            const type = document.getElementById('input-type').value;
+            const duration = document.getElementById('input-duration').value;
+            const reason = document.getElementById('input-reason').value.trim();
+            const btn = document.getElementById('btn-submit');
+
+            if(!seatNo || seatNo === "未指定座號") return alert("錯誤：無法辨識座號，請從 LINE 重新點擊連結。");
+            if(!date) return alert("請選擇請假日期！");
+            if(!reason) return alert("請輸入請假事由！");
+
+            // 變更按鈕狀態為載入中
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 傳送中...';
+            btn.classList.replace('bg-blue-600', 'bg-slate-400');
+
+            // 寫入 Firebase 資料庫
+            db.collection("leave_requests").add({
+                seatNo: String(seatNo).padStart(2, '0'),
+                type: type,
+                date: date,
+                duration: duration,
+                reason: reason,
+                status: "pending", // 待導師核准
+                timestamp: new Date().toISOString()
+            }).then(() => {
+                // 顯示成功遮罩
+                document.getElementById('success-overlay').classList.remove('hidden');
+            }).catch((error) => {
+                alert("送出失敗，請稍後再試：" + error.message);
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-paper-plane mr-2"></i> 確認送出請假單';
+                btn.classList.replace('bg-slate-400', 'bg-blue-600');
+            });
+        }
+    </script>
+</body>
+</html>
