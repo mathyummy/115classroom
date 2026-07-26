@@ -10,27 +10,24 @@
     <!-- 載入 FontAwesome (圖示庫) -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- 引入 Firebase -->
+      <!-- 引入 Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
-        /* 讓輸入框在手機上點擊時不會奇怪放大 */
-        input, select, textarea { font-size: 16px !important; }
+        /* 讓輸入框在手機上點擊時不會奇怪放大，並強制限制最大寬度防止跑版 */
+        input, select, textarea { 
+            font-size: 16px !important; 
+            max-width: 100% !important; 
+            box-sizing: border-box !important; 
+        }
     </style>
 </head>
 <body class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
 
     <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-        <!-- 標題區域 -->
-        <div class="bg-emerald-500 p-4 text-center">
-            <h1 class="text-xl font-bold text-white tracking-wider"><i class="fas fa-file-signature mr-2"></i>請假【事前報備】單</h1>
-        </div>
-
-        <div class="p-6 space-y-6">
-            
-            <!-- 增加紙本假單的重要提醒 (顯眼的紅色警示) -->
+<!-- ... existing code ... -->
             <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
                 <h3 class="text-red-800 font-bold text-lg mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> 重要規定，請務必詳閱：</h3>
                 <p class="text-sm text-red-700 leading-relaxed">
@@ -39,20 +36,23 @@
             </div>
 
             <!-- 日期獨立一列放在最上方 -->
-            <div>
-                <label class="block text-slate-700 text-base font-bold mb-2"><i class="far fa-calendar-alt text-slate-400 mr-2"></i>請假日期</label>
-                <input type="date" id="input-date" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
+            <div class="w-full overflow-hidden">
+                <label class="block text-slate-700 text-base font-bold mb-2 flex flex-wrap items-center">
+                    <div><i class="far fa-calendar-alt text-slate-400 mr-2"></i>請假日期</div>
+                    <span class="text-sm text-emerald-600 font-bold ml-2 animate-pulse">👆 (請點擊框框修改日期)</span>
+                </label>
+                <input type="date" id="input-date" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
             </div>
 
             <!-- 座號與假別並排在下方 -->
-            <div class="grid grid-cols-2 gap-4">
-                <div>
+            <div class="grid grid-cols-2 gap-4 w-full">
+                <div class="overflow-hidden">
                     <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-user-graduate text-slate-400 mr-2"></i>學生座號</label>
-                    <input type="text" id="input-seat" class="w-full bg-slate-100 text-slate-600 px-4 py-3 rounded-lg border border-slate-200 outline-none font-bold text-lg text-center" readonly placeholder="載入中...">
+                    <input type="text" id="input-seat" class="w-full bg-slate-100 text-slate-600 px-3 py-3 rounded-lg border border-slate-200 outline-none font-bold text-lg text-center" readonly placeholder="載入中...">
                 </div>
-                <div>
+                <div class="overflow-hidden">
                     <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-tag text-slate-400 mr-2"></i>假別</label>
-                    <select id="input-type" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
+                    <select id="input-type" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
                         <option value="病假">🤒 病假</option>
                         <option value="事假">💼 事假</option>
                         <option value="喪假">🕯️ 喪假</option>
@@ -60,9 +60,9 @@
                 </div>
             </div>
 
-            <div>
+            <div class="w-full overflow-hidden">
                 <label class="block text-slate-700 text-base font-bold mb-2"><i class="far fa-clock text-slate-400 mr-2"></i>請假節數/時間</label>
-                <select id="input-duration" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
+                <select id="input-duration" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base truncate">
                     <option value="全天">全天 (早修至放學)</option>
                     <option value="上午">上午 (早修至午休結束)</option>
                     <option value="下午">下午 (午休至放學)</option>
@@ -70,9 +70,9 @@
                 </select>
             </div>
 
-            <div>
+            <div class="w-full overflow-hidden">
                 <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-comment-dots text-slate-400 mr-2"></i>請假事由 <span class="text-xs text-slate-500 font-normal">(若選「其他」，請在此說明)</span></label>
-                <textarea id="input-reason" rows="3" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none resize-none text-base" placeholder="請簡述請假原因..."></textarea>
+                <textarea id="input-reason" rows="3" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none resize-none text-base" placeholder="請簡述請假原因..."></textarea>
             </div>
 
             <!-- 強制勾選同意框 -->
