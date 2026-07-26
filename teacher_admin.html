@@ -533,6 +533,7 @@
         // 🌟 宣告全域變數以儲存兩邊的資料
         let bindingsData = null;
         let lineParentsData = null;
+        let lineStudentsData = null; // 🌟 新增：學生綁定資料
 
         // 獨立出渲染綁定表格的函數，供多個監聽器呼叫
         function renderBindingTable() {
@@ -542,11 +543,25 @@
                 let sId = String(i).padStart(2,'0');
                 let id6 = (bindingsData && bindingsData[i] && bindingsData[i].id6) ? bindingsData[i].id6 : '未設定';
                 
-                // 🌟 比對真實的家長綁定紀錄庫
+                // 🌟 比對真實的家長與學生綁定紀錄庫
                 let isParentBound = (lineParentsData && lineParentsData['seat_' + i]) ? true : false;
+                let isStudentBound = (lineStudentsData && lineStudentsData['seat_' + i]) ? true : false;
                 
-                let pBound = isParentBound ? '<i class="fas fa-check-circle text-emerald-400 text-lg"></i>' : '<i class="fas fa-times-circle text-red-500 opacity-50"></i>';
-                let sBound = '<i class="fas fa-times-circle text-red-500 opacity-50"></i>'; // 學生端暫無實作
+                // 家長狀態與解除按鈕
+                let pBound = isParentBound ? 
+                    `<div class="flex items-center justify-center space-x-2">
+                        <i class="fas fa-check-circle text-emerald-400 text-lg"></i> 
+                        <button onclick="unbindParent(${i})" class="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/50 px-2 py-1 rounded transition" title="踢除並解除綁定">解除</button>
+                    </div>` : 
+                    `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
+                    
+                // 🌟 新增：學生狀態與解除按鈕
+                let sBound = isStudentBound ? 
+                    `<div class="flex items-center justify-center space-x-2">
+                        <i class="fas fa-check-circle text-emerald-400 text-lg"></i> 
+                        <button onclick="unbindStudent(${i})" class="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/50 px-2 py-1 rounded transition" title="踢除並解除綁定">解除</button>
+                    </div>` : 
+                    `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
                 
                 html += `
                 <tr class="hover:bg-slate-800/30 transition">
@@ -575,9 +590,15 @@
                 renderBindingTable();
             });
 
-            // 2. 🌟 監聽實際的 LINE 綁定狀態 (由 Google Apps Script 寫入)
+            // 2. 🌟 監聽實際的 LINE 家長綁定狀態
             db.collection("class_settings").doc("line_parents").onSnapshot((doc) => {
                 lineParentsData = doc.exists ? doc.data() : null;
+                renderBindingTable();
+            });
+
+            // 🌟 監聽實際的 LINE 學生綁定狀態
+            db.collection("class_settings").doc("line_students").onSnapshot((doc) => {
+                lineStudentsData = doc.exists ? doc.data() : null;
                 renderBindingTable();
             });
 
@@ -677,6 +698,34 @@
 
         
         // --- 表單/按鈕操作函數 (與資料庫互動) ---
+
+        // 🌟 新增：解除家長綁定的函數
+        function unbindParent(seat) {
+            let sId = String(seat).padStart(2,'0');
+            if(!confirm(`確定要解除 ${sId} 號家長的 LINE 綁定嗎？\n\n解除後，該家長必須重新輸入密碼才能再次查詢成績。`)) return;
+            
+            db.collection("class_settings").doc("line_parents").update({
+                [`seat_${seat}`]: firebase.firestore.FieldValue.delete()
+            }).then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`))
+              .catch(e => {
+                if(e.code === 'not-found') db.collection("class_settings").doc("line_parents").set({}).then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`));
+                else alert("解除失敗: " + e.message);
+            });
+        }
+
+        // 🌟 新增：解除學生綁定的函數
+        function unbindStudent(seat) {
+            let sId = String(seat).padStart(2,'0');
+            if(!confirm(`確定要解除 ${sId} 號學生的 LINE 綁定嗎？`)) return;
+            
+            db.collection("class_settings").doc("line_students").update({
+                [`seat_${seat}`]: firebase.firestore.FieldValue.delete()
+            }).then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`))
+              .catch(e => {
+                if(e.code === 'not-found') db.collection("class_settings").doc("line_students").set({}).then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`));
+                else alert("解除失敗: " + e.message);
+            });
+        }
 
         function executeBatchImport() {
             const lines = document.getElementById('batch-import-data').value.trim().split('\n').filter(l => l.trim() !== '');
