@@ -1,7 +1,36 @@
-<!-- ... existing code ... -->
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <!-- 確保手機版面能正確縮放 -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>701 班級請假系統</title>
+    <!-- 載入 Tailwind CSS (排版樣式) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 載入 FontAwesome (圖示庫) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- 引入 Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
+        /* 讓輸入框在手機上點擊時不會奇怪放大 */
+        input, select, textarea { font-size: 16px !important; }
+    </style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-slate-200">
+        <!-- 標題區域 -->
+        <div class="bg-emerald-500 p-4 text-center">
+            <h1 class="text-xl font-bold text-white tracking-wider"><i class="fas fa-file-signature mr-2"></i>請假【事前報備】單</h1>
+        </div>
+
         <div class="p-6 space-y-6">
             
-            <!-- 增加紙本假單的重要提醒 (改為顯眼的紅色警示) -->
+            <!-- 增加紙本假單的重要提醒 (顯眼的紅色警示) -->
             <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
                 <h3 class="text-red-800 font-bold text-lg mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> 重要規定，請務必詳閱：</h3>
                 <p class="text-sm text-red-700 leading-relaxed">
@@ -9,13 +38,13 @@
                 </p>
             </div>
 
-            <!-- 日期 (改為獨立一列，解決手機版擠壓跑版問題) -->
+            <!-- 日期獨立一列放在最上方 -->
             <div>
                 <label class="block text-slate-700 text-base font-bold mb-2"><i class="far fa-calendar-alt text-slate-400 mr-2"></i>請假日期</label>
                 <input type="date" id="input-date" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
             </div>
 
-            <!-- 座號與假別並排 -->
+            <!-- 座號與假別並排在下方 -->
             <div class="grid grid-cols-2 gap-4">
                 <div>
                     <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-user-graduate text-slate-400 mr-2"></i>學生座號</label>
@@ -33,7 +62,20 @@
 
             <div>
                 <label class="block text-slate-700 text-base font-bold mb-2"><i class="far fa-clock text-slate-400 mr-2"></i>請假節數/時間</label>
-<!-- ... existing code ... -->
+                <select id="input-duration" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
+                    <option value="全天">全天 (早修至放學)</option>
+                    <option value="上午">上午 (早修至午休結束)</option>
+                    <option value="下午">下午 (午休至放學)</option>
+                    <option value="其他(於下方事由說明)">其他 (請於下方事由說明)</option>
+                </select>
+            </div>
+
+            <div>
+                <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-comment-dots text-slate-400 mr-2"></i>請假事由 <span class="text-xs text-slate-500 font-normal">(若選「其他」，請在此說明)</span></label>
+                <textarea id="input-reason" rows="3" class="w-full bg-white text-slate-700 px-4 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none resize-none text-base" placeholder="請簡述請假原因..."></textarea>
+            </div>
+
+            <!-- 強制勾選同意框 -->
             <div class="mt-4 flex items-start bg-slate-50 p-3 rounded-lg border border-slate-200">
                 <div class="flex items-center h-5">
                     <input type="checkbox" id="confirm-rule" class="w-6 h-6 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-500 cursor-pointer">
@@ -71,7 +113,7 @@
     </div>
 
     <script>
-        // ⚠️ 非常重要：這裡必須放您專屬的 Firebase 金鑰，否則資料傳不出去！
+        // ⚠️ 非常重要：這裡必須放您專屬的 Firebase 金鑰
         const firebaseConfig = {
             apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA",
             authDomain: "smart-class-system-a1645.firebaseapp.com",
@@ -84,10 +126,9 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
-        // 設定日期選擇器的預設值與最小值 (禁止選擇過去日期)
+        // 處理日期：預設為今天，且限制不能選過去的日子
         const dateInput = document.getElementById('input-date');
         const today = new Date();
-        // 台灣時區補償 (確保晚上轉換不會少一天)
         const tzOffset = today.getTimezoneOffset() * 60000;
         const localISOTime = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
         
@@ -95,7 +136,42 @@
         dateInput.min = localISOTime; // 限制不能選取過去的時間
 
         // 自動抓取網址上的座號並填入
-<!-- ... existing code ... -->
+        const urlParams = new URLSearchParams(window.location.search);
+        const seatNo = urlParams.get('seat');
+        if(seatNo) {
+            document.getElementById('input-seat').value = String(seatNo).padStart(2, '0');
+        } else {
+            // 開發測試用，若網址無參數則預設為 01 號
+            document.getElementById('input-seat').value = "01";
+        }
+
+        // 送出表單到 Firebase 資料庫
+        function submitLeaveRequest() {
+            const seat = document.getElementById('input-seat').value;
+            const date = document.getElementById('input-date').value;
+            const type = document.getElementById('input-type').value;
+            const duration = document.getElementById('input-duration').value.trim();
+            const reason = document.getElementById('input-reason').value.trim();
+            const confirmRule = document.getElementById('confirm-rule').checked; 
+            const errorMsg = document.getElementById('error-msg');
+
+            // 簡單的資料驗證
+            if(!confirmRule) {
+                errorMsg.innerText = "❌ 請務必勾選「已了解請假規定」才能送出！";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            if(!seat || seat.includes("失敗")) {
+                errorMsg.innerText = "座號讀取失敗，請退回 LINE 重新點擊連結。";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+            if(!duration || !reason) {
+                errorMsg.innerText = "請假節數與事由不能為空！";
+                errorMsg.classList.remove('hidden');
+                return;
+            }
+
             errorMsg.classList.add('hidden'); // 隱藏錯誤訊息
 
             // 寫入 Firebase
@@ -109,8 +185,8 @@
                 timestamp: new Date().toISOString() // 紀錄填表時間
             })
             .then(() => {
-                // 送出成功後的畫面處理
-                document.getElementById('success-modal').classList.remove('hidden'); // 顯示置中彈出視窗
+                // 送出成功後的畫面處理：顯示置中彈出視窗
+                document.getElementById('success-modal').classList.remove('hidden'); 
                 
                 // 清空輸入框
                 document.getElementById('input-duration').value = '全天';
