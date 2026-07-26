@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <!-- 確保手機版面能正確縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>請假事先報備系統</title>
+    <title>701 班級請假系統</title>
     <!-- 載入 Tailwind CSS (排版樣式) -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- 載入 FontAwesome (圖示庫) -->
@@ -203,13 +203,24 @@
         // 關閉視窗函數 (供彈出視窗的按鈕使用)
         function closeApp() {
             try {
-                // 嘗試關閉視窗 (對某些瀏覽器或 LINE Webview 有效)
-                window.close();
-                // 提示家長若未關閉可按右上角 X
-                document.querySelector('#success-modal p').innerHTML = "請點擊右上角的「X」關閉此畫面返回 LINE。";
+                // 嘗試使用 Hack 手法關閉視窗 (對部分瀏覽器有效)
+                window.open('','_self').close();
             } catch (e) {
-                console.log(e);
+                console.log("關閉指令被阻擋", e);
             }
+            
+            // 由於 LINE 內部瀏覽器常阻擋程式自動關閉，若 300 毫秒後沒關閉成功，則改變按鈕文字引導家長
+            setTimeout(() => {
+                const btn = document.querySelector('#success-modal button');
+                btn.innerHTML = '<i class="fas fa-times mr-2"></i>請點擊右上角「X」關閉';
+                // 改變按鈕顏色為灰色
+                btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
+                btn.classList.add('bg-slate-600', 'hover:bg-slate-500');
+                
+                // 改變提示文字
+                document.querySelector('#success-modal p').innerHTML = 
+                    "<span class='text-red-500 font-bold'>LINE 系統限制自動關閉功能</span><br>請點擊螢幕右上角的「X」返回 LINE 聊天室。";
+            }, 300);
         }
     </script>
 </body>
