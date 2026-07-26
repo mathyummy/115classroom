@@ -137,6 +137,12 @@
                 <div class="bg-slate-800 p-4 rounded border border-slate-700 min-h-[100px] text-slate-300" id="dash-monitor-msg">
                     等待讀取中...
                 </div>
+                <div class="glass-panel p-6 rounded-xl mt-6">
+    <h3 class="text-lg font-bold text-emerald-400 mb-4"><i class="fas fa-file-signature mr-2"></i> 待核准線上請假單</h3>
+    <div id="leave-requests-container" class="space-y-4">
+        <div class="text-slate-500 italic">正在載入請假單...</div>
+    </div>
+</div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -694,7 +700,37 @@
                 });
                 container.innerHTML = html;
             });
+// 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending)
+db.collection("leave_requests").where("status", "==", "pending").onSnapshot((snapshot) => {
+    const container = document.getElementById('leave-requests-container');
+    if(snapshot.empty) {
+        container.innerHTML = '<div class="text-slate-500 text-sm text-center py-6 border border-dashed border-slate-700 rounded bg-slate-800/30">目前無待核准的請假單</div>';
+        return;
+    }
+    let html = '';
+    snapshot.forEach(doc => {
+        let data = doc.data();
+        html += `
+            <div class="bg-slate-800 p-4 rounded-lg border border-slate-600 flex justify-between items-center shadow-lg">
+                <div class="flex-1">
+                    <div class="font-bold text-white">${data.seatNo} 號 - ${data.type}</div>
+                    <div class="text-sm text-slate-300">${data.date} (${data.duration})</div>
+                    <div class="text-sm text-slate-400 italic">事由: ${data.reason}</div>
+                </div>
+                <button onclick="approveLeave('${doc.id}', '${data.seatNo}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-sm font-bold">核准</button>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+});
 
+// 🌟 新增核准功能的函數 (請加在 initDataListeners 函式外面)
+function approveLeave(docId, seatNo) {
+    if(!confirm(`確定要核准 ${seatNo} 號的請假申請嗎？`)) return;
+    db.collection('leave_requests').doc(docId).update({ status: 'approved' })
+    .then(() => alert('已核准！'))
+    .catch(e => alert('核准失敗: ' + e.message));
+}
             // 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending)
             db.collection("leave_requests").where("status", "==", "pending").onSnapshot((snapshot) => {
                 const container = document.getElementById('leave-requests-container');
