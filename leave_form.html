@@ -2,57 +2,67 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <!-- 確保手機版面能正確縮放 -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>請假報備系統</title>
-    <!-- 載入 Tailwind CSS (排版樣式) -->
+    <!-- 載入 Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- 載入 FontAwesome (圖示庫) -->
+    <!-- 載入 FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-      <!-- 引入 Firebase -->
+    <!-- 引入 Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8fafc; }
-        /* 讓輸入框在手機上點擊時不會奇怪放大，並強制限制最大寬度防止跑版 */
+        
+        /* 針對 iOS 與 LINE WebView 的終極跑版修正 */
+        * { box-sizing: border-box !important; }
+        
         input, select, textarea { 
             font-size: 16px !important; 
+            width: 100% !important;
             max-width: 100% !important; 
-            box-sizing: border-box !important; 
+        }
+
+        /* 專門馴服 iOS 的日期輸入框 */
+        input[type="date"] {
+            -webkit-appearance: none; 
+            min-width: 0; 
+            background-color: white;
+            display: block;
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4 bg-slate-100">
+<!-- 💡 修正：移除了 overflow-hidden 並加上 py-8 上下留白，讓手機可以順暢上下滑動 -->
+<body class="min-h-screen py-8 px-4 flex items-center justify-center bg-slate-100 w-full">
 
-    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-slate-200">
-<!-- ... existing code ... -->
-            <div class="bg-red-50 border-l-4 border-red-500 p-4 rounded-r-lg shadow-sm">
-                <h3 class="text-red-800 font-bold text-lg mb-1"><i class="fas fa-exclamation-triangle mr-1"></i> 重要規定，請務必詳閱：</h3>
-                <p class="text-sm text-red-700 leading-relaxed">
-                    本系統僅供向導師作<strong>「事前通知與安全確認」</strong>。為符合學校請假程序，學生返校後，<span class="bg-red-200 px-1 font-bold">仍必須填寫學校的「紙本假卡」</span>，經家長、導師簽名並送交學務處，才算真正完成請假手續！
-                </p>
-            </div>
+    <div class="bg-white w-full max-w-md rounded-2xl shadow-xl overflow-hidden border border-slate-200 h-fit">
+        <!-- 標題區域 -->
+        <div class="bg-emerald-500 p-4 text-center">
+            <h1 class="text-xl font-bold text-white tracking-wider"><i class="fas fa-file-signature mr-2"></i>請假【事前報備】單</h1>
+        </div>
+
+        <div class="p-5 sm:p-6 space-y-5">
 
             <!-- 日期獨立一列放在最上方 -->
-            <div class="w-full overflow-hidden">
-                <label class="block text-slate-700 text-base font-bold mb-2 flex flex-wrap items-center">
-                    <div><i class="far fa-calendar-alt text-slate-400 mr-2"></i>請假日期</div>
-                    <span class="text-sm text-emerald-600 font-bold ml-2 animate-pulse">👆 (請點擊框框修改日期)</span>
+            <div class="w-full">
+                <label class="block text-slate-700 text-base font-bold mb-2">
+                    <i class="far fa-calendar-alt text-slate-400 mr-2"></i>請假日期 
+                    <span class="text-emerald-600 text-sm ml-1 inline-block animate-pulse tracking-tight">👆(點擊修改)</span>
                 </label>
-                <input type="date" id="input-date" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
+                <input type="date" id="input-date" class="bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none text-base shadow-sm m-0">
             </div>
 
             <!-- 座號與假別並排在下方 -->
-            <div class="grid grid-cols-2 gap-4 w-full">
-                <div class="overflow-hidden">
+            <div class="grid grid-cols-2 gap-3 sm:gap-4 w-full">
+                <div>
                     <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-user-graduate text-slate-400 mr-2"></i>學生座號</label>
-                    <input type="text" id="input-seat" class="w-full bg-slate-100 text-slate-600 px-3 py-3 rounded-lg border border-slate-200 outline-none font-bold text-lg text-center" readonly placeholder="載入中...">
+                    <input type="text" id="input-seat" class="bg-slate-100 text-slate-600 px-3 py-3 rounded-lg border border-slate-200 outline-none font-bold text-lg text-center m-0" readonly placeholder="載入中...">
                 </div>
-                <div class="overflow-hidden">
+                <div>
                     <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-tag text-slate-400 mr-2"></i>假別</label>
-                    <select id="input-type" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base">
+                    <select id="input-type" class="bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none text-base m-0 shadow-sm">
                         <option value="病假">🤒 病假</option>
                         <option value="事假">💼 事假</option>
                         <option value="喪假">🕯️ 喪假</option>
@@ -60,46 +70,49 @@
                 </div>
             </div>
 
-            <div class="w-full overflow-hidden">
+            <div class="w-full">
                 <label class="block text-slate-700 text-base font-bold mb-2"><i class="far fa-clock text-slate-400 mr-2"></i>請假節數/時間</label>
-                <select id="input-duration" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 outline-none text-base truncate">
+                <select id="input-duration" class="bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none text-base m-0 shadow-sm">
                     <option value="全天">全天 (早修至放學)</option>
                     <option value="上午">上午 (早修至午休結束)</option>
                     <option value="下午">下午 (午休至放學)</option>
-                    <option value="其他(於下方事由說明)">其他 (請於下方事由說明)</option>
+                    <option value="其他(於下方事由說明)">其他 (請於事由說明)</option>
                 </select>
             </div>
 
-            <div class="w-full overflow-hidden">
-                <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-comment-dots text-slate-400 mr-2"></i>請假事由 <span class="text-xs text-slate-500 font-normal">(若選「其他」，請在此說明)</span></label>
-                <textarea id="input-reason" rows="3" class="w-full bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none resize-none text-base" placeholder="請簡述請假原因..."></textarea>
+            <div class="w-full">
+                <label class="block text-slate-700 text-base font-bold mb-2"><i class="fas fa-comment-dots text-slate-400 mr-2"></i>請假事由 <span class="text-xs text-slate-500 font-normal">(若選「其他」請說明)</span></label>
+                <textarea id="input-reason" rows="3" class="bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none resize-none text-base m-0 shadow-sm" placeholder="請簡述請假原因..."></textarea>
             </div>
 
-            <!-- 強制勾選同意框 -->
-            <div class="mt-4 flex items-start bg-slate-50 p-3 rounded-lg border border-slate-200">
-                <div class="flex items-center h-5">
-                    <input type="checkbox" id="confirm-rule" class="w-6 h-6 text-emerald-600 bg-white border-gray-300 rounded focus:ring-emerald-500 cursor-pointer">
+            <!-- 💡 修正：將重要規定整合進打勾區域，並改為紅色警示排版 -->
+            <div class="mt-4 flex items-start bg-red-50 p-4 rounded-xl border border-red-200 shadow-sm">
+                <div class="flex items-center h-5 mt-0.5">
+                    <!-- 加大打勾框 (w-6 h-6) 方便手機點擊 -->
+                    <input type="checkbox" id="confirm-rule" class="w-6 h-6 text-red-600 bg-white border-red-300 rounded focus:ring-red-500 cursor-pointer">
                 </div>
-                <div class="ml-3 text-sm">
-                    <label for="confirm-rule" class="font-bold text-slate-700 cursor-pointer text-base">
-                        我已了解本表單僅為事前通知導師。
+                <div class="ml-3 text-sm flex-1">
+                    <label for="confirm-rule" class="font-bold text-red-800 cursor-pointer text-base block leading-tight mb-1.5">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> 重要規定，我已詳閱並同意：
                     </label>
-                    <p class="text-slate-500 mt-1">孩子返校後，我會督促其完成「紙本假卡」手續。</p>
+                    <p class="text-sm text-red-700 leading-relaxed">
+                        本系統僅供<strong>「事前通知」</strong>。為符合學校程序，孩子返校後，<span class="bg-red-200 px-1 font-bold rounded">仍必須補寫「紙本假卡」</span>，送交學務處才算完成手續！
+                    </p>
                 </div>
             </div>
 
-            <button onclick="submitLeaveRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition mt-4 text-lg flex justify-center items-center">
+            <button onclick="submitLeaveRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition mt-2 text-lg flex justify-center items-center">
                 <i class="fas fa-paper-plane mr-2"></i> 確認送出報備單
             </button>
             
-            <div id="error-msg" class="hidden bg-red-100 text-red-700 p-3 rounded-lg text-center text-sm font-bold border border-red-300">
+            <div id="error-msg" class="hidden bg-red-100 text-red-700 p-3 rounded-lg text-center text-sm font-bold border border-red-300 mt-3">
                 <!-- 錯誤訊息顯示區 -->
             </div>
         </div>
     </div>
 
     <!-- 成功彈出視窗 (Modal) -->
-    <div id="success-modal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div id="success-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-sm w-full text-center transform transition-all">
             <div class="w-16 h-16 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <i class="fas fa-check text-3xl text-emerald-600"></i>
@@ -113,7 +126,7 @@
     </div>
 
     <script>
-        // ⚠️ 非常重要：這裡必須放您專屬的 Firebase 金鑰
+        // ⚠️ 記得放您的 Firebase 金鑰
         const firebaseConfig = {
             apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA",
             authDomain: "smart-class-system-a1645.firebaseapp.com",
@@ -122,7 +135,6 @@
             messagingSenderId: "236576763126",
             appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7"
         };
-        // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
@@ -133,19 +145,17 @@
         const localISOTime = new Date(Date.now() - tzOffset).toISOString().split('T')[0];
         
         dateInput.value = localISOTime;
-        dateInput.min = localISOTime; // 限制不能選取過去的時間
+        dateInput.min = localISOTime;
 
-        // 自動抓取網址上的座號並填入
+        // 抓取網址參數
         const urlParams = new URLSearchParams(window.location.search);
         const seatNo = urlParams.get('seat');
         if(seatNo) {
             document.getElementById('input-seat').value = String(seatNo).padStart(2, '0');
         } else {
-            // 開發測試用，若網址無參數則預設為 01 號
-            document.getElementById('input-seat').value = "01";
+            document.getElementById('input-seat').value = "01"; // 預設值，防呆用
         }
 
-        // 送出表單到 Firebase 資料庫
         function submitLeaveRequest() {
             const seat = document.getElementById('input-seat').value;
             const date = document.getElementById('input-date').value;
@@ -155,14 +165,8 @@
             const confirmRule = document.getElementById('confirm-rule').checked; 
             const errorMsg = document.getElementById('error-msg');
 
-            // 簡單的資料驗證
             if(!confirmRule) {
                 errorMsg.innerText = "❌ 請務必勾選「已了解請假規定」才能送出！";
-                errorMsg.classList.remove('hidden');
-                return;
-            }
-            if(!seat || seat.includes("失敗")) {
-                errorMsg.innerText = "座號讀取失敗，請退回 LINE 重新點擊連結。";
                 errorMsg.classList.remove('hidden');
                 return;
             }
@@ -172,52 +176,37 @@
                 return;
             }
 
-            errorMsg.classList.add('hidden'); // 隱藏錯誤訊息
+            errorMsg.classList.add('hidden');
 
-            // 寫入 Firebase
             db.collection("leave_requests").add({
                 seatNo: seat,
                 date: date,
                 type: type,
                 duration: duration,
                 reason: reason,
-                status: "pending", // 預設狀態為「待導師核准」
-                timestamp: new Date().toISOString() // 紀錄填表時間
+                status: "pending", 
+                timestamp: new Date().toISOString()
             })
             .then(() => {
-                // 送出成功後的畫面處理：顯示置中彈出視窗
                 document.getElementById('success-modal').classList.remove('hidden'); 
-                
-                // 清空輸入框
-                document.getElementById('input-duration').value = '全天';
-                document.getElementById('input-reason').value = '';
-                document.getElementById('confirm-rule').checked = false;
             })
             .catch((error) => {
-                console.error("寫入失敗: ", error);
                 errorMsg.innerText = "送出失敗，請檢查網路連線後再試。";
                 errorMsg.classList.remove('hidden');
             });
         }
 
-        // 關閉視窗函數 (供彈出視窗的按鈕使用)
         function closeApp() {
             try {
-                // 嘗試使用 Hack 手法關閉視窗 (對部分瀏覽器有效)
                 window.open('','_self').close();
-            } catch (e) {
-                console.log("關閉指令被阻擋", e);
-            }
+            } catch (e) {}
             
-            // 由於 LINE 內部瀏覽器常阻擋程式自動關閉，若 300 毫秒後沒關閉成功，則改變按鈕文字引導家長
             setTimeout(() => {
                 const btn = document.querySelector('#success-modal button');
                 btn.innerHTML = '<i class="fas fa-times mr-2"></i>請點擊右上角「X」關閉';
-                // 改變按鈕顏色為灰色
                 btn.classList.remove('bg-emerald-600', 'hover:bg-emerald-500');
                 btn.classList.add('bg-slate-600', 'hover:bg-slate-500');
                 
-                // 改變提示文字
                 document.querySelector('#success-modal p').innerHTML = 
                     "<span class='text-red-500 font-bold'>LINE 系統限制自動關閉功能</span><br>請點擊螢幕右上角的「X」返回 LINE 聊天室。";
             }, 300);
