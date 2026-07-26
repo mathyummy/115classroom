@@ -33,13 +33,15 @@
             display: block;
         }
 
-        /* 強制回復手機端原生的打勾框樣式 */
+        /* 🌟 強制回復手機端原生的打勾框樣式，確保 iOS 絕對會顯示 */
         input[type="checkbox"] {
-            -webkit-appearance: auto;
+            -webkit-appearance: checkbox !important;
+            appearance: checkbox !important;
             width: 1.5rem !important;
             height: 1.5rem !important;
-            margin: 0;
+            margin: 0 !important;
             cursor: pointer;
+            display: inline-block !important;
         }
     </style>
 </head>
@@ -96,21 +98,21 @@
                 <textarea id="input-reason" rows="3" class="bg-white text-slate-700 px-3 py-3 rounded-lg border border-slate-300 focus:border-emerald-500 outline-none resize-none text-base m-0 shadow-sm" placeholder="請簡述請假原因..."></textarea>
             </div>
 
-            <!-- 🌟 修正：合體版的「重要規定」與「打勾框」，移至最下方 -->
-            <label class="mt-2 flex items-start bg-red-50 hover:bg-red-100 p-3 sm:p-4 rounded-xl border border-red-200 cursor-pointer transition shadow-sm">
-                <div class="flex items-center h-6 mt-0.5">
-                    <input type="checkbox" id="confirm-rule" class="accent-red-600">
+            <!-- 🌟 修正：分兩行顯示，並修復 iOS 隱藏打勾框的 Bug -->
+            <label class="mt-4 flex flex-col bg-red-50 hover:bg-red-100 p-4 rounded-xl border border-red-200 cursor-pointer transition shadow-sm w-full">
+                <div class="flex items-center">
+                    <input type="checkbox" id="confirm-rule">
+                    <span class="ml-3 text-red-800 font-bold text-base leading-tight">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>重要規定，我已詳閱並同意：
+                    </span>
                 </div>
-                <div class="ml-3 flex-1">
-                    <h3 class="text-red-800 font-bold text-base mb-1.5 leading-tight"><i class="fas fa-exclamation-triangle mr-1"></i>重要規定，我已詳閱並同意：</h3>
-                    <p class="text-sm text-red-700 leading-relaxed">
-                        本系統僅供<strong>「事前通知」</strong>。為符合學校程序，孩子返校後，<span class="bg-red-200 px-1 font-bold rounded">仍必須補寫「紙本假卡」</span>，送交學務處才算完成手續！
-                    </p>
+                <div class="mt-2 pl-9 text-sm text-red-700 leading-relaxed">
+                    本系統僅供<strong>「事前通知」</strong>。為符合學校程序，孩子返校後，<span class="bg-red-200 px-1 font-bold rounded text-red-900">仍必須補寫「紙本假卡」</span>，送交學務處才算完成手續！
                 </div>
             </label>
 
             <!-- 送出按鈕 -->
-            <button onclick="submitLeaveRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition mt-2 text-lg flex justify-center items-center">
+            <button onclick="submitLeaveRequest()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-4 rounded-xl shadow-lg transition mt-5 text-lg flex justify-center items-center">
                 <i class="fas fa-paper-plane mr-2"></i> 確認送出報備單
             </button>
             
