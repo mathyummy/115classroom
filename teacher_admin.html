@@ -91,12 +91,11 @@
         </nav>
         
         <div class="p-4 border-t border-slate-700 flex flex-col gap-3">
-            <!-- 登出按鈕就在這裡！ -->
             <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-red-400 hover:bg-red-900/30 border border-red-900/50 transition text-sm font-bold">
                 <i class="fas fa-sign-out-alt"></i><span>安全登出</span>
             </button>
             <div class="text-xs text-slate-500 text-center">
-                智慧班級管理系統 v1.2<br>Teacher Admin Panel
+                智慧班級管理系統 v1.3<br>Teacher Admin Panel
             </div>
         </div>
     </aside>
@@ -238,7 +237,7 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-700 text-slate-300" id="binding-table-body">
-                        <!-- JS 動態生成 24 人的綁定清單 -->
+                        <!-- JS 動態生成 -->
                     </tbody>
                 </table>
             </div>
@@ -479,7 +478,6 @@
             });
         }
 
-
         // ==================== 頁面與資料庫邏輯 ====================
 
         const todayStr = new Date().toISOString().split('T')[0];
@@ -520,7 +518,6 @@
             if(navBtn) navBtn.classList.add('active', 'bg-blue-600', 'text-white');
         }
 
-        // Modal 相關
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openBatchImportModal() { 
             document.getElementById('batch-import-data').value = '';
@@ -533,36 +530,58 @@
             st.innerHTML = '<i class="fas fa-check-circle mr-2"></i> 雲端資料庫已連線';
         }
 
-        // 登入後才啟動資料庫監聽 (避免未登入時報錯)
+        // 🌟 宣告全域變數以儲存兩邊的資料
+        let bindingsData = null;
+        let lineParentsData = null;
+
+        // 獨立出渲染綁定表格的函數，供多個監聽器呼叫
+        function renderBindingTable() {
+            const tbody = document.getElementById('binding-table-body');
+            let html = '';
+            for(let i=1; i<=24; i++) {
+                let sId = String(i).padStart(2,'0');
+                let id6 = (bindingsData && bindingsData[i] && bindingsData[i].id6) ? bindingsData[i].id6 : '未設定';
+                
+                // 🌟 比對真實的家長綁定紀錄庫
+                let isParentBound = (lineParentsData && lineParentsData['seat_' + i]) ? true : false;
+                
+                let pBound = isParentBound ? '<i class="fas fa-check-circle text-emerald-400 text-lg"></i>' : '<i class="fas fa-times-circle text-red-500 opacity-50"></i>';
+                let sBound = '<i class="fas fa-times-circle text-red-500 opacity-50"></i>'; // 學生端暫無實作
+                
+                html += `
+                <tr class="hover:bg-slate-800/30 transition">
+                    <td class="p-3 font-bold text-white bg-slate-800/50 text-center">${sId}</td>
+                    <td class="p-3">
+                        <div class="flex items-center space-x-2">
+                            <input type="text" id="bind-id-${i}" value="${id6 === '未設定' ? '' : id6}" placeholder="未設定" class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 tracking-widest text-white focus:border-orange-500 outline-none">
+                        </div>
+                    </td>
+                    <td class="p-3 text-center">${pBound}</td>
+                    <td class="p-3 text-center">${sBound}</td>
+                    <td class="p-3 text-center">
+                        <button onclick="updateBinding(${i})" class="text-orange-400 hover:text-orange-300 text-xs border border-orange-500/50 px-2 py-1 rounded transition"><i class="fas fa-save mr-1"></i>儲存</button>
+                    </td>
+                </tr>`;
+            }
+            tbody.innerHTML = html;
+        }
+
+        // 登入後才啟動資料庫監聽
         function initDataListeners() {
+            
+            // 1. 監聽導師設定的綁定密碼
             db.collection("class_settings").doc("bindings").onSnapshot((doc) => {
-                let bindData = doc.exists ? doc.data().studentBindings : null;
-                const tbody = document.getElementById('binding-table-body');
-                let html = '';
-                for(let i=1; i<=24; i++) {
-                    let sId = String(i).padStart(2,'0');
-                    let id6 = (bindData && bindData[i] && bindData[i].id6) ? bindData[i].id6 : '未設定';
-                    let pBound = (bindData && bindData[i] && bindData[i].parentBound) ? '<i class="fas fa-check-circle text-emerald-400 text-lg"></i>' : '<i class="fas fa-times-circle text-red-500 opacity-50"></i>';
-                    let sBound = (bindData && bindData[i] && bindData[i].studentBound) ? '<i class="fas fa-check-circle text-emerald-400 text-lg"></i>' : '<i class="fas fa-times-circle text-red-500 opacity-50"></i>';
-                    
-                    html += `
-                    <tr class="hover:bg-slate-800/30 transition">
-                        <td class="p-3 font-bold text-white bg-slate-800/50 text-center">${sId}</td>
-                        <td class="p-3">
-                            <div class="flex items-center space-x-2">
-                                <input type="text" id="bind-id-${i}" value="${id6 === '未設定' ? '' : id6}" placeholder="未設定" class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 tracking-widest text-white focus:border-orange-500 outline-none">
-                            </div>
-                        </td>
-                        <td class="p-3 text-center">${pBound}</td>
-                        <td class="p-3 text-center">${sBound}</td>
-                        <td class="p-3 text-center">
-                            <button onclick="updateBinding(${i})" class="text-orange-400 hover:text-orange-300 text-xs border border-orange-500/50 px-2 py-1 rounded transition"><i class="fas fa-save mr-1"></i>儲存</button>
-                        </td>
-                    </tr>`;
-                }
-                tbody.innerHTML = html;
+                bindingsData = doc.exists ? doc.data().studentBindings : null;
+                renderBindingTable();
             });
 
+            // 2. 🌟 監聽實際的 LINE 綁定狀態 (由 Google Apps Script 寫入)
+            db.collection("class_settings").doc("line_parents").onSnapshot((doc) => {
+                lineParentsData = doc.exists ? doc.data() : null;
+                renderBindingTable();
+            });
+
+            // 3. 監聽大屏看板設定
             db.collection("board_settings").doc("current").onSnapshot((doc) => {
                 markConnected();
                 if (doc.exists) {
@@ -588,6 +607,7 @@
                 }
             });
 
+            // 4. 監聽每日表現與出缺勤
             db.collection("daily_records").doc(todayStr).onSnapshot((doc) => {
                 if (doc.exists) {
                     globalStudentsData = doc.data().studentsData;
@@ -630,6 +650,7 @@
                 }
             });
 
+            // 5. 監聽操作日誌
             db.collection("audit_logs").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
                 const container = document.getElementById('audit-log-container');
                 if(snapshot.empty) {
