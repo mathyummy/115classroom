@@ -35,9 +35,7 @@
     <div id="login-overlay" class="fixed inset-0 bg-[#0f172a] z-50 flex items-center justify-center transition-opacity duration-500">
         <div class="glass-panel p-8 rounded-2xl w-96 max-w-[90%] shadow-[0_0_40px_rgba(59,130,246,0.3)] border border-slate-600">
             <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg border-4 border-blue-400/30">
-                    密
-                </div>
+                <div class="w-20 h-20 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg border-4 border-blue-400/30">密</div>
                 <h2 class="text-2xl font-bold text-white tracking-widest">導師安全登入</h2>
                 <p class="text-slate-400 text-sm mt-2">請輸入您的導師專屬帳號密碼</p>
             </div>
@@ -58,45 +56,26 @@
         </div>
     </div>
 
+    <!-- 左側邊欄 -->
     <aside class="sidebar w-64 h-full flex flex-col transition-all duration-300 z-20">
         <div class="p-6 border-b border-slate-700 flex items-center space-x-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">
-                701
-            </div>
+            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">701</div>
             <span class="text-xl font-bold tracking-wider">導師後台</span>
         </div>
         
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
-                <i class="fas fa-chart-pie w-5"></i><span>今日班級總覽</span>
-            </button>
-            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
-                <i class="fas fa-broadcast-tower w-5"></i><span>大屏廣播遙控</span>
-            </button>
-            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-orange-400 hover:bg-slate-700 transition">
-                <i class="fas fa-id-card w-5"></i><span>LINE@ 綁定管理</span>
-            </button>
-            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition">
-                <i class="fas fa-users-cog w-5"></i><span>幹部權限管理</span>
-            </button>
-            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-emerald-400 hover:bg-slate-700 transition">
-                <i class="fas fa-file-excel w-5"></i><span>LINE@ 成績系統</span>
-            </button>
-            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-purple-400 hover:bg-slate-700 transition">
-                <i class="fas fa-calendar-check w-5"></i><span>每週結算與推播</span>
-            </button>
-            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-pink-400 hover:bg-slate-700 transition">
-                <i class="fas fa-comments w-5"></i><span>LINE@ 溝通紀錄</span>
-            </button>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fas fa-chart-pie w-5"></i><span>今日班級總覽</span></button>
+            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fas fa-broadcast-tower w-5"></i><span>大屏廣播遙控</span></button>
+            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-orange-400 hover:bg-slate-700 transition"><i class="fas fa-id-card w-5"></i><span>LINE@ 綁定管理</span></button>
+            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fas fa-users-cog w-5"></i><span>幹部權限管理</span></button>
+            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-emerald-400 hover:bg-slate-700 transition"><i class="fas fa-file-excel w-5"></i><span>LINE@ 成績系統</span></button>
+            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-purple-400 hover:bg-slate-700 transition"><i class="fas fa-calendar-check w-5"></i><span>每週結算與推播</span></button>
+            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-pink-400 hover:bg-slate-700 transition"><i class="fas fa-comments w-5"></i><span>LINE@ 溝通紀錄</span></button>
         </nav>
         
         <div class="p-4 border-t border-slate-700 flex flex-col gap-3">
-            <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-red-400 hover:bg-red-900/30 border border-red-900/50 transition text-sm font-bold">
-                <i class="fas fa-sign-out-alt"></i><span>安全登出</span>
-            </button>
-            <div class="text-xs text-slate-500 text-center">
-                智慧班級管理系統 v1.3<br>Teacher Admin Panel
-            </div>
+            <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-red-400 hover:bg-red-900/30 border border-red-900/50 transition text-sm font-bold"><i class="fas fa-sign-out-alt"></i><span>安全登出</span></button>
+            <div class="text-xs text-slate-500 text-center">智慧班級管理系統 v1.4<br>Teacher Admin Panel</div>
         </div>
     </aside>
 
@@ -114,11 +93,12 @@
                 </div>
             </div>
 
+            <!-- 三大指標看板 -->
             <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                 <div class="glass-panel p-6 rounded-xl border-l-4 border-l-blue-500">
                     <div class="text-slate-400 text-sm mb-1">今日出席狀況</div>
                     <div class="text-3xl font-bold text-white mb-2"><span id="dash-present">--</span><span class="text-lg text-slate-500 font-normal"> /24 人</span></div>
-                    <div class="text-sm text-yellow-400 space-y-1" id="dash-absent-list">讀取中...</div>
+                    <div class="text-sm space-y-1" id="dash-absent-list">讀取中...</div>
                 </div>
                 <div class="glass-panel p-6 rounded-xl border-l-4 border-l-red-500">
                     <div class="text-slate-400 text-sm mb-1">作業缺交警示</div>
@@ -132,40 +112,36 @@
                 </div>
             </div>
 
+            <!-- 班長留言板 -->
             <div class="glass-panel p-6 rounded-xl">
                 <h3 class="text-lg font-bold text-emerald-400 mb-4"><i class="fas fa-comment-dots mr-2"></i> 班長 / 幹部回報留言</h3>
-                <div class="bg-slate-800 p-4 rounded border border-slate-700 min-h-[100px] text-slate-300" id="dash-monitor-msg">
+                <div class="bg-slate-800 p-4 rounded border border-slate-700 min-h-[80px] text-slate-300" id="dash-monitor-msg">
                     等待讀取中...
                 </div>
-                <div class="glass-panel p-6 rounded-xl mt-6">
-    <h3 class="text-lg font-bold text-emerald-400 mb-4"><i class="fas fa-file-signature mr-2"></i> 待核准線上請假單</h3>
-    <div id="leave-requests-container" class="space-y-4">
-        <div class="text-slate-500 italic">正在載入請假單...</div>
-    </div>
-</div>
             </div>
 
+            <!-- 雙欄位：請假單 & 日誌 -->
             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="glass-panel p-6 rounded-xl">
-                    <h3 class="text-lg font-bold text-blue-400 mb-4"><i class="fab fa-line mr-2"></i> LINE@ 家長請假單</h3>
-                    <div class="space-y-3">
-                        <div class="bg-slate-800 p-3 rounded border border-slate-700 flex justify-between items-center">
-                            <div>
-                                <span class="font-bold text-white mr-2">08號 學生家長</span>
-                                <span class="text-xs bg-yellow-900 text-yellow-300 px-2 py-0.5 rounded">事假</span>
-                                <div class="text-sm text-slate-400 mt-1">家裡有事需回南部一趟 (今日 07:30 申請)</div>
-                            </div>
-                            <button class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1 rounded text-sm transition font-bold shadow">核准</button>
-                        </div>
+                
+                <!-- 待核准請假單 -->
+                <div class="glass-panel p-6 rounded-xl flex flex-col">
+                    <h3 class="text-lg font-bold text-blue-400 mb-4"><i class="fas fa-file-signature mr-2"></i> 待核准線上請假單</h3>
+                    <div id="leave-requests-container" class="space-y-3 flex-1 h-48 overflow-y-auto pr-2">
+                        <div class="text-slate-500 italic text-sm">正在載入請假單...</div>
                     </div>
                 </div>
 
-                <div class="glass-panel p-6 rounded-xl">
-                    <h3 class="text-lg font-bold text-slate-300 mb-4"><i class="fas fa-history mr-2"></i> 幹部系統操作日誌</h3>
-                    <div class="space-y-3 text-sm h-32 overflow-y-auto pr-2" id="audit-log-container">
+                <!-- 操作日誌 -->
+                <div class="glass-panel p-6 rounded-xl flex flex-col">
+                    <div class="flex justify-between items-center mb-4">
+                        <h3 class="text-lg font-bold text-slate-300"><i class="fas fa-history mr-2"></i> 幹部系統操作日誌</h3>
+                        <button onclick="clearAuditLogs()" class="text-xs bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-300 px-2 py-1 rounded transition border border-slate-600 hover:border-red-500/50"><i class="fas fa-trash-alt mr-1"></i> 清空</button>
+                    </div>
+                    <div class="space-y-3 text-sm flex-1 h-48 overflow-y-auto pr-2" id="audit-log-container">
                         <div class="text-slate-500 italic">日誌資料同步中...</div>
                     </div>
                 </div>
+                
             </div>
         </section>
 
@@ -204,7 +180,6 @@
                         </button>
                     </div>
                 </div>
-
                 <div class="mt-4 text-emerald-400 text-sm hidden bg-emerald-900/30 p-2 rounded border border-emerald-800" id="marquee-success">
                     <i class="fas fa-check-circle mr-1"></i> 已成功同步至教室大黑板！
                 </div>
@@ -222,7 +197,6 @@
                     <i class="fas fa-clipboard-list mr-2"></i> 批次匯入名單
                 </button>
             </div>
-            
             <div class="bg-orange-900/20 border border-orange-500/30 p-4 rounded-xl flex items-start space-x-3 mb-6 text-orange-200 text-sm">
                 <i class="fas fa-shield-alt text-orange-400 text-2xl mt-0.5"></i>
                 <div>
@@ -230,20 +204,12 @@
                     家長初次加好友時，系統將提示：「請輸入『座號+身分證後六碼』綁定身分 (例: 05123456)」。驗證成功後，該 LINE 帳號將永久綁定對應座號，防止成績外洩。
                 </div>
             </div>
-
             <div class="glass-panel rounded-xl overflow-hidden">
                 <table class="w-full text-center text-sm">
                     <thead class="bg-slate-800 text-slate-300 border-b border-slate-700">
-                        <tr>
-                            <th class="p-4 font-semibold w-20">座號</th>
-                            <th class="p-4 font-semibold text-left">身分證後六碼 (綁定密碼)</th>
-                            <th class="p-4 font-semibold">家長 LINE 綁定狀態</th>
-                            <th class="p-4 font-semibold">學生 LINE 綁定狀態</th>
-                            <th class="p-4 font-semibold w-24">操作</th>
-                        </tr>
+                        <tr><th class="p-4 font-semibold w-20">座號</th><th class="p-4 font-semibold text-left">身分證後六碼 (綁定密碼)</th><th class="p-4 font-semibold">家長 LINE 綁定狀態</th><th class="p-4 font-semibold">學生 LINE 綁定狀態</th><th class="p-4 font-semibold w-24">操作</th></tr>
                     </thead>
                     <tbody class="divide-y divide-slate-700 text-slate-300" id="binding-table-body">
-                        <!-- JS 動態生成 -->
                     </tbody>
                 </table>
             </div>
@@ -310,7 +276,6 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-700 text-slate-300" id="score-table-body">
-                        <!-- JS 生成 -->
                     </tbody>
                 </table>
             </div>
@@ -328,7 +293,6 @@
                     <button onclick="alert('已發送本週榮譽榜及個人報表至家長 LINE@！')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold shadow-lg transition flex items-center"><i class="fab fa-line mr-2"></i> 發送 LINE@ 週報</button>
                 </div>
             </div>
-            
             <div class="glass-panel rounded-xl overflow-hidden">
                 <table class="w-full text-center text-sm">
                     <thead class="bg-slate-800 text-slate-300">
@@ -339,7 +303,6 @@
                     </tbody>
                 </table>
             </div>
-
             <div class="glass-panel p-6 rounded-xl border-l-4 border-l-purple-500">
                 <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-crown text-yellow-400 mr-2"></i>本週榮譽榜 (推播預覽)</h3>
                 <p class="text-slate-400 text-sm mb-4">以下名單將於點擊「發送 LINE@ 週報」時，自動生成精美圖文公告於家長群：</p>
@@ -398,7 +361,6 @@
                 </div>
             </div>
         </section>
-
     </main>
 
     <!-- 批次匯入 Modal -->
@@ -409,15 +371,12 @@
                 <button onclick="closeModal('modal-batch-import')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-5">
-                <p class="text-sm text-slate-300 mb-3 leading-relaxed">
-                    請從 Excel 複製「身分證後六碼」整欄資料<br>
-                    <span class="text-orange-400 text-xs">（共 24 筆，必須依座號 1~24 順序排列）</span>，並直接貼上於下方：
-                </p>
+                <p class="text-sm text-slate-300 mb-3 leading-relaxed">請從 Excel 複製「身分證後六碼」整欄資料<br><span class="text-orange-400 text-xs">（共 24 筆，必須依座號 1~24 順序排列）</span>，並直接貼上於下方：</p>
                 <textarea id="batch-import-data" rows="10" class="w-full bg-slate-900 text-white p-3 rounded border border-slate-600 focus:border-orange-500 outline-none font-mono text-sm placeholder-slate-600" placeholder="範例格式：&#10;123456 (1號)&#10;654321 (2號)&#10;...貼上 24 行數字..."></textarea>
             </div>
             <div class="px-5 py-4 border-t border-slate-700 bg-slate-900/50 flex justify-end space-x-3 rounded-b-xl">
                 <button onclick="closeModal('modal-batch-import')" class="px-4 py-2 text-slate-300 hover:text-white transition">取消</button>
-                <button onclick="executeBatchImport()" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded font-bold transition shadow">確認並更新資料庫</button>
+                <button onclick="executeBatchImport()" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded font-bold transition shadow">確認並更新</button>
             </div>
         </div>
     </div>
@@ -437,51 +396,35 @@
 
         // ==================== 身分驗證系統 (Firebase Auth) ====================
         
-        // 監聽登入狀態改變
         auth.onAuthStateChanged((user) => {
             const overlay = document.getElementById('login-overlay');
             if (user) {
-                // 已登入：隱藏遮罩，載入資料庫
                 overlay.style.opacity = '0';
-                setTimeout(() => overlay.classList.add('hidden'), 500); // 動畫過渡
+                setTimeout(() => overlay.classList.add('hidden'), 500); 
                 initDataListeners();
             } else {
-                // 未登入：顯示遮罩，阻擋操作
                 overlay.classList.remove('hidden');
                 setTimeout(() => overlay.style.opacity = '1', 10);
             }
         });
 
-        // 登入按鈕動作
         function handleLogin() {
             const email = document.getElementById('login-email').value;
             const pwd = document.getElementById('login-pwd').value;
             const errEl = document.getElementById('login-error');
             
-            if(!email || !pwd) {
-                errEl.innerText = "請輸入 Email 與密碼";
-                errEl.classList.remove('hidden');
-                return;
-            }
+            if(!email || !pwd) { errEl.innerText = "請輸入 Email 與密碼"; errEl.classList.remove('hidden'); return; }
 
             auth.signInWithEmailAndPassword(email, pwd)
-                .then(() => {
-                    errEl.classList.add('hidden');
-                })
-                .catch((error) => {
-                    errEl.innerText = "登入失敗：帳號或密碼錯誤";
-                    errEl.classList.remove('hidden');
-                });
+                .then(() => errEl.classList.add('hidden'))
+                .catch(() => { errEl.innerText = "登入失敗：帳號或密碼錯誤"; errEl.classList.remove('hidden'); });
         }
 
-        // 登出按鈕動作
         function handleLogout() {
             auth.signOut().then(() => {
-                alert("已安全登出！重新整理網頁後將會鎖定。");
-                window.location.reload(); // 登出後強制重新整理網頁
-            }).catch((error) => {
-                alert("登出發生錯誤：" + error.message);
-            });
+                alert("已安全登出！");
+                window.location.reload(); 
+            }).catch((error) => alert("登出發生錯誤：" + error.message));
         }
 
         // ==================== 頁面與資料庫邏輯 ====================
@@ -536,12 +479,10 @@
             st.innerHTML = '<i class="fas fa-check-circle mr-2"></i> 雲端資料庫已連線';
         }
 
-        // 🌟 宣告全域變數以儲存兩邊的資料
         let bindingsData = null;
         let lineParentsData = null;
-        let lineStudentsData = null; // 🌟 新增：學生綁定資料
+        let lineStudentsData = null; 
 
-        // 獨立出渲染綁定表格的函數，供多個監聽器呼叫
         function renderBindingTable() {
             const tbody = document.getElementById('binding-table-body');
             let html = '';
@@ -549,25 +490,20 @@
                 let sId = String(i).padStart(2,'0');
                 let id6 = (bindingsData && bindingsData[i] && bindingsData[i].id6) ? bindingsData[i].id6 : '未設定';
                 
-                // 🌟 比對真實的家長與學生綁定紀錄庫
                 let isParentBound = (lineParentsData && lineParentsData['seat_' + i]) ? true : false;
                 let isStudentBound = (lineStudentsData && lineStudentsData['seat_' + i]) ? true : false;
                 
-                // 家長狀態與解除按鈕
                 let pBound = isParentBound ? 
                     `<div class="flex items-center justify-center space-x-2">
                         <i class="fas fa-check-circle text-emerald-400 text-lg"></i> 
                         <button onclick="unbindParent(${i})" class="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/50 px-2 py-1 rounded transition" title="踢除並解除綁定">解除</button>
-                    </div>` : 
-                    `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
+                    </div>` : `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
                     
-                // 🌟 新增：學生狀態與解除按鈕
                 let sBound = isStudentBound ? 
                     `<div class="flex items-center justify-center space-x-2">
                         <i class="fas fa-check-circle text-emerald-400 text-lg"></i> 
                         <button onclick="unbindStudent(${i})" class="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/50 px-2 py-1 rounded transition" title="踢除並解除綁定">解除</button>
-                    </div>` : 
-                    `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
+                    </div>` : `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
                 
                 html += `
                 <tr class="hover:bg-slate-800/30 transition">
@@ -587,43 +523,35 @@
             tbody.innerHTML = html;
         }
 
-        // 登入後才啟動資料庫監聽
+        // --- 清空日誌功能 ---
+        function clearAuditLogs() {
+            if(!confirm("確定要清空所有的幹部操作日誌嗎？\n(此動作無法復原)")) return;
+            db.collection("audit_logs").get().then((snapshot) => {
+                if(snapshot.empty) { alert("目前沒有日誌可以清空。"); return; }
+                const batch = db.batch();
+                snapshot.docs.forEach((doc) => batch.delete(doc.ref));
+                return batch.commit();
+            }).then(() => alert("✅ 日誌已全部清空！"))
+              .catch(err => alert("清空失敗: " + err.message));
+        }
+
         function initDataListeners() {
             
-            // 1. 監聽導師設定的綁定密碼
-            db.collection("class_settings").doc("bindings").onSnapshot((doc) => {
-                bindingsData = doc.exists ? doc.data().studentBindings : null;
-                renderBindingTable();
-            });
+            db.collection("class_settings").doc("bindings").onSnapshot((doc) => { bindingsData = doc.exists ? doc.data().studentBindings : null; renderBindingTable(); });
+            db.collection("class_settings").doc("line_parents").onSnapshot((doc) => { lineParentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
+            db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
 
-            // 2. 🌟 監聽實際的 LINE 家長綁定狀態
-            db.collection("class_settings").doc("line_parents").onSnapshot((doc) => {
-                lineParentsData = doc.exists ? doc.data() : null;
-                renderBindingTable();
-            });
-
-            // 🌟 監聽實際的 LINE 學生綁定狀態
-            db.collection("class_settings").doc("line_students").onSnapshot((doc) => {
-                lineStudentsData = doc.exists ? doc.data() : null;
-                renderBindingTable();
-            });
-
-            // 3. 監聽大屏看板設定
             db.collection("board_settings").doc("current").onSnapshot((doc) => {
                 markConnected();
                 if (doc.exists) {
                     const data = doc.data();
                     if(data.topBoardInfo) {
                         document.getElementById('marquee-input').value = data.topBoardInfo.marqueeText || '';
-                        if(data.topBoardInfo.monitorMsg) {
-                            document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-slate-500 mt-2 block">- 班長即時回報</span>`;
-                        }
+                        if(data.topBoardInfo.monitorMsg) document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-slate-500 mt-2 block">- 班長即時回報</span>`;
                     }
                     if(data.passwords) {
                         ['edit_board', 'monitor', 'vice', 'discipline', 'health', 'academic'].forEach(role => {
-                            if(document.getElementById(`pwd-${role}`)) {
-                                document.getElementById(`pwd-${role}`).value = data.passwords[role] || '1234';
-                            }
+                            if(document.getElementById(`pwd-${role}`)) document.getElementById(`pwd-${role}`).value = data.passwords[role] || '1234';
                         });
                     }
                     if(data.boardData && data.boardData.homework) {
@@ -634,16 +562,12 @@
                 }
             });
 
-            // 4. 監聽每日表現與出缺勤
             db.collection("daily_records").doc(todayStr).onSnapshot((doc) => {
                 if (doc.exists) {
                     globalStudentsData = doc.data().studentsData;
                     const sData = globalStudentsData;
-                    
-                    let present = 0;
-                    let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] };
-                    let disciplineCount = 0;
-                    let disciplineList = [];
+                    let present = 0; let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] };
+                    let disciplineCount = 0; let disciplineList = [];
 
                     for(let i=1; i<=24; i++) {
                         let st = sData[i].attendance;
@@ -653,21 +577,21 @@
                         let issues = [];
                         if(sData[i].discipline === '待改進') issues.push('秩序');
                         if(sData[i].clean === '待改進') issues.push('打掃');
-                        if(issues.length > 0) {
-                            disciplineCount++;
-                            disciplineList.push(`${String(i).padStart(2,'0')}(${issues.join(',')})`);
-                        }
+                        if(issues.length > 0) { disciplineCount++; disciplineList.push(`${String(i).padStart(2,'0')}(${issues.join(',')})`); }
                     }
 
                     document.getElementById('dash-present').innerText = present;
+                    
+                    // 🌟 修正假單文字顏色排版 (座號改為灰色 text-slate-300)
                     let absentHtmlArr = [];
                     for (let type in absentGroups) {
                         if (absentGroups[type].length > 0) {
                             let colorClass = type === '病假' ? 'text-yellow-400' : (type === '事假' ? 'text-blue-400' : (type === '公假' ? 'text-purple-400' : 'text-red-400'));
-                            absentHtmlArr.push(`<div><span class="${colorClass}">${type}:</span> ${absentGroups[type].join(', ')}</div>`);
+                            absentHtmlArr.push(`<div><span class="${colorClass} font-bold">${type}:</span> <span class="text-slate-300">${absentGroups[type].join(', ')}</span></div>`);
                         }
                     }
-                    document.getElementById('dash-absent-list').innerHTML = absentHtmlArr.length > 0 ? absentHtmlArr.join('') : '<i class="fas fa-check-circle mr-1 text-emerald-400"></i> 全員到齊';
+                    document.getElementById('dash-absent-list').className = "text-sm space-y-1"; 
+                    document.getElementById('dash-absent-list').innerHTML = absentHtmlArr.length > 0 ? absentHtmlArr.join('') : '<span class="text-emerald-400"><i class="fas fa-check-circle mr-1"></i> 全員到齊</span>';
                     
                     document.getElementById('dash-discipline').innerText = disciplineCount;
                     document.getElementById('dash-discipline-list').innerText = disciplineList.length > 0 ? `待改進座號: ${disciplineList.join(', ')}` : '常規表現良好';
@@ -677,8 +601,7 @@
                 }
             });
 
-            // 5. 監聽操作日誌
-            db.collection("audit_logs").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
+            db.collection("audit_logs").orderBy("timestamp", "desc").limit(15).onSnapshot((snapshot) => {
                 const container = document.getElementById('audit-log-container');
                 if(snapshot.empty) {
                     container.innerHTML = `<div class="text-slate-500 italic">今日目前尚無幹部操作紀錄。</div>`;
@@ -700,38 +623,8 @@
                 });
                 container.innerHTML = html;
             });
-// 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending)
-db.collection("leave_requests").where("status", "==", "pending").onSnapshot((snapshot) => {
-    const container = document.getElementById('leave-requests-container');
-    if(snapshot.empty) {
-        container.innerHTML = '<div class="text-slate-500 text-sm text-center py-6 border border-dashed border-slate-700 rounded bg-slate-800/30">目前無待核准的請假單</div>';
-        return;
-    }
-    let html = '';
-    snapshot.forEach(doc => {
-        let data = doc.data();
-        html += `
-            <div class="bg-slate-800 p-4 rounded-lg border border-slate-600 flex justify-between items-center shadow-lg">
-                <div class="flex-1">
-                    <div class="font-bold text-white">${data.seatNo} 號 - ${data.type}</div>
-                    <div class="text-sm text-slate-300">${data.date} (${data.duration})</div>
-                    <div class="text-sm text-slate-400 italic">事由: ${data.reason}</div>
-                </div>
-                <button onclick="approveLeave('${doc.id}', '${data.seatNo}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded text-sm font-bold">核准</button>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-});
 
-// 🌟 新增核准功能的函數 (請加在 initDataListeners 函式外面)
-function approveLeave(docId, seatNo) {
-    if(!confirm(`確定要核准 ${seatNo} 號的請假申請嗎？`)) return;
-    db.collection('leave_requests').doc(docId).update({ status: 'approved' })
-    .then(() => alert('已核准！'))
-    .catch(e => alert('核准失敗: ' + e.message));
-}
-            // 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending)
+            // 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending，縮小版型以符合方塊大小)
             db.collection("leave_requests").where("status", "==", "pending").onSnapshot((snapshot) => {
                 const container = document.getElementById('leave-requests-container');
                 if(snapshot.empty) {
@@ -741,61 +634,54 @@ function approveLeave(docId, seatNo) {
                 let html = '';
                 let reqs = [];
                 snapshot.forEach(doc => reqs.push({id: doc.id, ...doc.data()}));
-                reqs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)); // 依時間先後排序
+                reqs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)); 
                 
                 reqs.forEach(data => {
-                    const dateStr = new Date(data.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'});
-                    let typeColor = 'bg-slate-700 text-slate-300'; // 預設顏色
+                    let typeColor = 'bg-slate-700 text-slate-300'; 
                     if(data.type==='病假') typeColor = 'bg-red-900/50 text-red-300 border-red-500/30';
                     else if(data.type==='事假') typeColor = 'bg-yellow-900/50 text-yellow-300 border-yellow-500/30';
                     else if(data.type==='公假') typeColor = 'bg-blue-900/50 text-blue-300 border-blue-500/30';
 
                     html += `
-                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-600 flex justify-between items-center shadow-lg hover:border-slate-500 transition">
-                            <div class="flex-1 pr-2">
-                                <div class="mb-2 flex items-center flex-wrap gap-2">
-                                    <span class="font-bold text-white text-lg">${data.seatNo} 號</span>
-                                    <span class="text-xs font-bold ${typeColor} px-2 py-0.5 rounded border">${data.type}</span>
-                                    <span class="text-sm text-slate-300 font-medium">${data.date} (${data.duration})</span>
+                        <div class="bg-slate-900/50 p-3 rounded border border-slate-700 flex justify-between items-center hover:border-slate-500 transition mb-2">
+                            <div class="flex-1 pr-2 overflow-hidden">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-bold text-white text-base">${data.seatNo} 號</span>
+                                    <span class="text-[10px] font-bold ${typeColor} px-1.5 py-0.5 rounded border whitespace-nowrap">${data.type}</span>
                                 </div>
-                                <div class="text-sm text-slate-300 bg-slate-900/50 p-2 rounded border border-slate-700">${data.reason}</div>
-                                <div class="text-xs text-slate-500 mt-2"><i class="far fa-clock mr-1"></i>申請時間: ${dateStr}</div>
+                                <div class="text-xs text-slate-300 truncate" title="${data.reason}">${data.reason}</div>
+                                <div class="text-[10px] text-slate-500 mt-1">${data.date} (${data.duration})</div>
                             </div>
-                            <button onclick="approveLeave('${data.id}', '${data.seatNo}', '${data.type}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg text-sm transition font-bold shadow-lg whitespace-nowrap flex flex-col items-center justify-center">
-                                <i class="fas fa-check mb-1"></i><span>核准</span>
+                            <button onclick="approveLeave('${data.id}', '${data.seatNo}', '${data.type}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs transition font-bold shadow whitespace-nowrap">
+                                核准
                             </button>
                         </div>
                     `;
                 });
                 container.innerHTML = html;
             });
-        } // end of initDataListeners()
+        }
 
-        
         // --- 表單/按鈕操作函數 (與資料庫互動) ---
 
-        // 🌟 新增：解除家長綁定的函數
         function unbindParent(seat) {
             let sId = String(seat).padStart(2,'0');
             if(!confirm(`確定要解除 ${sId} 號家長的 LINE 綁定嗎？\n\n解除後，該家長必須重新輸入密碼才能再次查詢成績。`)) return;
             
-            db.collection("class_settings").doc("line_parents").update({
-                [`seat_${seat}`]: firebase.firestore.FieldValue.delete()
-            }).then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`))
+            db.collection("class_settings").doc("line_parents").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() })
+              .then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`))
               .catch(e => {
                 if(e.code === 'not-found') db.collection("class_settings").doc("line_parents").set({}).then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`));
                 else alert("解除失敗: " + e.message);
             });
         }
 
-        // 🌟 新增：解除學生綁定的函數
         function unbindStudent(seat) {
             let sId = String(seat).padStart(2,'0');
             if(!confirm(`確定要解除 ${sId} 號學生的 LINE 綁定嗎？`)) return;
             
-            db.collection("class_settings").doc("line_students").update({
-                [`seat_${seat}`]: firebase.firestore.FieldValue.delete()
-            }).then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`))
+            db.collection("class_settings").doc("line_students").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() })
+              .then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`))
               .catch(e => {
                 if(e.code === 'not-found') db.collection("class_settings").doc("line_students").set({}).then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`));
                 else alert("解除失敗: " + e.message);
@@ -806,53 +692,39 @@ function approveLeave(docId, seatNo) {
             const lines = document.getElementById('batch-import-data').value.trim().split('\n').filter(l => l.trim() !== '');
             if(lines.length === 0) return alert('請貼上資料後再點擊匯入！');
             
-            let updates = {};
-            let count = 0;
+            let updates = {}; let count = 0;
             for(let i=0; i<Math.min(lines.length, 24); i++) {
-                let seat = i + 1;
-                let id6 = lines[i].replace(/\D/g, '').trim(); 
+                let seat = i + 1; let id6 = lines[i].replace(/\D/g, '').trim(); 
                 if(id6) { updates[seat] = { id6: id6 }; count++; }
             }
             if(count === 0) return alert('未能解析出有效的數字資料，請檢查格式。');
 
-            db.collection("class_settings").doc("bindings").set({
-                studentBindings: updates
-            }, { merge: true }).then(() => {
-                alert(`成功匯入 ${count} 筆密碼資料！`);
-                closeModal('modal-batch-import');
+            db.collection("class_settings").doc("bindings").set({ studentBindings: updates }, { merge: true }).then(() => {
+                alert(`成功匯入 ${count} 筆密碼資料！`); closeModal('modal-batch-import');
             }).catch(e => alert("匯入失敗: " + e));
         }
 
         function updateBinding(seat) {
             const val = document.getElementById(`bind-id-${seat}`).value.trim();
             if(!val) return alert('請輸入身分證後六碼！');
-            db.collection("class_settings").doc("bindings").set({
-                studentBindings: { [seat]: { id6: val } }
-            }, { merge: true }).then(() => {
+            db.collection("class_settings").doc("bindings").set({ studentBindings: { [seat]: { id6: val } } }, { merge: true }).then(() => {
                 alert(`${String(seat).padStart(2,'0')} 號 密碼設定成功！`);
             }).catch(e => alert("錯誤: " + e));
         }
 
-        // 🌟 核准請假單的函數
         function approveLeave(docId, seatNo, type) {
             if(!confirm(`確定已閱畢並核准 ${seatNo} 號的 ${type} 申請嗎？\n\n(核准後將從待辦清單中移除)`)) return;
-            db.collection('leave_requests').doc(docId).update({ status: 'approved' })
-            .catch(e => alert('核准失敗: ' + e.message));
+            db.collection('leave_requests').doc(docId).update({ status: 'approved' }).catch(e => alert('核准失敗: ' + e.message));
         }
 
-        function setMarqueePreset(text) {
-            document.getElementById('marquee-input').value = text;
-        }
+        function setMarqueePreset(text) { document.getElementById('marquee-input').value = text; }
 
         function sendMarquee() {
             const val = document.getElementById('marquee-input').value;
             if(!val) return alert('請輸入廣播內容！');
-            db.collection('board_settings').doc('current').set({
-                topBoardInfo: { marqueeText: val }
-            }, { merge: true }).then(() => {
+            db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => {
                 const msg = document.getElementById('marquee-success');
-                msg.classList.remove('hidden');
-                setTimeout(() => msg.classList.add('hidden'), 3000);
+                msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
             }).catch(err => alert('寫入失敗: ' + err.message));
         }
 
@@ -864,16 +736,13 @@ function approveLeave(docId, seatNo) {
                 try {
                     const data = new Uint8Array(evt.target.result);
                     const workbook = XLSX.read(data, {type: 'array'});
-                    const firstSheetName = workbook.SheetNames[0];
-                    const worksheet = workbook.Sheets[firstSheetName];
+                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
                     const json = XLSX.utils.sheet_to_json(worksheet, {header: 1}); 
                     
                     let successCount = 0;
                     for(let r = 1; r < json.length; r++) {
-                        const row = json[r];
-                        if(!row || row.length === 0) continue;
-                        let seatNum = parseInt(row[0]);
-                        if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue;
+                        const row = json[r]; if(!row || row.length === 0) continue;
+                        let seatNum = parseInt(row[0]); if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue;
                         
                         if(row[1] !== undefined) { const el = document.getElementById(`score-chi-${seatNum}`); if(el) el.value = row[1]; }
                         if(row[2] !== undefined) { const el = document.getElementById(`score-eng-${seatNum}`); if(el) el.value = row[2]; }
@@ -896,32 +765,24 @@ function approveLeave(docId, seatNo) {
             let scoreData = {};
             for(let i=1; i<=24; i++) {
                 scoreData[i] = {
-                    chi: document.getElementById(`score-chi-${i}`)?.value || "",
-                    eng: document.getElementById(`score-eng-${i}`)?.value || "",
-                    math: document.getElementById(`score-math-${i}`)?.value || "",
-                    sci: document.getElementById(`score-sci-${i}`)?.value || "",
-                    soc: document.getElementById(`score-soc-${i}`)?.value || "",
-                    avg: document.getElementById(`score-avg-${i}`)?.value || "",
+                    chi: document.getElementById(`score-chi-${i}`)?.value || "", eng: document.getElementById(`score-eng-${i}`)?.value || "",
+                    math: document.getElementById(`score-math-${i}`)?.value || "", sci: document.getElementById(`score-sci-${i}`)?.value || "",
+                    soc: document.getElementById(`score-soc-${i}`)?.value || "", avg: document.getElementById(`score-avg-${i}`)?.value || "",
                     pr: document.getElementById(`score-pr-${i}`)?.value || "",
                 };
             }
-            db.collection("class_settings").doc("scores").set({
-                latestExam: scoreData,
-                updatedAt: new Date().toISOString()
-            }, { merge: true }).then(() => {
-                alert('🎉 成績已成功上傳至雲端資料庫！\n已綁定的家長現在可透過 LINE 機器人查詢。');
-            }).catch(e => alert('上傳失敗，您可能是未登入的訪客: ' + e));
+            db.collection("class_settings").doc("scores").set({ latestExam: scoreData, updatedAt: new Date().toISOString() }, { merge: true })
+            .then(() => alert('🎉 成績已成功上傳至雲端資料庫！\n已綁定的家長現在可透過 LINE 機器人查詢。'))
+            .catch(e => alert('上傳失敗: ' + e));
         }
 
         function updatePassword(role) {
             const input = document.getElementById(`pwd-${role}`);
             const newVal = input.value.trim();
             if(!newVal) return alert('密碼不能為空！');
-            db.collection('board_settings').doc('current').set({
-                passwords: { [role]: newVal }
-            }, { merge: true }).then(() => {
-                alert('密碼已成功更新，大黑板密碼鎖已連動生效！');
-            }).catch(err => alert('更新失敗: ' + err.message));
+            db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true })
+            .then(() => alert('密碼已成功更新，大黑板密碼鎖已連動生效！'))
+            .catch(err => alert('更新失敗: ' + err.message));
         }
 
         function renderDashboardHW() {
@@ -938,9 +799,9 @@ function approveLeave(docId, seatNo) {
             for(let seat in studentMissingCounts) { if(studentMissingCounts[seat] > maxMissing) { maxMissing = studentMissingCounts[seat]; topOffender = seat; } }
             document.getElementById('dash-missing-hw').innerText = missingTotalItemsCount;
             let detailHtml = '';
-            if(missingTotalItemsCount === 0) detailHtml = '<div class="text-emerald-400 font-bold"><i class="fas fa-check-circle"></i> 全班作業已繳齊</div>';
+            if(missingTotalItemsCount === 0) detailHtml = '<div class="text-emerald-400 font-bold mt-2"><i class="fas fa-check-circle"></i> 全班作業已繳齊</div>';
             else {
-                for(let hwId in hwMissingMap) { let hwName = globalHWMap[hwId] || '臨時/已刪除作業'; detailHtml += `<div><span class="text-white font-bold">${hwName}：</span><span class="text-red-300 ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`; }
+                for(let hwId in hwMissingMap) { let hwName = globalHWMap[hwId] || '臨時/已刪除作業'; detailHtml += `<div><span class="text-white font-bold">${hwName}：</span><span class="text-slate-300 ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`; }
                 if(topOffender) detailHtml += `<div class="mt-3 pt-2 border-t border-red-500/30 text-yellow-300 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> 缺交最多：${String(topOffender).padStart(2,'0')} 號 (${maxMissing} 項)</div>`;
             }
             document.getElementById('dash-missing-list').innerHTML = detailHtml;
