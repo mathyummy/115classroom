@@ -694,6 +694,45 @@
                 });
                 container.innerHTML = html;
             });
+
+            // 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending)
+            db.collection("leave_requests").where("status", "==", "pending").onSnapshot((snapshot) => {
+                const container = document.getElementById('leave-requests-container');
+                if(snapshot.empty) {
+                    container.innerHTML = '<div class="text-slate-500 text-sm text-center py-6 border border-dashed border-slate-700 rounded bg-slate-800/30"><i class="fas fa-inbox mb-2 text-2xl block text-slate-600"></i>目前無待核准的請假單</div>';
+                    return;
+                }
+                let html = '';
+                let reqs = [];
+                snapshot.forEach(doc => reqs.push({id: doc.id, ...doc.data()}));
+                reqs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)); // 依時間先後排序
+                
+                reqs.forEach(data => {
+                    const dateStr = new Date(data.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'});
+                    let typeColor = 'bg-slate-700 text-slate-300'; // 預設顏色
+                    if(data.type==='病假') typeColor = 'bg-red-900/50 text-red-300 border-red-500/30';
+                    else if(data.type==='事假') typeColor = 'bg-yellow-900/50 text-yellow-300 border-yellow-500/30';
+                    else if(data.type==='公假') typeColor = 'bg-blue-900/50 text-blue-300 border-blue-500/30';
+
+                    html += `
+                        <div class="bg-slate-800 p-4 rounded-lg border border-slate-600 flex justify-between items-center shadow-lg hover:border-slate-500 transition">
+                            <div class="flex-1 pr-2">
+                                <div class="mb-2 flex items-center flex-wrap gap-2">
+                                    <span class="font-bold text-white text-lg">${data.seatNo} 號</span>
+                                    <span class="text-xs font-bold ${typeColor} px-2 py-0.5 rounded border">${data.type}</span>
+                                    <span class="text-sm text-slate-300 font-medium">${data.date} (${data.duration})</span>
+                                </div>
+                                <div class="text-sm text-slate-300 bg-slate-900/50 p-2 rounded border border-slate-700">${data.reason}</div>
+                                <div class="text-xs text-slate-500 mt-2"><i class="far fa-clock mr-1"></i>申請時間: ${dateStr}</div>
+                            </div>
+                            <button onclick="approveLeave('${data.id}', '${data.seatNo}', '${data.type}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-3 rounded-lg text-sm transition font-bold shadow-lg whitespace-nowrap flex flex-col items-center justify-center">
+                                <i class="fas fa-check mb-1"></i><span>核准</span>
+                            </button>
+                        </div>
+                    `;
+                });
+                container.innerHTML = html;
+            });
         } // end of initDataListeners()
 
         
@@ -756,6 +795,13 @@
             }, { merge: true }).then(() => {
                 alert(`${String(seat).padStart(2,'0')} 號 密碼設定成功！`);
             }).catch(e => alert("錯誤: " + e));
+        }
+
+        // 🌟 核准請假單的函數
+        function approveLeave(docId, seatNo, type) {
+            if(!confirm(`確定已閱畢並核准 ${seatNo} 號的 ${type} 申請嗎？\n\n(核准後將從待辦清單中移除)`)) return;
+            db.collection('leave_requests').doc(docId).update({ status: 'approved' })
+            .catch(e => alert('核准失敗: ' + e.message));
         }
 
         function setMarqueePreset(text) {
