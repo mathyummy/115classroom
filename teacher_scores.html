@@ -1,0 +1,730 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>導師後台 - 成績分析系統</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Chart.js 繪圖套件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // 沿用視覺一致性設定
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#faf8f5', 100: '#f4efe6', 200: '#e8ddce',
+                            300: '#d8c5b0', 400: '#c2a88d', 500: '#b08e6f',
+                            600: '#9b7658', 700: '#805d46', 800: '#6b4d3d', 900: '#563e32',
+                        },
+                        morandi: { pink: '#d98b8b', blue: '#8b9bb4', green: '#8bb49c' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #faf8f5; color: #6b4d3d; }
+        .glass-panel { background: #ffffff; border: 1px solid #e8ddce; box-shadow: 0 4px 20px -2px rgba(107, 77, 61, 0.05); }
+        .tab-btn.active { background-color: #b08e6f; color: white; border-color: #b08e6f; }
+        .tab-btn { background-color: white; color: #805d46; border-color: #e8ddce; }
+        .fade-in { animation: fadeIn 0.4s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        /* 隱藏捲軸但可捲動 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <header class="bg-white border-b border-brand-200 px-4 sm:px-6 py-4 sticky top-0 z-40 shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                <i class="fas fa-chalkboard-teacher"></i>
+            </div>
+            <div>
+                <h1 class="font-bold text-brand-800 text-lg">班級成績管理</h1>
+                <p class="text-xs text-brand-500 font-medium">導師專屬數據中心</p>
+            </div>
+        </div>
+        
+        <!-- 頁籤按鈕 -->
+        <div class="flex space-x-2 w-full sm:w-auto overflow-x-auto no-scrollbar pb-1 sm:pb-0">
+            <button onclick="switchTab('overview')" id="tab-overview" class="tab-btn active px-4 py-2 rounded-lg font-bold text-sm border shadow-sm flex-shrink-0 transition flex items-center">
+                <i class="fas fa-layer-group mr-2"></i>單次總覽
+            </button>
+            <button onclick="switchTab('subject')" id="tab-subject" class="tab-btn px-4 py-2 rounded-lg font-bold text-sm border shadow-sm flex-shrink-0 transition flex items-center">
+                <i class="fas fa-book-open mr-2"></i>各科表現
+            </button>
+            <button onclick="switchTab('student')" id="tab-student" class="tab-btn px-4 py-2 rounded-lg font-bold text-sm border shadow-sm flex-shrink-0 transition flex items-center">
+                <i class="fas fa-user-graduate mr-2"></i>個別學生
+            </button>
+        </div>
+    </header>
+
+    <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-brand-50 relative">
+        <div id="loading-spinner" class="absolute inset-0 flex items-center justify-center bg-brand-50/80 z-10">
+            <div class="text-brand-500 font-bold flex flex-col items-center">
+                <i class="fas fa-circle-notch fa-spin text-3xl mb-2"></i>
+                讀取數據中...
+            </div>
+        </div>
+
+        <div class="max-w-5xl mx-auto space-y-6 pb-10">
+            <!-- 全局考試選擇器 (顯示於總覽與各科表現) -->
+            <div id="global-exam-selector-container" class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row items-center gap-4 fade-in">
+                <label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-filter mr-2 text-brand-500"></i>選擇測驗</label>
+                <select id="global-exam-selector" onchange="handleExamChange(this.value)" class="w-full bg-brand-50 text-brand-800 px-4 py-2 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm">
+                    <option value="">讀取中...</option>
+                </select>
+            </div>
+
+            <div id="view-overview" class="tab-content space-y-6 fade-in">
+                <!-- 總覽 - 頂部數據卡片 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">班級總平均</span>
+                        <span class="text-2xl font-black text-brand-800" id="overview-avg">--</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">班級最高平均</span>
+                        <span class="text-2xl font-black text-brand-800" id="overview-max">--</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">總平均及格率</span>
+                        <span class="text-2xl font-black text-brand-800" id="overview-pass-rate">--</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink">
+                        <span class="text-xs text-brand-500 font-bold mb-1">需關懷人數</span>
+                        <span class="text-2xl font-black text-morandi-pink" id="overview-fail-count">--</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 班級平均雷達圖 -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-bullseye mr-2 text-brand-500"></i>班級五育平均</h2>
+                        <div class="w-full aspect-square max-h-[250px] mx-auto relative">
+                            <canvas id="classRadarChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- 成績分佈長條圖 -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-chart-bar mr-2 text-brand-500"></i>平均分數區間分佈</h2>
+                        <div class="w-full h-[250px] relative">
+                            <canvas id="avgDistributionChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- 表現優異名單 -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-trophy mr-2 text-yellow-500"></i>總平均優異表現 (Top 5)</h2>
+                        <ul id="overview-top-list" class="space-y-1">
+                            <!-- JS 動態產生 -->
+                        </ul>
+                    </div>
+                    <!-- 需關懷名單 -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-hand-holding-heart mr-2 text-morandi-pink"></i>需關懷名單 (平均不及格)</h2>
+                        <ul id="overview-bottom-list" class="space-y-1">
+                            <!-- JS 動態產生 -->
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-subject" class="tab-content hidden space-y-6 fade-in">
+                <div class="flex gap-2 mb-2 overflow-x-auto no-scrollbar pb-2" id="subject-buttons">
+                    <!-- 科目按鈕由 JS 產生 -->
+                </div>
+
+                <!-- 單科數據卡片 -->
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">該科班平均</span>
+                        <span class="text-2xl font-black text-brand-800" id="subj-avg">--</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">該科最高分</span>
+                        <span class="text-2xl font-black text-brand-800" id="subj-max">--</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">該科及格率</span>
+                        <span class="text-2xl font-black text-brand-800" id="subj-pass-rate">--</span>
+                    </div>
+                    <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                        <span class="text-xs text-brand-500 font-bold mb-1">不及格人數</span>
+                        <span class="text-2xl font-black text-morandi-pink" id="subj-fail-count">--</span>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- 單科級距分佈 (圓餅圖) -->
+                    <div class="glass-panel p-5 rounded-2xl lg:col-span-1 flex flex-col">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">級距比例</h2>
+                        <div class="w-full aspect-square max-h-[200px] mx-auto relative flex-1">
+                            <canvas id="subjectPieChart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <!-- 進退步比較 -->
+                    <div class="glass-panel p-5 rounded-2xl lg:col-span-2">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2 flex justify-between items-center">
+                            <span><i class="fas fa-exchange-alt mr-2 text-brand-500"></i>與前次測驗比較</span>
+                            <span class="text-xs text-brand-400 font-normal">僅比較相同科目</span>
+                        </h2>
+                        <div class="grid grid-cols-2 gap-6 h-full">
+                            <div>
+                                <h3 class="text-sm font-bold text-morandi-green mb-2"><i class="fas fa-arrow-up mr-1"></i>進步最多</h3>
+                                <div id="subj-improved-list" class="space-y-1"></div>
+                            </div>
+                            <div>
+                                <h3 class="text-sm font-bold text-morandi-pink mb-2"><i class="fas fa-arrow-down mr-1"></i>退步最多</h3>
+                                <div id="subj-regressed-list" class="space-y-1"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <!-- 單科全班成績分佈 -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2 flex justify-between">
+                            <span id="subject-dist-title">單科分數分佈 (座號順序)</span>
+                        </h2>
+                        <div class="w-full h-[250px] relative">
+                            <canvas id="subjectBarChart"></canvas>
+                        </div>
+                    </div>
+                    <!-- 單科歷次走勢 -->
+                    <div class="glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">該科歷次班級平均走勢</h2>
+                        <div class="w-full h-[250px] relative">
+                            <canvas id="subjectTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="view-student" class="tab-content hidden space-y-6 fade-in">
+                <div class="glass-panel p-4 rounded-2xl flex flex-col sm:flex-row items-center gap-4">
+                    <label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-user mr-2 text-brand-500"></i>選擇學生座號</label>
+                    <select id="student-selector" onchange="handleStudentChange()" class="w-full bg-brand-50 text-brand-800 px-4 py-2 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm">
+                        <!-- 由 JS 產生 1~35 號 -->
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <!-- 個人雷達圖與成績單 -->
+                    <div class="md:col-span-1 glass-panel p-5 rounded-2xl flex flex-col">
+                        <h2 class="text-md font-bold text-brand-800 mb-2 border-b border-brand-100 pb-2">個人表現雷達圖</h2>
+                        <div class="w-full aspect-square max-h-[250px] mx-auto relative mb-4">
+                            <canvas id="studentRadarChart"></canvas>
+                        </div>
+                        <div class="mt-auto grid grid-cols-2 gap-2" id="student-mini-scores">
+                            <!-- JS 產生 -->
+                        </div>
+                    </div>
+
+                    <!-- 個人歷次走勢 -->
+                    <div class="md:col-span-2 glass-panel p-5 rounded-2xl">
+                        <h2 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">個人歷次總平均走勢</h2>
+                        <div class="w-full h-[300px] sm:h-[400px] relative">
+                            <canvas id="studentTrendChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <script>
+        // 初始化 Firebase
+        const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+
+        // 狀態管理
+        let allExams = [];
+        let allRecords = {};
+        let currentTab = 'overview';
+        let currentExamId = null;
+        let currentSubjectKey = 'chi';
+        let currentStudentSeat = '1';
+
+        // 科目對照表
+        const subjectMap = {
+            'chi': '國文', 'eng': '英文', 'math': '數學', 
+            'sci': '自然', 'soc': '社會', 'avg': '平均'
+        };
+        const mainSubjects = ['chi', 'eng', 'math', 'sci', 'soc'];
+
+        // Chart.js 實例保存
+        let charts = {
+            classRadar: null, avgDist: null, 
+            subjBar: null, subjTrend: null, subjPie: null,
+            stuRadar: null, stuTrend: null
+        };
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.color = '#805d46';
+
+        // 初始化
+        window.addEventListener('DOMContentLoaded', () => {
+            initStudentSelector();
+            initSubjectButtons();
+            fetchData();
+        });
+
+        /* ==================== 頁籤切換 ==================== */
+        function switchTab(tabId) {
+            currentTab = tabId;
+            
+            // 更新按鈕樣式
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`tab-${tabId}`).classList.add('active');
+            
+            // 更新內容顯示
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+
+            // 總覽跟各科需要考試選擇器，學生頁籤也需要但主要是看個人
+            const globalExamSelector = document.getElementById('global-exam-selector-container');
+            if(tabId === 'overview' || tabId === 'subject' || tabId === 'student') {
+                globalExamSelector.classList.remove('hidden');
+            }
+
+            renderCurrentTab();
+        }
+
+        /* ==================== 資料讀取 ==================== */
+        function fetchData() {
+            db.collection("class_settings").doc("scores").onSnapshot((doc) => {
+                document.getElementById('loading-spinner').classList.add('hidden');
+                if (doc.exists) {
+                    const data = doc.data();
+                    allExams = data.exam_list || [];
+                    allRecords = data.records || {};
+                    
+                    // 排序: 新的在最前面
+                    allExams.sort((a,b) => b.timestamp - a.timestamp);
+                    
+                    updateExamSelector();
+                    
+                    if(allExams.length > 0 && !currentExamId) {
+                        currentExamId = allExams[0].id; // 預設最新
+                    }
+                    renderCurrentTab();
+                }
+            });
+        }
+
+        /* ==================== 初始化與事件處理 ==================== */
+        function initStudentSelector() {
+            const sel = document.getElementById('student-selector');
+            let html = '';
+            for(let i=1; i<=35; i++) { html += `<option value="${i}">${i}號</option>`; }
+            sel.innerHTML = html;
+        }
+
+        function initSubjectButtons() {
+            const container = document.getElementById('subject-buttons');
+            let html = '';
+            mainSubjects.forEach(sub => {
+                html += `<button onclick="setSubject('${sub}')" id="btn-sub-${sub}" class="sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition ${sub === currentSubjectKey ? 'bg-brand-500 text-white border-brand-500' : 'bg-white text-brand-600 border-brand-200 hover:bg-brand-50'}">${subjectMap[sub]}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function updateExamSelector() {
+            const sel = document.getElementById('global-exam-selector');
+            if(allExams.length === 0) {
+                sel.innerHTML = '<option value="">尚無考試資料</option>';
+                return;
+            }
+            let html = '';
+            allExams.forEach(ex => {
+                html += `<option value="${ex.id}" ${ex.id === currentExamId ? 'selected' : ''}>[${ex.grade}${ex.semester}] ${ex.name}</option>`;
+            });
+            sel.innerHTML = html;
+        }
+
+        function handleExamChange(val) {
+            currentExamId = val;
+            renderCurrentTab();
+        }
+
+        function handleStudentChange() {
+            currentStudentSeat = document.getElementById('student-selector').value;
+            if(currentTab === 'student') renderStudentTab();
+        }
+
+        function setSubject(subKey) {
+            currentSubjectKey = subKey;
+            // 更新按鈕外觀
+            document.querySelectorAll('.sub-btn').forEach(btn => {
+                btn.className = "sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-white text-brand-600 border-brand-200 hover:bg-brand-50";
+            });
+            const activeBtn = document.getElementById(`btn-sub-${subKey}`);
+            if(activeBtn) activeBtn.className = "sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-brand-500 text-white border-brand-500";
+            
+            if(currentTab === 'subject') renderSubjectTab();
+        }
+
+        function renderCurrentTab() {
+            if(!currentExamId || !allRecords[currentExamId]) return;
+            if(currentTab === 'overview') renderOverviewTab();
+            else if(currentTab === 'subject') renderSubjectTab();
+            else if(currentTab === 'student') renderStudentTab();
+        }
+
+        // 處理社會科整合邏輯 (同家長端)
+        function getMergedSocietyScore(scoresObj) {
+            if (!scoresObj) return null;
+            if (scoresObj.soc !== undefined && scoresObj.soc !== "") return Number(scoresObj.soc);
+            let sum = 0, count = 0;
+            if (scoresObj.hist !== undefined && scoresObj.hist !== "") { sum += Number(scoresObj.hist); count++; }
+            if (scoresObj.geo !== undefined && scoresObj.geo !== "") { sum += Number(scoresObj.geo); count++; }
+            if (scoresObj.civics !== undefined && scoresObj.civics !== "") { sum += Number(scoresObj.civics); count++; }
+            if (count > 0) return Math.round((sum / count) * 10) / 10;
+            return null;
+        }
+
+        /* ==================== 渲染: 總覽頁籤 ==================== */
+        function renderOverviewTab() {
+            const examData = allRecords[currentExamId];
+            const avg = examData.class_average || {};
+            const students = examData.students || {};
+
+            // 1. 計算頂部數據與名單
+            let validStudents = [];
+            Object.keys(students).forEach(seat => {
+                let a = Number(students[seat].avg);
+                if(!isNaN(a)) validStudents.push({seat: seat, avg: a});
+            });
+            validStudents.sort((a,b) => b.avg - a.avg); // 降冪排序
+
+            let totalAvg = validStudents.reduce((sum, s) => sum + s.avg, 0) / validStudents.length || 0;
+            let maxAvg = validStudents.length > 0 ? validStudents[0].avg : '--';
+            let passCount = validStudents.filter(s => s.avg >= 60).length;
+            let passRate = validStudents.length > 0 ? Math.round((passCount / validStudents.length) * 100) : 0;
+            let failCount = validStudents.length - passCount;
+
+            document.getElementById('overview-avg').innerText = totalAvg.toFixed(1);
+            document.getElementById('overview-max').innerText = maxAvg;
+            document.getElementById('overview-pass-rate').innerText = passRate + '%';
+            document.getElementById('overview-fail-count').innerText = failCount + '人';
+
+            // Top 5 名單
+            let topHtml = '';
+            validStudents.slice(0, 5).forEach((s, idx) => {
+                topHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><span class="w-6 inline-block text-brand-400 font-bold">${idx+1}.</span> ${s.seat}號</span><span class="font-bold text-brand-900">${s.avg}</span></li>`;
+            });
+            document.getElementById('overview-top-list').innerHTML = topHtml || '<li class="text-brand-400 py-2 text-sm">無資料</li>';
+
+            // 關懷名單 (<60)
+            let bottomHtml = '';
+            let failures = validStudents.filter(s => s.avg < 60);
+            failures.forEach(s => {
+                bottomHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><i class="fas fa-exclamation-circle text-morandi-pink mr-2"></i>${s.seat}號</span><span class="font-bold text-morandi-pink">${s.avg}</span></li>`;
+            });
+            document.getElementById('overview-bottom-list').innerHTML = bottomHtml || '<li class="text-brand-400 py-2 text-sm">無不及格學生，表現優異！</li>';
+
+            // 2. 班級平均雷達圖
+            const radarData = [
+                avg.chi || 0, avg.eng || 0, avg.math || 0, avg.sci || 0, getMergedSocietyScore(avg) || 0
+            ];
+            
+            if(charts.classRadar) charts.classRadar.destroy();
+            charts.classRadar = new Chart(document.getElementById('classRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['國文', '英文', '數學', '自然', '社會'],
+                    datasets: [{
+                        label: '班級平均', data: radarData,
+                        backgroundColor: 'rgba(176, 142, 111, 0.2)', borderColor: '#b08e6f',
+                        pointBackgroundColor: '#b08e6f', borderWidth: 2, pointRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, display:false } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 3. 平均分數分佈圖
+            let dist = { '90以上':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 };
+            validStudents.forEach(st => {
+                const a = st.avg;
+                if(a>=90) dist['90以上']++;
+                else if(a>=80) dist['80-89']++;
+                else if(a>=70) dist['70-79']++;
+                else if(a>=60) dist['60-69']++;
+                else dist['不及格']++;
+            });
+
+            if(charts.avgDist) charts.avgDist.destroy();
+            charts.avgDist = new Chart(document.getElementById('avgDistributionChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(dist),
+                    datasets: [{
+                        label: '人數', data: Object.values(dist),
+                        backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'],
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ==================== 渲染: 各科表現頁籤 ==================== */
+        function renderSubjectTab() {
+            const examData = allRecords[currentExamId];
+            const students = examData.students || {};
+            const subName = subjectMap[currentSubjectKey];
+            document.getElementById('subject-dist-title').innerText = `${subName} 單科分數分佈 (依座號)`;
+
+            // 整理單科成績陣列
+            let subjScores = [];
+            for(let i=1; i<=35; i++) {
+                const st = students[i];
+                if(st) {
+                    let score = (currentSubjectKey === 'soc') ? getMergedSocietyScore(st) : st[currentSubjectKey];
+                    if(score !== undefined && score !== null && score !== "") {
+                        subjScores.push({ seat: i, score: Number(score) });
+                    }
+                }
+            }
+
+            // 1. 計算頂部卡片數據
+            let sortedScores = [...subjScores].sort((a,b) => b.score - a.score);
+            let s_total = sortedScores.reduce((sum, s) => sum + s.score, 0);
+            let s_avg = sortedScores.length > 0 ? (s_total / sortedScores.length).toFixed(1) : '--';
+            let s_max = sortedScores.length > 0 ? sortedScores[0].score : '--';
+            let s_passCount = sortedScores.filter(s => s.score >= 60).length;
+            let s_failCount = sortedScores.length - s_passCount;
+            let s_passRate = sortedScores.length > 0 ? Math.round((s_passCount / sortedScores.length) * 100) : 0;
+
+            document.getElementById('subj-avg').innerText = s_avg;
+            document.getElementById('subj-max').innerText = s_max;
+            document.getElementById('subj-pass-rate').innerText = s_passRate + '%';
+            document.getElementById('subj-fail-count').innerText = s_failCount + '人';
+
+            // 2. 圓餅圖 (級距)
+            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 };
+            sortedScores.forEach(s => {
+                if(s.score>=90) dist['90+']++;
+                else if(s.score>=80) dist['80-89']++;
+                else if(s.score>=70) dist['70-79']++;
+                else if(s.score>=60) dist['60-69']++;
+                else dist['不及格']++;
+            });
+
+            if(charts.subjPie) charts.subjPie.destroy();
+            charts.subjPie = new Chart(document.getElementById('subjectPieChart').getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(dist),
+                    datasets: [{
+                        data: Object.values(dist),
+                        backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'],
+                        borderWidth: 0
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false, cutout: '60%',
+                    plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: {size: 11} } } }
+                }
+            });
+
+            // 3. 進退步比對 (與前一次測驗)
+            let currentIdx = allExams.findIndex(ex => ex.id === currentExamId);
+            let prevExamId = (currentIdx !== -1 && currentIdx + 1 < allExams.length) ? allExams[currentIdx + 1].id : null;
+            let diffList = [];
+
+            if (prevExamId && allRecords[prevExamId]) {
+                let prevStudents = allRecords[prevExamId].students || {};
+                subjScores.forEach(s => {
+                    let p_st = prevStudents[s.seat];
+                    if (p_st) {
+                        let p_score = (currentSubjectKey === 'soc') ? getMergedSocietyScore(p_st) : p_st[currentSubjectKey];
+                        if(p_score !== undefined && p_score !== null && p_score !== "") {
+                            diffList.push({ seat: s.seat, diff: s.score - Number(p_score) });
+                        }
+                    }
+                });
+            }
+
+            diffList.sort((a,b) => b.diff - a.diff);
+            let impHtml = '', regHtml = '';
+            
+            if (diffList.length > 0) {
+                let improved = diffList.filter(d => d.diff > 0).slice(0, 3); // 進步前三
+                let regressed = diffList.filter(d => d.diff < 0).slice(-3).reverse(); // 退步前三
+
+                improved.forEach(d => { impHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50 last:border-0"><span class="text-sm text-brand-700">${d.seat}號</span><span class="text-sm font-bold text-morandi-green">+${d.diff}</span></div>`; });
+                regressed.forEach(d => { regHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50 last:border-0"><span class="text-sm text-brand-700">${d.seat}號</span><span class="text-sm font-bold text-morandi-pink">${d.diff}</span></div>`; });
+            }
+
+            document.getElementById('subj-improved-list').innerHTML = impHtml || '<div class="text-brand-400 text-sm py-2">無比對資料或無進步</div>';
+            document.getElementById('subj-regressed-list').innerHTML = regHtml || '<div class="text-brand-400 text-sm py-2">無比對資料或無退步</div>';
+
+            // 4. 單科全班成績分佈長條圖 (照座號)
+            let labels = [];
+            let dataPoints = [];
+            subjScores.sort((a,b) => a.seat - b.seat).forEach(s => { // 恢復成依座號排序
+                labels.push(s.seat + '號');
+                dataPoints.push(s.score);
+            });
+
+            if(charts.subjBar) charts.subjBar.destroy();
+            charts.subjBar = new Chart(document.getElementById('subjectBarChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '分數', data: dataPoints,
+                        backgroundColor: dataPoints.map(v => v < 60 ? '#d98b8b' : '#b08e6f'), // 不及格標紅
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+
+            // 5. 該科歷次走勢
+            const chronologicalExams = [...allExams].sort((a,b) => a.timestamp - b.timestamp);
+            let trendLabels = [], trendData = [];
+            
+            chronologicalExams.forEach(ex => {
+                const rec = allRecords[ex.id];
+                if(rec && rec.class_average) {
+                    let s = (currentSubjectKey === 'soc') ? getMergedSocietyScore(rec.class_average) : rec.class_average[currentSubjectKey];
+                    if(s !== undefined && s !== null) {
+                        trendLabels.push(ex.name.substring(0,8));
+                        trendData.push(Number(s));
+                    }
+                }
+            });
+
+            if(charts.subjTrend) charts.subjTrend.destroy();
+            charts.subjTrend = new Chart(document.getElementById('subjectTrendChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: trendLabels,
+                    datasets: [{
+                        label: `${subName}平均`, data: trendData,
+                        borderColor: '#805d46', backgroundColor: 'rgba(128, 93, 70, 0.1)',
+                        borderWidth: 3, pointRadius: 4, fill: true, tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+
+        /* ==================== 渲染: 個別學生頁籤 ==================== */
+        function renderStudentTab() {
+            const examData = allRecords[currentExamId];
+            const stData = (examData.students || {})[currentStudentSeat] || {};
+            const clsAvg = examData.class_average || {};
+
+            // 1. 個人雷達圖
+            const myRadar = [
+                stData.chi || 0, stData.eng || 0, stData.math || 0, stData.sci || 0, getMergedSocietyScore(stData) || 0
+            ];
+            const avgRadar = [
+                clsAvg.chi || 0, clsAvg.eng || 0, clsAvg.math || 0, clsAvg.sci || 0, getMergedSocietyScore(clsAvg) || 0
+            ];
+
+            if(charts.stuRadar) charts.stuRadar.destroy();
+            charts.stuRadar = new Chart(document.getElementById('studentRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['國文', '英文', '數學', '自然', '社會'],
+                    datasets: [
+                        { label: '個人', data: myRadar, borderColor: '#b08e6f', backgroundColor: 'rgba(176,142,111,0.3)', borderWidth:2 },
+                        { label: '班平均', data: avgRadar, borderColor: '#e8ddce', borderDash: [5,5], fill:false, borderWidth:2 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 100, ticks: { display: false } } },
+                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 12 } } }
+                }
+            });
+
+            // 2. 迷你成績單
+            let html = '';
+            mainSubjects.forEach(sub => {
+                let score = (sub === 'soc') ? getMergedSocietyScore(stData) : stData[sub];
+                let val = (score !== undefined && score !== null && score !== "") ? score : '--';
+                let color = (val !== '--' && Number(val) < 60) ? 'text-morandi-pink' : 'text-brand-800';
+                html += `<div class="bg-brand-50 p-2 rounded-lg text-center border border-brand-100">
+                            <div class="text-[10px] text-brand-500">${subjectMap[sub]}</div>
+                            <div class="text-sm font-black ${color}">${val}</div>
+                         </div>`;
+            });
+            html += `<div class="bg-brand-100 p-2 rounded-lg text-center border border-brand-200 col-span-2">
+                        <div class="text-[10px] text-brand-700">總平均</div>
+                        <div class="text-base font-black text-brand-900">${stData.avg || '--'}</div>
+                     </div>`;
+            document.getElementById('student-mini-scores').innerHTML = html;
+
+            // 3. 歷次走勢
+            const chronologicalExams = [...allExams].sort((a,b) => a.timestamp - b.timestamp);
+            let tLabels = [], tData = [];
+            chronologicalExams.forEach(ex => {
+                const rec = allRecords[ex.id];
+                if(rec && rec.students && rec.students[currentStudentSeat]) {
+                    let a = rec.students[currentStudentSeat].avg;
+                    if(a !== undefined && a !== "") {
+                        tLabels.push(ex.name.substring(0,8));
+                        tData.push(Number(a));
+                    }
+                }
+            });
+
+            if(charts.stuTrend) charts.stuTrend.destroy();
+            charts.stuTrend = new Chart(document.getElementById('studentTrendChart').getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: tLabels,
+                    datasets: [{
+                        label: '個人平均', data: tData,
+                        borderColor: '#805d46', backgroundColor: '#805d46',
+                        borderWidth: 3, pointRadius: 5, tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { y: { min: 0, max: 100 } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
