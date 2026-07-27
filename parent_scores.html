@@ -15,7 +15,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // 沿用米棕色與莫蘭迪色系，保持視覺一致性
+        // 沿用米棕色與莫蘭迪色系
         tailwind.config = {
             theme: {
                 extend: {
@@ -55,11 +55,11 @@
             <div class="space-y-5">
                 <div>
                     <label class="block text-brand-700 text-sm mb-2 font-bold"><i class="fas fa-chair mr-1"></i> 學生座號</label>
-                    <input type="number" id="login-seat" placeholder="例如: 1" class="w-full bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 outline-none transition font-bold text-lg text-center">
+                    <input type="number" id="login-seat" placeholder="例如: 1" class="w-full bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 outline-none transition font-bold text-lg text-center">
                 </div>
                 <div>
                     <label class="block text-brand-700 text-sm mb-2 font-bold"><i class="fas fa-id-card mr-1"></i> 身分證後六碼</label>
-                    <input type="password" id="login-id6" placeholder="••••••" class="w-full bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 outline-none transition font-bold text-lg text-center tracking-[0.5em]">
+                    <input type="password" id="login-id6" placeholder="••••••" class="w-full bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 outline-none transition font-bold text-lg text-center tracking-[0.5em]">
                 </div>
                 <button onclick="handleLogin()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-xl shadow-md transition mt-4 flex justify-center items-center text-lg">
                     <i class="fas fa-search mr-2"></i> 驗證並查詢
@@ -71,7 +71,6 @@
 
     <!-- ==================== 成績圖表主畫面 ==================== -->
     <div id="dashboard" class="hidden flex-1 flex flex-col fade-in">
-        <!-- 頂部資訊 -->
         <header class="bg-white border-b border-brand-200 px-6 py-4 sticky top-0 z-40 shadow-sm">
             <div class="max-w-3xl mx-auto flex justify-between items-center">
                 <div class="flex items-center space-x-3">
@@ -91,7 +90,7 @@
                 <!-- 測驗選擇器 -->
                 <div class="glass-panel p-5 rounded-2xl">
                     <label class="block text-brand-700 text-sm mb-2 font-bold"><i class="fas fa-list-ul mr-1"></i> 請選擇要查看的測驗：</label>
-                    <select id="exam-selector" onchange="loadExamData(this.value)" class="w-full bg-brand-50 text-brand-800 px-4 py-3 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-bold text-base shadow-sm">
+                    <select id="exam-selector" onchange="loadExamData(this.value)" class="w-full bg-brand-50 text-brand-800 px-4 py-3 rounded-xl border border-brand-200 outline-none font-bold text-base shadow-sm">
                         <option value="">讀取中...</option>
                     </select>
                 </div>
@@ -119,17 +118,18 @@
                     <div class="bg-brand-100 p-4 border-b border-brand-200 font-bold text-brand-800 flex items-center">
                         <i class="fas fa-table mr-2 text-brand-500"></i>成績明細表
                     </div>
-                    <div class="p-4 grid grid-cols-3 sm:grid-cols-4 gap-3 bg-white" id="score-details-grid">
-                        <!-- 動態產生 -->
-                    </div>
+                    <div class="p-4 grid grid-cols-3 sm:grid-cols-4 gap-3 bg-white" id="score-details-grid"></div>
                 </div>
 
-                <!-- 歷次平均趨勢圖 -->
+                <!-- 歷次實力指標趨勢圖 (新版) -->
                 <div class="glass-panel p-5 sm:p-6 rounded-2xl">
-                    <h2 class="text-lg font-bold text-brand-800 mb-4 flex items-center border-b border-brand-100 pb-3">
-                        <i class="fas fa-chart-line mr-2 text-brand-500"></i>歷次平均趨勢圖
-                    </h2>
-                    <div class="w-full h-[250px] relative">
+                    <div class="mb-4 border-b border-brand-100 pb-3">
+                        <h2 class="text-lg font-bold text-brand-800 flex items-center">
+                            <i class="fas fa-chart-line mr-2 text-brand-500"></i>歷次實力指標趨勢圖
+                        </h2>
+                        <p class="text-xs text-brand-500 mt-1"><i class="fas fa-info-circle mr-1"></i>數值 1.0 代表等同全年級平均水準。數值越高，代表該次實力與相對排名越好（已排除考題難度影響）。</p>
+                    </div>
+                    <div class="w-full h-[280px] relative">
                         <canvas id="lineChart"></canvas>
                     </div>
                 </div>
@@ -139,69 +139,54 @@
     </div>
 
     <script>
-        // 初始化 Firebase
         const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645" };
         if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
         const db = firebase.firestore();
 
-        // 狀態變數
         let currentSeat = null;
         let allExams = [];
         let allRecords = {};
         
-        // Chart.js 實例
         let radarChartInstance = null;
         let lineChartInstance = null;
 
         Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
         Chart.defaults.color = '#805d46';
 
-        // 網頁載入時檢查 URL 參數，若是從 Line 開啟會帶入 seat 參數 (例如: ?seat=1)
         window.addEventListener('DOMContentLoaded', () => {
             const urlParams = new URLSearchParams(window.location.search);
             const seatParam = urlParams.get('seat');
-            
             if (seatParam) {
-                // 自動帶入座號並跳過登入畫面
                 currentSeat = seatParam;
                 document.getElementById('display-seat').innerText = String(seatParam).padStart(2, '0');
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('dashboard').classList.remove('hidden');
-                fetchScoresData(); // 直接抓取成績資料
+                fetchScoresData(); 
             }
         });
 
-        /* ==================== 1. 登入驗證 ==================== */
         function handleLogin() {
             const seatInput = document.getElementById('login-seat').value.trim();
             const id6Input = document.getElementById('login-id6').value.trim();
             const errEl = document.getElementById('login-error');
-
             if (!seatInput || !id6Input) {
                 errEl.innerText = "請輸入座號與身分證後六碼";
                 errEl.classList.remove('hidden'); return;
             }
-
-            // 到導師設定的 bindings 去檢查
             db.collection("class_settings").doc("bindings").get().then((doc) => {
                 if (doc.exists) {
                     const bindings = doc.data().studentBindings || {};
                     const studentData = bindings[seatInput];
-                    
                     if (studentData && studentData.id6 === id6Input) {
-                        // 登入成功
                         currentSeat = seatInput;
                         document.getElementById('display-seat').innerText = String(seatInput).padStart(2, '0');
                         document.getElementById('login-screen').classList.add('hidden');
                         document.getElementById('dashboard').classList.remove('hidden');
-                        fetchScoresData(); // 抓取成績資料
+                        fetchScoresData();
                     } else {
-                        errEl.innerText = "身分驗證失敗：座號或密碼錯誤，請洽導師。";
+                        errEl.innerText = "身分驗證失敗：座號或密碼錯誤。";
                         errEl.classList.remove('hidden');
                     }
-                } else {
-                    errEl.innerText = "系統尚未設定綁定資料。";
-                    errEl.classList.remove('hidden');
                 }
             }).catch(e => {
                 errEl.innerText = "連線錯誤: " + e.message;
@@ -220,136 +205,201 @@
             if(lineChartInstance) lineChartInstance.destroy();
         }
 
-        /* ==================== 2. 獲取成績資料 ==================== */
         function fetchScoresData() {
             db.collection("class_settings").doc("scores").onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
                     allExams = data.exam_list || [];
                     allRecords = data.records || {};
-                    
-                    // 依據時間排序 (新的在上面)
                     allExams.sort((a,b) => b.timestamp - a.timestamp);
-                    
                     renderExamSelector();
-                    renderTrendChart(); // 繪製歷次走勢圖
+                    renderTrendChart();
                 }
             });
         }
 
-        /* ==================== 3. 渲染選單與當次成績 ==================== */
+        /* 自動格式化測驗名稱 (如: 七上第一次) */
+        function formatExamName(exam) {
+            let grade = exam.grade || '';
+            let semester = exam.semester || '';
+            let name = exam.name.replace('段考', '').replace('平時考', '').replace('複習考', '');
+            if(!grade && !semester) return exam.name.substring(0, 8);
+            return `${grade}${semester}${name}`;
+        }
+
+        /* 計算社會科整合平均 */
+        function getMergedSocietyScore(scoresObj) {
+            if (!scoresObj) return null;
+            if (scoresObj.soc !== undefined && scoresObj.soc !== "") return Number(scoresObj.soc);
+            let sum = 0; let count = 0;
+            if (scoresObj.hist !== undefined && scoresObj.hist !== "") { sum += Number(scoresObj.hist); count++; }
+            if (scoresObj.geo !== undefined && scoresObj.geo !== "") { sum += Number(scoresObj.geo); count++; }
+            if (scoresObj.civics !== undefined && scoresObj.civics !== "") { sum += Number(scoresObj.civics); count++; }
+            if (count > 0) return Math.round((sum / count) * 10) / 10;
+            return null; 
+        }
+
+        /* 智慧計算基準總平均 (若無總平均則由單科加總推算) */
+        function getBaseAvgTotal(avgData) {
+            if (!avgData) return null;
+            if (avgData.avg !== undefined && avgData.avg !== "") return Number(avgData.avg);
+            
+            let sum = 0; let count = 0;
+            ['chi', 'eng', 'math', 'sci'].forEach(sub => {
+                if (avgData[sub] !== undefined && avgData[sub] !== "") { sum += Number(avgData[sub]); count++; }
+            });
+            let soc = getMergedSocietyScore(avgData);
+            if (soc !== null) { sum += soc; count++; }
+            
+            if (count > 0) return Math.round((sum / count) * 10) / 10;
+            return null;
+        }
+
         function renderExamSelector() {
             const selector = document.getElementById('exam-selector');
             if(allExams.length === 0) {
                 selector.innerHTML = '<option value="">目前尚無測驗紀錄</option>';
                 return;
             }
-
             let html = '';
             allExams.forEach(exam => {
                 html += `<option value="${exam.id}">[${exam.grade}${exam.semester}] ${exam.name}</option>`;
             });
             selector.innerHTML = html;
-            
-            // 自動載入最新一次考試
             loadExamData(allExams[0].id);
         }
 
         function loadExamData(examId) {
             if(!examId || !allRecords[examId]) return;
-            
             const examRecord = allRecords[examId];
             const myScores = examRecord.students[currentSeat] || {};
             const classAvg = examRecord.class_average || {};
-
             document.getElementById('exam-avg-display').innerText = `平均 ${myScores.avg !== undefined ? myScores.avg : '--'}`;
-
-            // 繪製雷達圖
             drawRadarChart(myScores, classAvg);
-            // 繪製明細表
             renderScoreTable(myScores);
         }
 
-        /* ==================== 4. 智慧計算社會科 (歷史+地理+公民) ==================== */
-        function getMergedSocietyScore(scoresObj) {
-            if (!scoresObj) return null;
-            
-            // 如果原本就有單獨的社會科分數，直接回傳
-            if (scoresObj.soc !== undefined && scoresObj.soc !== "") {
-                return Number(scoresObj.soc);
-            }
-            
-            // 如果沒有單獨社會，檢查是否有歷地公
-            let sum = 0; let count = 0;
-            if (scoresObj.hist !== undefined && scoresObj.hist !== "") { sum += Number(scoresObj.hist); count++; }
-            if (scoresObj.geo !== undefined && scoresObj.geo !== "") { sum += Number(scoresObj.geo); count++; }
-            if (scoresObj.civics !== undefined && scoresObj.civics !== "") { sum += Number(scoresObj.civics); count++; }
-            
-            if (count > 0) {
-                return Math.round((sum / count) * 10) / 10; // 取平均至小數第一位
-            }
-            
-            return null; // 都沒有就回傳 null
-        }
-
-        /* ==================== 5. 繪製雷達圖 ==================== */
         function drawRadarChart(myScores, classAvg) {
             const emptyHint = document.getElementById('radar-empty');
-            
-            // 準備五科資料
             const labels = ['國文', '英文', '數學', '自然', '社會'];
-            const myData = [
-                myScores.chi || null, 
-                myScores.eng || null, 
-                myScores.math || null, 
-                myScores.sci || null, 
-                getMergedSocietyScore(myScores) // 智慧社會科處理
-            ];
-            
-            const avgData = [
-                classAvg.chi || null, 
-                classAvg.eng || null, 
-                classAvg.math || null, 
-                classAvg.sci || null, 
-                getMergedSocietyScore(classAvg) // 智慧社會科處理
-            ];
+            const myData = [ myScores.chi || null, myScores.eng || null, myScores.math || null, myScores.sci || null, getMergedSocietyScore(myScores) ];
+            const avgData = [ classAvg.chi || null, classAvg.eng || null, classAvg.math || null, classAvg.sci || null, getMergedSocietyScore(classAvg) ];
 
-            // 檢查是否完全無成績
             if(myData.every(v => v === null)) {
                 emptyHint.classList.remove('hidden');
                 if(radarChartInstance) radarChartInstance.destroy();
                 return;
-            } else {
-                emptyHint.classList.add('hidden');
-            }
+            } else { emptyHint.classList.add('hidden'); }
 
             const ctx = document.getElementById('radarChart').getContext('2d');
-            if (radarChartInstance) radarChartInstance.destroy(); // 清除舊圖
-
+            if (radarChartInstance) radarChartInstance.destroy();
             radarChartInstance = new Chart(ctx, {
                 type: 'radar',
                 data: {
                     labels: labels,
                     datasets: [
+                        { label: '個人成績', data: myData, backgroundColor: 'rgba(176, 142, 111, 0.2)', borderColor: '#b08e6f', pointBackgroundColor: '#b08e6f', borderWidth: 2, pointRadius: 4 },
+                        { label: '班級平均', data: avgData, backgroundColor: 'rgba(232, 221, 206, 0.1)', borderColor: '#e8ddce', borderDash: [5, 5], pointBackgroundColor: '#d8c5b0', borderWidth: 2, pointRadius: 3 }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    scales: { r: { min: 0, max: 100, ticks: { stepSize: 20, display: false } } },
+                    plugins: { legend: { display: false }, tooltip: { callbacks: { label: function(context) { return context.dataset.label + ': ' + (context.raw !== null ? context.raw + ' 分' : '未考'); } } } }
+                }
+            });
+        }
+
+        function renderScoreTable(myScores) {
+            const container = document.getElementById('score-details-grid');
+            const subjects = [
+                { key: 'chi', name: '國文' }, { key: 'eng', name: '英文' }, { key: 'math', name: '數學' }, 
+                { key: 'sci', name: '自然' }, { key: 'soc', name: '社會' }, { key: 'hist', name: '歷史' }, 
+                { key: 'geo', name: '地理' }, { key: 'civics', name: '公民' }, { key: 'avg', name: '平均', isSpecial: true }
+            ];
+            let html = '';
+            subjects.forEach(sub => {
+                const score = myScores[sub.key];
+                if(score !== undefined && score !== "") {
+                    let colorClass = (!sub.isSpecial && Number(score) < 60) ? 'text-morandi-pink' : 'text-brand-800';
+                    html += `<div class="bg-brand-50 rounded-xl p-3 text-center border border-brand-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-brand-500 font-bold mb-1">${sub.name}</div>
+                        <div class="text-lg font-black ${colorClass}">${score}</div>
+                    </div>`;
+                }
+            });
+            container.innerHTML = html || '<div class="col-span-3 sm:col-span-4 text-center text-brand-400 py-4 font-bold">無詳細資料</div>';
+        }
+
+        /* 繪製實力指標走勢圖 */
+        function renderTrendChart() {
+            const chronologicalExams = [...allExams].sort((a,b) => a.timestamp - b.timestamp);
+            
+            const labels = [];
+            const indexData = []; 
+            const tooltipRawData = []; 
+
+            chronologicalExams.forEach(exam => {
+                const rec = allRecords[exam.id];
+                if(rec && rec.students[currentSeat]) {
+                    const myAvg = rec.students[currentSeat].avg;
+                    // 優先使用年級平均，若無則退回班級平均(相容舊資料)
+                    let baseAvg = getBaseAvgTotal(rec.grade_average) || getBaseAvgTotal(rec.class_average);
+
+                    if(myAvg !== undefined && myAvg !== "") {
+                        labels.push(formatExamName(exam)); 
+                        
+                        if (baseAvg && baseAvg > 0) {
+                            let ratio = (Number(myAvg) / baseAvg).toFixed(2);
+                            indexData.push(Number(ratio));
+                            tooltipRawData.push({ my: Number(myAvg), base: baseAvg, isGrade: !!rec.grade_average });
+                        } else {
+                            indexData.push(null);
+                            tooltipRawData.push(null);
+                        }
+                    }
+                }
+            });
+
+            if(labels.length === 0) return;
+
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            // 動態決定 Y 軸範圍
+            let validIndices = indexData.filter(v => v !== null);
+            let minVal = validIndices.length ? Math.min(...validIndices) - 0.1 : 0.8;
+            let maxVal = validIndices.length ? Math.max(...validIndices) + 0.1 : 1.2;
+            if (minVal > 0.95) minVal = 0.9;
+            if (maxVal < 1.05) maxVal = 1.1;
+
+            lineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [
                         {
-                            label: '個人成績',
-                            data: myData,
-                            backgroundColor: 'rgba(176, 142, 111, 0.2)', // brand-500
+                            label: '個人實力指標',
+                            data: indexData,
                             borderColor: '#b08e6f',
-                            pointBackgroundColor: '#b08e6f',
-                            borderWidth: 2,
-                            pointRadius: 4,
-                            pointHoverRadius: 6
+                            backgroundColor: 'rgba(176, 142, 111, 0.1)',
+                            borderWidth: 3,
+                            pointBackgroundColor: '#fff',
+                            pointBorderColor: '#b08e6f',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7,
+                            fill: true,
+                            tension: 0.3
                         },
                         {
-                            label: '班級平均',
-                            data: avgData,
-                            backgroundColor: 'rgba(232, 221, 206, 0.1)', // brand-200
-                            borderColor: '#e8ddce',
+                            label: '平均基準線',
+                            data: labels.map(() => 1.0),
+                            borderColor: '#8b9bb4',
                             borderDash: [5, 5],
-                            pointBackgroundColor: '#d8c5b0',
                             borderWidth: 2,
-                            pointRadius: 3
+                            pointRadius: 0,
+                            fill: false
                         }
                     ]
                 },
@@ -357,116 +407,9 @@
                     responsive: true,
                     maintainAspectRatio: false,
                     scales: {
-                        r: {
-                            min: 0,
-                            max: 100,
-                            ticks: { stepSize: 20, display: false },
-                            grid: { color: '#f4efe6' },
-                            angleLines: { color: '#f4efe6' },
-                            pointLabels: { font: { size: 14, weight: 'bold', family: "'Inter', sans-serif" }, color: '#805d46' }
-                        }
-                    },
-                    plugins: {
-                        legend: { display: false }, // 我們自訂了下方圖例
-                        tooltip: {
-                            backgroundColor: 'rgba(107, 77, 61, 0.9)',
-                            padding: 10,
-                            bodyFont: { font: { size: 14 } },
-                            callbacks: {
-                                label: function(context) { return context.dataset.label + ': ' + (context.raw !== null ? context.raw + ' 分' : '未考'); }
-                            }
-                        }
-                    }
-                }
-            });
-        }
-
-        /* ==================== 6. 渲染詳細成績卡片 ==================== */
-        function renderScoreTable(myScores) {
-            const container = document.getElementById('score-details-grid');
-            
-            const subjects = [
-                { key: 'chi', name: '國文' }, { key: 'eng', name: '英文' }, 
-                { key: 'math', name: '數學' }, { key: 'sci', name: '自然' }, 
-                { key: 'soc', name: '社會' }, { key: 'hist', name: '歷史' }, 
-                { key: 'geo', name: '地理' }, { key: 'civics', name: '公民' },
-                { key: 'avg', name: '平均', isSpecial: true }, { key: 'pr', name: 'PR值', isSpecial: true }
-            ];
-
-            let html = '';
-            subjects.forEach(sub => {
-                const score = myScores[sub.key];
-                if(score !== undefined && score !== "") {
-                    const num = Number(score);
-                    let colorClass = 'text-brand-800';
-                    if (!sub.isSpecial && num < 60) colorClass = 'text-morandi-pink'; // 不及格紅字
-                    
-                    html += `
-                    <div class="bg-brand-50 rounded-xl p-3 text-center border border-brand-100 flex flex-col justify-center shadow-sm">
-                        <div class="text-xs text-brand-500 font-bold mb-1">${sub.name}</div>
-                        <div class="text-lg font-black ${colorClass}">${score}</div>
-                    </div>`;
-                }
-            });
-
-            if(html === '') {
-                container.innerHTML = '<div class="col-span-3 sm:col-span-4 text-center text-brand-400 py-4 font-bold">無詳細資料</div>';
-            } else {
-                container.innerHTML = html;
-            }
-        }
-
-        /* ==================== 7. 歷次趨勢折線圖 ==================== */
-        function renderTrendChart() {
-            // 從舊到新排序 (符合時間軸從左到右)
-            const chronologicalExams = [...allExams].sort((a,b) => a.timestamp - b.timestamp);
-            
-            const labels = [];
-            const avgData = [];
-
-            chronologicalExams.forEach(exam => {
-                const examRecord = allRecords[exam.id];
-                if(examRecord && examRecord.students[currentSeat]) {
-                    const avg = examRecord.students[currentSeat].avg;
-                    if(avg !== undefined && avg !== "") {
-                        // 只取較短的名稱放入圖表標籤，以免太擠
-                        labels.push(exam.name.substring(0, 8)); 
-                        avgData.push(Number(avg));
-                    }
-                }
-            });
-
-            if(labels.length === 0) return; // 沒資料不畫
-
-            const ctx = document.getElementById('lineChart').getContext('2d');
-            if (lineChartInstance) lineChartInstance.destroy();
-
-            lineChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [{
-                        label: '個人平均分數',
-                        data: avgData,
-                        borderColor: '#b08e6f',
-                        backgroundColor: 'rgba(176, 142, 111, 0.1)',
-                        borderWidth: 3,
-                        pointBackgroundColor: '#fff',
-                        pointBorderColor: '#b08e6f',
-                        pointBorderWidth: 2,
-                        pointRadius: 5,
-                        pointHoverRadius: 7,
-                        fill: true,
-                        tension: 0.3 // 曲線平滑度
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: {
                         y: {
-                            min: Math.max(0, Math.min(...avgData) - 10), // 動態抓底限
-                            max: 100,
+                            min: Number(minVal.toFixed(1)),
+                            max: Number(maxVal.toFixed(1)),
                             grid: { color: '#f4efe6' }
                         },
                         x: {
@@ -477,10 +420,19 @@
                     plugins: {
                         legend: { display: false },
                         tooltip: {
-                            backgroundColor: 'rgba(107, 77, 61, 0.9)',
-                            padding: 10,
+                            backgroundColor: 'rgba(107, 77, 61, 0.95)',
+                            padding: 12,
                             callbacks: {
-                                label: function(context) { return '平均: ' + context.raw + ' 分'; }
+                                label: function(context) {
+                                    if(context.datasetIndex === 1) return '基準線 (1.0 = 平均水準)';
+                                    let raw = tooltipRawData[context.dataIndex];
+                                    if(!raw) return '無資料';
+                                    let typeStr = raw.isGrade ? '年級' : '班級';
+                                    return [
+                                        `指標：${context.raw}`,
+                                        `分數：${raw.my} (${typeStr}平均: ${raw.base})`
+                                    ];
+                                }
                             }
                         }
                     }
