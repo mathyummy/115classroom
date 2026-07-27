@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>學生成績分析系統 - 家長專區</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase -->
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Chart.js 繪圖套件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // 沿用米棕色與莫蘭迪色系，保持視覺一致性
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#faf8f5', 100: '#f4efe6', 200: '#e8ddce',
+                            300: '#d8c5b0', 400: '#c2a88d', 500: '#b08e6f',
+                            600: '#9b7658', 700: '#805d46', 800: '#6b4d3d', 900: '#563e32',
+                        },
+                        morandi: { pink: '#d98b8b', blue: '#8b9bb4' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #faf8f5; color: #6b4d3d; -webkit-tap-highlight-color: transparent; }
+        .glass-panel { background: #ffffff; border: 1px solid #e8ddce; box-shadow: 0 4px 20px -2px rgba(107, 77, 61, 0.05); }
+        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .fade-in { animation: fadeIn 0.5s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col">
+
+    <!-- ==================== 登入驗證區塊 ==================== -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-50">
+        <div class="bg-white p-6 sm:p-8 rounded-3xl w-full max-w-sm shadow-xl border border-brand-200 fade-in">
+            <div class="text-center mb-8">
+                <div class="w-20 h-20 bg-brand-100 rounded-full mx-auto flex items-center justify-center text-brand-600 text-3xl mb-4 shadow-sm border-4 border-white">
+                    <i class="fas fa-user-graduate"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-brand-800 tracking-wider">成績查詢系統</h2>
+                <p class="text-brand-500 text-sm mt-2">歡迎家長！請進行身分驗證</p>
+            </div>
+            
+            <div class="space-y-5">
+                <div>
+                    <label class="block text-brand-700 text-sm mb-2 font-bold"><i class="fas fa-chair mr-1"></i> 學生座號</label>
+                    <input type="number" id="login-seat" placeholder="例如: 1" class="w-full bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 outline-none transition font-bold text-lg text-center">
+                </div>
+                <div>
+                    <label class="block text-brand-700 text-sm mb-2 font-bold"><i class="fas fa-id-card mr-1"></i> 身分證後六碼</label>
+                    <input type="password" id="login-id6" placeholder="••••••" class="w-full bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 focus:ring-2 focus:ring-brand-200 outline-none transition font-bold text-lg text-center tracking-[0.5em]">
+                </div>
+                <button onclick="handleLogin()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-4 rounded-xl shadow-md transition mt-4 flex justify-center items-center text-lg">
+                    <i class="fas fa-search mr-2"></i> 驗證並查詢
+                </button>
+                <div id="login-error" class="text-morandi-pink text-sm text-center bg-red-50 border border-red-100 p-3 rounded-lg hidden font-bold mt-4"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ==================== 成績圖表主畫面 ==================== -->
+    <div id="dashboard" class="hidden flex-1 flex flex-col fade-in">
+        <!-- 頂部資訊 -->
+        <header class="bg-white border-b border-brand-200 px-6 py-4 sticky top-0 z-40 shadow-sm">
+            <div class="max-w-3xl mx-auto flex justify-between items-center">
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center text-brand-700 font-bold border border-brand-200 text-lg shadow-sm" id="display-seat">--</div>
+                    <div>
+                        <h1 class="font-bold text-brand-800 text-lg">學生成績分析</h1>
+                        <p class="text-xs text-brand-500 font-medium">701班專屬</p>
+                    </div>
+                </div>
+                <button onclick="logout()" class="text-brand-400 hover:text-morandi-pink transition"><i class="fas fa-sign-out-alt text-xl"></i></button>
+            </div>
+        </header>
+
+        <main class="flex-1 overflow-y-auto p-4 sm:p-6 bg-brand-50">
+            <div class="max-w-3xl mx-auto space-y-6 pb-10">
+                
+                <!-- 測驗選擇器 -->
+                <div class="glass-panel p-5 rounded-2xl">
+                    <label class="block text-brand-700 text-sm mb-2 font-bold"><i class="fas fa-list-ul mr-1"></i> 請選擇要查看的測驗：</label>
+                    <select id="exam-selector" onchange="loadExamData(this.value)" class="w-full bg-brand-50 text-brand-800 px-4 py-3 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-bold text-base shadow-sm">
+                        <option value="">讀取中...</option>
+                    </select>
+                </div>
+
+                <!-- 雷達圖與總覽 -->
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl relative">
+                    <h2 class="text-lg font-bold text-brand-800 mb-4 flex items-center justify-between border-b border-brand-100 pb-3">
+                        <span><i class="fas fa-bullseye mr-2 text-brand-500"></i>五育均衡雷達圖</span>
+                        <span id="exam-avg-display" class="bg-brand-100 text-brand-700 px-3 py-1 rounded-lg text-sm font-bold border border-brand-200">平均 --</span>
+                    </h2>
+                    
+                    <div class="w-full aspect-square max-h-[350px] mx-auto flex items-center justify-center relative">
+                        <canvas id="radarChart"></canvas>
+                        <div id="radar-empty" class="absolute inset-0 flex items-center justify-center text-brand-400 font-bold bg-white/80 hidden">本次測驗尚無成績</div>
+                    </div>
+                    
+                    <div class="mt-4 flex justify-center space-x-6 text-sm font-medium border-t border-brand-100 pt-4">
+                        <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-brand-500 mr-2"></span>個人成績</div>
+                        <div class="flex items-center"><span class="w-3 h-3 rounded-full bg-brand-200 border border-brand-400 mr-2"></span>班級平均</div>
+                    </div>
+                </div>
+
+                <!-- 完整成績明細 -->
+                <div class="glass-panel rounded-2xl overflow-hidden">
+                    <div class="bg-brand-100 p-4 border-b border-brand-200 font-bold text-brand-800 flex items-center">
+                        <i class="fas fa-table mr-2 text-brand-500"></i>成績明細表
+                    </div>
+                    <div class="p-4 grid grid-cols-3 sm:grid-cols-4 gap-3 bg-white" id="score-details-grid">
+                        <!-- 動態產生 -->
+                    </div>
+                </div>
+
+                <!-- 歷次平均趨勢圖 -->
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl">
+                    <h2 class="text-lg font-bold text-brand-800 mb-4 flex items-center border-b border-brand-100 pb-3">
+                        <i class="fas fa-chart-line mr-2 text-brand-500"></i>歷次平均趨勢圖
+                    </h2>
+                    <div class="w-full h-[250px] relative">
+                        <canvas id="lineChart"></canvas>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // 初始化 Firebase
+        const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645" };
+        if (!firebase.apps.length) { firebase.initializeApp(firebaseConfig); }
+        const db = firebase.firestore();
+
+        // 狀態變數
+        let currentSeat = null;
+        let allExams = [];
+        let allRecords = {};
+        
+        // Chart.js 實例
+        let radarChartInstance = null;
+        let lineChartInstance = null;
+
+        Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+        Chart.defaults.color = '#805d46';
+
+        // 網頁載入時檢查 URL 參數，若是從 Line 開啟會帶入 seat 參數 (例如: ?seat=1)
+        window.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const seatParam = urlParams.get('seat');
+            
+            if (seatParam) {
+                // 自動帶入座號並跳過登入畫面
+                currentSeat = seatParam;
+                document.getElementById('display-seat').innerText = String(seatParam).padStart(2, '0');
+                document.getElementById('login-screen').classList.add('hidden');
+                document.getElementById('dashboard').classList.remove('hidden');
+                fetchScoresData(); // 直接抓取成績資料
+            }
+        });
+
+        /* ==================== 1. 登入驗證 ==================== */
+        function handleLogin() {
+            const seatInput = document.getElementById('login-seat').value.trim();
+            const id6Input = document.getElementById('login-id6').value.trim();
+            const errEl = document.getElementById('login-error');
+
+            if (!seatInput || !id6Input) {
+                errEl.innerText = "請輸入座號與身分證後六碼";
+                errEl.classList.remove('hidden'); return;
+            }
+
+            // 到導師設定的 bindings 去檢查
+            db.collection("class_settings").doc("bindings").get().then((doc) => {
+                if (doc.exists) {
+                    const bindings = doc.data().studentBindings || {};
+                    const studentData = bindings[seatInput];
+                    
+                    if (studentData && studentData.id6 === id6Input) {
+                        // 登入成功
+                        currentSeat = seatInput;
+                        document.getElementById('display-seat').innerText = String(seatInput).padStart(2, '0');
+                        document.getElementById('login-screen').classList.add('hidden');
+                        document.getElementById('dashboard').classList.remove('hidden');
+                        fetchScoresData(); // 抓取成績資料
+                    } else {
+                        errEl.innerText = "身分驗證失敗：座號或密碼錯誤，請洽導師。";
+                        errEl.classList.remove('hidden');
+                    }
+                } else {
+                    errEl.innerText = "系統尚未設定綁定資料。";
+                    errEl.classList.remove('hidden');
+                }
+            }).catch(e => {
+                errEl.innerText = "連線錯誤: " + e.message;
+                errEl.classList.remove('hidden');
+            });
+        }
+
+        function logout() {
+            currentSeat = null;
+            document.getElementById('dashboard').classList.add('hidden');
+            document.getElementById('login-screen').classList.remove('hidden');
+            document.getElementById('login-seat').value = '';
+            document.getElementById('login-id6').value = '';
+            document.getElementById('login-error').classList.add('hidden');
+            if(radarChartInstance) radarChartInstance.destroy();
+            if(lineChartInstance) lineChartInstance.destroy();
+        }
+
+        /* ==================== 2. 獲取成績資料 ==================== */
+        function fetchScoresData() {
+            db.collection("class_settings").doc("scores").onSnapshot((doc) => {
+                if (doc.exists) {
+                    const data = doc.data();
+                    allExams = data.exam_list || [];
+                    allRecords = data.records || {};
+                    
+                    // 依據時間排序 (新的在上面)
+                    allExams.sort((a,b) => b.timestamp - a.timestamp);
+                    
+                    renderExamSelector();
+                    renderTrendChart(); // 繪製歷次走勢圖
+                }
+            });
+        }
+
+        /* ==================== 3. 渲染選單與當次成績 ==================== */
+        function renderExamSelector() {
+            const selector = document.getElementById('exam-selector');
+            if(allExams.length === 0) {
+                selector.innerHTML = '<option value="">目前尚無測驗紀錄</option>';
+                return;
+            }
+
+            let html = '';
+            allExams.forEach(exam => {
+                html += `<option value="${exam.id}">[${exam.grade}${exam.semester}] ${exam.name}</option>`;
+            });
+            selector.innerHTML = html;
+            
+            // 自動載入最新一次考試
+            loadExamData(allExams[0].id);
+        }
+
+        function loadExamData(examId) {
+            if(!examId || !allRecords[examId]) return;
+            
+            const examRecord = allRecords[examId];
+            const myScores = examRecord.students[currentSeat] || {};
+            const classAvg = examRecord.class_average || {};
+
+            document.getElementById('exam-avg-display').innerText = `平均 ${myScores.avg !== undefined ? myScores.avg : '--'}`;
+
+            // 繪製雷達圖
+            drawRadarChart(myScores, classAvg);
+            // 繪製明細表
+            renderScoreTable(myScores);
+        }
+
+        /* ==================== 4. 智慧計算社會科 (歷史+地理+公民) ==================== */
+        function getMergedSocietyScore(scoresObj) {
+            if (!scoresObj) return null;
+            
+            // 如果原本就有單獨的社會科分數，直接回傳
+            if (scoresObj.soc !== undefined && scoresObj.soc !== "") {
+                return Number(scoresObj.soc);
+            }
+            
+            // 如果沒有單獨社會，檢查是否有歷地公
+            let sum = 0; let count = 0;
+            if (scoresObj.hist !== undefined && scoresObj.hist !== "") { sum += Number(scoresObj.hist); count++; }
+            if (scoresObj.geo !== undefined && scoresObj.geo !== "") { sum += Number(scoresObj.geo); count++; }
+            if (scoresObj.civics !== undefined && scoresObj.civics !== "") { sum += Number(scoresObj.civics); count++; }
+            
+            if (count > 0) {
+                return Math.round((sum / count) * 10) / 10; // 取平均至小數第一位
+            }
+            
+            return null; // 都沒有就回傳 null
+        }
+
+        /* ==================== 5. 繪製雷達圖 ==================== */
+        function drawRadarChart(myScores, classAvg) {
+            const emptyHint = document.getElementById('radar-empty');
+            
+            // 準備五科資料
+            const labels = ['國文', '英文', '數學', '自然', '社會'];
+            const myData = [
+                myScores.chi || null, 
+                myScores.eng || null, 
+                myScores.math || null, 
+                myScores.sci || null, 
+                getMergedSocietyScore(myScores) // 智慧社會科處理
+            ];
+            
+            const avgData = [
+                classAvg.chi || null, 
+                classAvg.eng || null, 
+                classAvg.math || null, 
+                classAvg.sci || null, 
+                getMergedSocietyScore(classAvg) // 智慧社會科處理
+            ];
+
+            // 檢查是否完全無成績
+            if(myData.every(v => v === null)) {
+                emptyHint.classList.remove('hidden');
+                if(radarChartInstance) radarChartInstance.destroy();
+                return;
+            } else {
+                emptyHint.classList.add('hidden');
+            }
+
+            const ctx = document.getElementById('radarChart').getContext('2d');
+            if (radarChartInstance) radarChartInstance.destroy(); // 清除舊圖
+
+            radarChartInstance = new Chart(ctx, {
+                type: 'radar',
+                data: {
+                    labels: labels,
+                    datasets: [
+                        {
+                            label: '個人成績',
+                            data: myData,
+                            backgroundColor: 'rgba(176, 142, 111, 0.2)', // brand-500
+                            borderColor: '#b08e6f',
+                            pointBackgroundColor: '#b08e6f',
+                            borderWidth: 2,
+                            pointRadius: 4,
+                            pointHoverRadius: 6
+                        },
+                        {
+                            label: '班級平均',
+                            data: avgData,
+                            backgroundColor: 'rgba(232, 221, 206, 0.1)', // brand-200
+                            borderColor: '#e8ddce',
+                            borderDash: [5, 5],
+                            pointBackgroundColor: '#d8c5b0',
+                            borderWidth: 2,
+                            pointRadius: 3
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        r: {
+                            min: 0,
+                            max: 100,
+                            ticks: { stepSize: 20, display: false },
+                            grid: { color: '#f4efe6' },
+                            angleLines: { color: '#f4efe6' },
+                            pointLabels: { font: { size: 14, weight: 'bold', family: "'Inter', sans-serif" }, color: '#805d46' }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false }, // 我們自訂了下方圖例
+                        tooltip: {
+                            backgroundColor: 'rgba(107, 77, 61, 0.9)',
+                            padding: 10,
+                            bodyFont: { font: { size: 14 } },
+                            callbacks: {
+                                label: function(context) { return context.dataset.label + ': ' + (context.raw !== null ? context.raw + ' 分' : '未考'); }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        /* ==================== 6. 渲染詳細成績卡片 ==================== */
+        function renderScoreTable(myScores) {
+            const container = document.getElementById('score-details-grid');
+            
+            const subjects = [
+                { key: 'chi', name: '國文' }, { key: 'eng', name: '英文' }, 
+                { key: 'math', name: '數學' }, { key: 'sci', name: '自然' }, 
+                { key: 'soc', name: '社會' }, { key: 'hist', name: '歷史' }, 
+                { key: 'geo', name: '地理' }, { key: 'civics', name: '公民' },
+                { key: 'avg', name: '平均', isSpecial: true }, { key: 'pr', name: 'PR值', isSpecial: true }
+            ];
+
+            let html = '';
+            subjects.forEach(sub => {
+                const score = myScores[sub.key];
+                if(score !== undefined && score !== "") {
+                    const num = Number(score);
+                    let colorClass = 'text-brand-800';
+                    if (!sub.isSpecial && num < 60) colorClass = 'text-morandi-pink'; // 不及格紅字
+                    
+                    html += `
+                    <div class="bg-brand-50 rounded-xl p-3 text-center border border-brand-100 flex flex-col justify-center shadow-sm">
+                        <div class="text-xs text-brand-500 font-bold mb-1">${sub.name}</div>
+                        <div class="text-lg font-black ${colorClass}">${score}</div>
+                    </div>`;
+                }
+            });
+
+            if(html === '') {
+                container.innerHTML = '<div class="col-span-3 sm:col-span-4 text-center text-brand-400 py-4 font-bold">無詳細資料</div>';
+            } else {
+                container.innerHTML = html;
+            }
+        }
+
+        /* ==================== 7. 歷次趨勢折線圖 ==================== */
+        function renderTrendChart() {
+            // 從舊到新排序 (符合時間軸從左到右)
+            const chronologicalExams = [...allExams].sort((a,b) => a.timestamp - b.timestamp);
+            
+            const labels = [];
+            const avgData = [];
+
+            chronologicalExams.forEach(exam => {
+                const examRecord = allRecords[exam.id];
+                if(examRecord && examRecord.students[currentSeat]) {
+                    const avg = examRecord.students[currentSeat].avg;
+                    if(avg !== undefined && avg !== "") {
+                        // 只取較短的名稱放入圖表標籤，以免太擠
+                        labels.push(exam.name.substring(0, 8)); 
+                        avgData.push(Number(avg));
+                    }
+                }
+            });
+
+            if(labels.length === 0) return; // 沒資料不畫
+
+            const ctx = document.getElementById('lineChart').getContext('2d');
+            if (lineChartInstance) lineChartInstance.destroy();
+
+            lineChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: labels,
+                    datasets: [{
+                        label: '個人平均分數',
+                        data: avgData,
+                        borderColor: '#b08e6f',
+                        backgroundColor: 'rgba(176, 142, 111, 0.1)',
+                        borderWidth: 3,
+                        pointBackgroundColor: '#fff',
+                        pointBorderColor: '#b08e6f',
+                        pointBorderWidth: 2,
+                        pointRadius: 5,
+                        pointHoverRadius: 7,
+                        fill: true,
+                        tension: 0.3 // 曲線平滑度
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: {
+                            min: Math.max(0, Math.min(...avgData) - 10), // 動態抓底限
+                            max: 100,
+                            grid: { color: '#f4efe6' }
+                        },
+                        x: {
+                            grid: { display: false },
+                            ticks: { font: { family: "'Inter', sans-serif", size: 10 } }
+                        }
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: 'rgba(107, 77, 61, 0.9)',
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) { return '平均: ' + context.raw + ' 分'; }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
