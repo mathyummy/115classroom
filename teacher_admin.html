@@ -69,7 +69,6 @@
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <!-- 登入保護遮罩 -->
     <div id="login-overlay" class="fixed inset-0 bg-brand-50/90 backdrop-blur-md z-[60] flex items-center justify-center transition-opacity duration-500 p-4">
         <div class="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-md shadow-2xl border border-brand-200">
             <div class="text-center mb-8">
@@ -94,7 +93,6 @@
         </div>
     </div>
 
-    <!-- 手機版頂部導覽列 -->
     <div class="md:hidden fixed top-0 w-full bg-white border-b border-brand-200 z-40 flex justify-between items-center p-4 shadow-sm">
         <div class="flex items-center space-x-3">
             <div class="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center text-brand-700 font-bold text-sm border border-brand-200">701</div>
@@ -105,7 +103,6 @@
         </button>
     </div>
 
-    <!-- 側邊欄 Sidebar (響應式) -->
     <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 w-64 h-full flex flex-col transition-transform duration-300 z-50 shadow-sm">
         <div class="p-6 border-b border-brand-100 flex justify-between items-center bg-brand-50/50">
             <div class="flex items-center space-x-3">
@@ -147,7 +144,6 @@
         </div>
     </aside>
 
-    <!-- 手機版側邊欄背景遮罩 -->
     <div id="mobile-menu-overlay" onclick="toggleMobileMenu()" class="hidden fixed inset-0 bg-brand-900/40 z-40 md:hidden backdrop-blur-sm transition-opacity"></div>
 
     <main class="flex-1 h-full overflow-y-auto bg-brand-50 p-4 pt-20 md:pt-8 md:p-8">
@@ -172,7 +168,6 @@
                 </div>
                 <div class="glass-panel p-5 sm:p-6 rounded-2xl border-l-4 border-l-morandi-pink">
                     <div class="text-brand-500 text-sm mb-1 font-bold">作業缺交警示</div>
-                    <!-- 🌟 修正：改成 人次 -->
                     <div class="text-3xl sm:text-4xl font-bold text-brand-800 mb-3"><span id="dash-missing-hw">--</span><span class="text-base sm:text-lg text-brand-400 font-medium ml-1">人次</span></div>
                     <div class="text-sm text-brand-700 space-y-1 mt-2 font-medium" id="dash-missing-list">讀取中...</div>
                 </div>
@@ -196,7 +191,6 @@
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
-                <!-- 🌟 全新統計展示區 (包含管理明細按鈕) -->
                 <div class="glass-panel p-5 sm:p-6 rounded-2xl hidden lg:block">
                     <h3 class="text-lg font-bold text-brand-700 mb-4 flex items-center justify-between">
                         <span class="flex items-center"><i class="fas fa-chart-line mr-2 text-brand-500"></i> 已核准請假統計</span>
@@ -210,7 +204,6 @@
                 <div class="glass-panel p-5 sm:p-6 rounded-2xl">
                     <h3 class="text-lg font-bold text-brand-700 mb-4 flex items-center justify-between">
                         <span class="flex items-center"><i class="fas fa-history mr-2 text-brand-500"></i> 幹部系統操作日誌</span>
-                        <!-- 🌟 加回清空按鈕 -->
                         <button onclick="clearAuditLogs()" class="text-xs font-bold bg-red-50 hover:bg-red-100 text-morandi-pink border border-red-100 px-2.5 py-1.5 rounded-lg transition shadow-sm"><i class="fas fa-trash-alt mr-1"></i>清空</button>
                     </h3>
                     <div class="space-y-3 text-sm h-40 overflow-y-auto pr-2 custom-scrollbar" id="audit-log-container">
@@ -350,24 +343,62 @@
                     <p class="text-brand-500 text-sm sm:text-base font-medium">手動輸入或匯入 Excel 成績，存檔後供家長 LINE 查詢。</p>
                 </div>
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full xl:w-auto">
-                    <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
+                    <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleSmartExcelUpload(event)">
                     <button onclick="document.getElementById('excel-file-input').click()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm">
-                        <i class="fas fa-file-excel mr-2 text-brand-400"></i> Excel 匯入
+                        <i class="fas fa-file-excel mr-2 text-brand-400"></i> Excel 智慧匯入
                     </button>
-                    <button onclick="saveScoresToCloud()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center">
+                    <button id="btn-save-scores" onclick="saveScoresToCloud()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center">
                         <i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布
                     </button>
                 </div>
             </div>
+
+            <!-- 🌟 歷史測驗管理面板 (新增區塊) -->
+            <div class="glass-panel p-4 rounded-xl border-l-4 border-l-brand-600 flex flex-wrap items-center gap-3">
+                <span class="font-bold text-brand-700 mr-2"><i class="fas fa-history mr-1"></i> 歷史紀錄管理：</span>
+                <select id="history-exam-select" class="bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 flex-1 min-w-[200px]">
+                    <option value="">➕ --- 建立全新測驗 --- (預設)</option>
+                </select>
+                <button onclick="loadExamData()" class="bg-brand-100 hover:bg-brand-200 text-brand-700 px-4 py-2.5 rounded-lg text-sm font-bold transition shadow-sm border border-brand-200"><i class="fas fa-edit mr-1"></i> 載入</button>
+                <button onclick="deleteExamData()" id="btn-delete-exam" class="hidden bg-red-50 hover:bg-red-100 text-morandi-pink px-4 py-2.5 rounded-lg text-sm font-bold transition shadow-sm border border-red-200"><i class="fas fa-trash-alt mr-1"></i> 刪除此測驗</button>
+            </div>
+
+            <!-- 🌟 全新測驗設定面板 -->
+            <div class="glass-panel p-4 rounded-xl border-l-4 border-l-brand-400 flex flex-wrap items-center gap-3">
+                <span class="font-bold text-brand-700 mr-2"><i class="fas fa-cog mr-1"></i> 本次測驗設定：</span>
+                <select id="new-exam-grade" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2">
+                    <option value="七年級">七年級</option>
+                    <option value="八年級">八年級</option>
+                    <option value="九年級">九年級</option>
+                </select>
+                <select id="new-exam-semester" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2">
+                    <option value="上學期">上學期</option>
+                    <option value="下學期">下學期</option>
+                </select>
+                <select id="new-exam-type" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2" onchange="document.getElementById('new-exam-custom').classList.toggle('hidden', this.value !== '其他')">
+                    <option value="第一次段考">第一次段考</option>
+                    <option value="第二次段考">第二次段考</option>
+                    <option value="第三次段考">第三次段考</option>
+                    <option value="第一次模擬考">第一次模擬考</option>
+                    <option value="第二次模擬考">第二次模擬考</option>
+                    <option value="平時測驗">平時測驗</option>
+                    <option value="其他">其他 (自訂名稱)</option>
+                </select>
+                <input type="text" id="new-exam-custom" placeholder="輸入自訂名稱..." class="hidden bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 w-40">
+            </div>
             
             <div class="bg-brand-100 border border-brand-200 p-4 rounded-xl flex items-start space-x-3 text-brand-800 text-sm mb-2 font-medium">
                 <i class="fas fa-info-circle text-brand-500 text-xl mt-0.5"></i>
-                <span class="leading-relaxed"><strong>Excel 匯入說明：</strong> 系統會自動抓取前 8 個欄位，建議格式依序為：<strong>座號, 國文, 英文, 數學, 自然, 社會, 平均, PR值</strong>。第一行若為標題會自動略過。</span>
+                <div class="leading-relaxed">
+                    <strong>智慧匯入說明：</strong> 系統會自動辨識 Excel 表頭名稱（不限順序）。<br>
+                    <span class="text-brand-600 font-bold">支援抓取的欄位包含：</span> 座號、國文、英文、數學、自然(理化)、社會、歷史、地理、公民、平均、PR值。<br>
+                    <span class="text-morandi-pink font-bold">✨ 分科儲存設計：</span> 匯入時各科獨立儲存，家長查詢時能看到最完整的明細！
+                </div>
             </div>
 
             <!-- 成績表格水平捲動 -->
             <div class="glass-panel rounded-2xl overflow-x-auto shadow-sm custom-scrollbar">
-                <table class="w-full text-center text-sm whitespace-nowrap min-w-[800px]">
+                <table class="w-full text-center text-sm whitespace-nowrap min-w-[900px]">
                     <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
                         <tr>
                             <th class="p-4 font-bold w-16 sticky left-0 bg-brand-100 z-10 border-r border-brand-200">座號</th>
@@ -376,6 +407,10 @@
                             <th class="p-4 font-bold">數學</th>
                             <th class="p-4 font-bold">自然</th>
                             <th class="p-4 font-bold">社會</th>
+                            <!-- 🌟 新增歷史、地理、公民獨立欄位 -->
+                            <th class="p-4 font-bold text-brand-600 bg-brand-50">歷史</th>
+                            <th class="p-4 font-bold text-brand-600 bg-brand-50">地理</th>
+                            <th class="p-4 font-bold text-brand-600 bg-brand-50">公民</th>
                             <th class="p-4 font-bold">平均</th>
                             <th class="p-4 font-bold">校排PR值</th>
                         </tr>
@@ -548,11 +583,25 @@
 
         const todayStr = new Date().toISOString().split('T')[0];
         let globalHWMap = {}; let globalStudentsData = null; let bindingsData = null; let lineParentsData = null; let lineStudentsData = null; let globalApprovedLeaves = [];
+        let allExamsData = null; let currentEditingExamId = null; // 🌟 儲存歷史紀錄與當前編輯狀態
 
+        // 🌟 這裡更新了成績表格，加入了歷史、地理、公民的輸入框
         window.addEventListener('DOMContentLoaded', () => {
             const tbody = document.getElementById('score-table-body'); let html = '';
             for(let i=1; i<=24; i++) {
-                html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 bg-brand-50 sticky left-0 z-10 border-r border-brand-200">${String(i).padStart(2,'0')}</td><td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td><td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td></tr>`;
+                html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
+                    <td class="p-3 font-bold text-brand-800 bg-brand-50 sticky left-0 z-10 border-r border-brand-200">${String(i).padStart(2,'0')}</td>
+                    <td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-hist-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-geo-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-civics-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td>
+                    <td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td>
+                </tr>`;
             }
             tbody.innerHTML = html;
         });
@@ -577,6 +626,14 @@
             db.collection("class_settings").doc("bindings").onSnapshot((doc) => { bindingsData = doc.exists ? doc.data().studentBindings : null; renderBindingTable(); });
             db.collection("class_settings").doc("line_parents").onSnapshot((doc) => { lineParentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
             db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
+
+            // 🌟 監聽所有成績紀錄以產出歷史清單
+            db.collection("class_settings").doc("scores").onSnapshot((doc) => {
+                if (doc.exists) {
+                    allExamsData = doc.data();
+                    renderExamHistorySelect();
+                }
+            });
 
             db.collection("board_settings").doc("current").onSnapshot((doc) => {
                 markConnected();
@@ -756,8 +813,236 @@
 
         function setMarqueePreset(text) { document.getElementById('marquee-input').value = text; }
         function sendMarquee() { const val = document.getElementById('marquee-input').value; if(!val) return alert('請輸入廣播內容！'); db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => { const msg = document.getElementById('marquee-success'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000); }).catch(err => alert('失敗: ' + err.message)); }
-        function handleExcelUpload(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const data = new Uint8Array(evt.target.result); const workbook = XLSX.read(data, {type: 'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let successCount = 0; for(let r = 1; r < json.length; r++) { const row = json[r]; if(!row || row.length === 0) continue; let seatNum = parseInt(row[0]); if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue; ['chi','eng','math','sci','soc','avg','pr'].forEach((sub, idx) => { if(row[idx+1] !== undefined) { const el = document.getElementById(`score-${sub}-${seatNum}`); if(el) el.value = row[idx+1]; } }); successCount++; } if(successCount > 0) alert(`✅ 成功匯入 ${successCount} 筆！`); else alert('⚠️ 匯入失敗，請檢查格式。'); } catch(error) { alert('錯誤: ' + error); } finally { document.getElementById('excel-file-input').value = ''; } }; reader.readAsArrayBuffer(file); }
-        function saveScoresToCloud() { let scoreData = {}; for(let i=1; i<=24; i++) { scoreData[i] = {}; ['chi','eng','math','sci','soc','avg','pr'].forEach(sub => scoreData[i][sub] = document.getElementById(`score-${sub}-${i}`)?.value || ""); } db.collection("class_settings").doc("scores").set({ latestExam: scoreData, updatedAt: new Date().toISOString() }, { merge: true }).then(() => alert('🎉 成績上傳成功！')).catch(e => alert('上傳失敗: ' + e)); }
+        
+        // 🌟 智慧判斷 Excel 表頭，支援歷史、地理、公民
+        function handleSmartExcelUpload(e) { 
+            const file = e.target.files[0]; if (!file) return; 
+            const reader = new FileReader(); 
+            reader.onload = function(evt) { 
+                try { 
+                    const data = new Uint8Array(evt.target.result); 
+                    const workbook = XLSX.read(data, {type: 'array'}); 
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); 
+                    
+                    if(json.length < 2) return alert('Excel 內資料不足！');
+
+                    const headers = json[0];
+                    let colMap = { seat: -1, chi: -1, eng: -1, math: -1, sci: -1, soc: -1, hist: -1, geo: -1, civics: -1, avg: -1, pr: -1 };
+
+                    headers.forEach((h, idx) => {
+                        if(!h) return;
+                        let text = String(h).trim();
+                        if(text.includes('座號')) colMap.seat = idx;
+                        else if(text.includes('國文')) colMap.chi = idx;
+                        else if(text.includes('英文')) colMap.eng = idx;
+                        else if(text.includes('數學')) colMap.math = idx;
+                        else if(text.includes('自然') || text.includes('理化')) colMap.sci = idx;
+                        else if(text.includes('社會')) colMap.soc = idx;
+                        else if(text.includes('歷史')) colMap.hist = idx;
+                        else if(text.includes('地理')) colMap.geo = idx;
+                        else if(text.includes('公民')) colMap.civics = idx;
+                        else if(text.includes('平均')) colMap.avg = idx;
+                        else if(text.includes('PR') || text.includes('校排')) colMap.pr = idx;
+                    });
+
+                    // 備案：如果都找不到名字，照舊順序排 (但不包含歷史地理公民)
+                    if(colMap.seat === -1) colMap = { seat: 0, chi: 1, eng: 2, math: 3, sci: 4, soc: 5, avg: 6, pr: 7, hist: -1, geo: -1, civics: -1 };
+
+                    let successCount = 0; 
+                    
+                    for(let r = 1; r < json.length; r++) { 
+                        const row = json[r]; if(!row || row.length === 0) continue; 
+                        let seatNum = parseInt(row[colMap.seat]); if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue; 
+                        
+                        ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => {
+                            if(colMap[sub] !== -1 && row[colMap[sub]] !== undefined) {
+                                const el = document.getElementById(`score-${sub}-${seatNum}`);
+                                if(el) el.value = row[colMap[sub]];
+                            }
+                        });
+                        successCount++; 
+                    } 
+                    if(successCount > 0) alert(`✅ 成功智慧匯入 ${successCount} 筆成績資料！`); 
+                    else alert('⚠️ 匯入失敗，請檢查資料格式。'); 
+                } catch(error) { alert('錯誤: ' + error); } 
+                finally { document.getElementById('excel-file-input').value = ''; } 
+            }; 
+            reader.readAsArrayBuffer(file); 
+        }
+
+        // 🌟 算繪歷史紀錄下拉選單
+        function renderExamHistorySelect() {
+            const select = document.getElementById('history-exam-select');
+            const currentVal = select.value; // 記住目前的選擇
+            let html = '<option value="">➕ --- 建立全新測驗 --- (預設)</option>';
+            if (allExamsData && allExamsData.exam_list) {
+                // 照時間排序 (新的在最上面)
+                let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
+                sortedExams.forEach(exam => {
+                    html += `<option value="${exam.id}">[${exam.grade}${exam.semester}] ${exam.name}</option>`;
+                });
+            }
+            select.innerHTML = html;
+            if([...select.options].some(o => o.value === currentVal)) select.value = currentVal;
+        }
+
+        // 🌟 載入歷史成績到表格中
+        function loadExamData() {
+            const selectVal = document.getElementById('history-exam-select').value;
+            const btnDelete = document.getElementById('btn-delete-exam');
+            const btnSave = document.getElementById('btn-save-scores');
+
+            // 選擇了「建立全新測驗」
+            if (!selectVal) {
+                currentEditingExamId = null;
+                btnDelete.classList.add('hidden');
+                btnSave.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布';
+                
+                // 清空表格與設定
+                for(let i=1; i<=24; i++) {
+                    ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
+                        const el = document.getElementById(`score-${sub}-${i}`);
+                        if(el) el.value = '';
+                    });
+                }
+                document.getElementById('new-exam-custom').value = '';
+                alert("表格已清空，可開始輸入新測驗成績。");
+                return;
+            }
+
+            // 載入舊有測驗
+            currentEditingExamId = selectVal;
+            const examInfo = allExamsData.exam_list.find(e => e.id === selectVal);
+            const examRecords = allExamsData.records[selectVal] ? allExamsData.records[selectVal].students : {};
+
+            if(examInfo) {
+                document.getElementById('new-exam-grade').value = examInfo.grade;
+                document.getElementById('new-exam-semester').value = examInfo.semester;
+                document.getElementById('new-exam-type').value = examInfo.category;
+                if(examInfo.category === '其他') {
+                    document.getElementById('new-exam-custom').classList.remove('hidden');
+                    document.getElementById('new-exam-custom').value = examInfo.name;
+                } else {
+                    document.getElementById('new-exam-custom').classList.add('hidden');
+                }
+            }
+
+            // 填入成績
+            for(let i=1; i<=24; i++) {
+                let stuScore = examRecords[i] || {};
+                ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
+                    const el = document.getElementById(`score-${sub}-${i}`);
+                    if(el) el.value = stuScore[sub] !== undefined ? stuScore[sub] : '';
+                });
+            }
+
+            btnDelete.classList.remove('hidden');
+            btnSave.innerHTML = '<i class="fas fa-save mr-2"></i> 覆蓋更新';
+            alert(`已載入「${examInfo.name}」的成績資料！\n您可以查看、修改，或重新匯入 Excel 後點擊「覆蓋更新」。`);
+        }
+
+        // 🌟 刪除當前編輯的歷史測驗
+        function deleteExamData() {
+            if(!currentEditingExamId) return;
+            if(!confirm("⚠️ 警告：確定要永久刪除此測驗所有成績嗎？刪除後家長將無法查詢，且無法復原。")) return;
+
+            const docRef = db.collection("class_settings").doc("scores");
+            db.runTransaction(transaction => {
+                return transaction.get(docRef).then(doc => {
+                    if(!doc.exists) return;
+                    let data = doc.data();
+                    let examList = data.exam_list || [];
+                    examList = examList.filter(e => e.id !== currentEditingExamId);
+
+                    let records = data.records || {};
+                    delete records[currentEditingExamId]; // 刪除整筆成績紀錄
+
+                    transaction.update(docRef, { exam_list: examList, records: records });
+                });
+            }).then(() => {
+                alert("✅ 已成功刪除該次測驗紀錄。");
+                document.getElementById('history-exam-select').value = ""; // 切回新增模式
+                loadExamData(); // 執行清空
+            }).catch(e => alert("刪除失敗: " + e));
+        }
+
+        // 🌟 儲存成績與班平均 (支援新增與更新)
+        function saveScoresToCloud() { 
+            const grade = document.getElementById('new-exam-grade').value;
+            const semester = document.getElementById('new-exam-semester').value;
+            const type = document.getElementById('new-exam-type').value;
+            let name = type === '其他' ? document.getElementById('new-exam-custom').value.trim() : type;
+            if(type === '其他' && !name) return alert('請輸入自訂測驗名稱！');
+
+            // 判斷是「更新舊測驗」還是「產生新測驗 ID」
+            const examId = currentEditingExamId || `exam_${Date.now()}`;
+            const examInfo = { id: examId, grade: grade, semester: semester, category: type, name: name, timestamp: Date.now() };
+
+            let scoreData = {}; 
+            let sums = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 };
+            let counts = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 };
+
+            for(let i=1; i<=24; i++) { 
+                let studentScore = {};
+                let hasData = false;
+                ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
+                    const val = document.getElementById(`score-${sub}-${i}`)?.value;
+                    if(val !== "" && val !== undefined) {
+                        let num = Number(val);
+                        studentScore[sub] = num;
+                        if(['chi','eng','math','sci','soc','hist','geo','civics'].includes(sub)) {
+                            sums[sub] += num; counts[sub]++;
+                        }
+                        hasData = true;
+                    }
+                }); 
+                if(hasData) scoreData[i] = studentScore;
+            }
+            if (Object.keys(scoreData).length === 0) return alert('表格內沒有任何成績資料！');
+
+            // 計算各科班平均
+            let classAverage = {};
+            ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => {
+                classAverage[sub] = (counts[sub] > 0) ? Math.round((sums[sub] / counts[sub]) * 10) / 10 : 0;
+            });
+
+            const docRef = db.collection("class_settings").doc("scores");
+            db.runTransaction(transaction => {
+                return transaction.get(docRef).then(doc => {
+                    let data = doc.exists ? doc.data() : {};
+                    let examList = data.exam_list || [];
+                    
+                    if (currentEditingExamId) {
+                        // 如果是更新，找出舊的標題資訊替換掉
+                        const index = examList.findIndex(e => e.id === currentEditingExamId);
+                        if(index > -1) {
+                            examInfo.timestamp = examList[index].timestamp; // 保留原始建立時間
+                            examList[index] = examInfo;
+                        } else {
+                            examList.push(examInfo);
+                        }
+                    } else {
+                        // 新增
+                        examList.push(examInfo);
+                    }
+                    
+                    let records = data.records || {};
+                    records[examId] = { class_average: classAverage, students: scoreData, updatedAt: new Date().toISOString() };
+                    
+                    transaction.set(docRef, { exam_list: examList, records: records }, { merge: true });
+                });
+            }).then(() => {
+                alert(`🎉 「${grade}${semester} | ${name}」成績已成功${currentEditingExamId ? '更新' : '儲存發布'}！`);
+                // 儲存後保持在該測驗的編輯狀態
+                if(!currentEditingExamId) {
+                    currentEditingExamId = examId;
+                    document.getElementById('history-exam-select').value = examId;
+                    document.getElementById('btn-delete-exam').classList.remove('hidden');
+                    document.getElementById('btn-save-scores').innerHTML = '<i class="fas fa-save mr-2"></i> 覆蓋更新';
+                }
+            }).catch(e => alert('上傳失敗: ' + e)); 
+        }
+
         function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
 
         function renderDashboardHW() {
