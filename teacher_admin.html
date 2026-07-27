@@ -630,39 +630,25 @@
                 <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm min-h-0">
                     <div class="w-full sm:w-1/3 bg-white border-b sm:border-b-0 sm:border-r border-brand-200 flex flex-col h-1/3 sm:h-full">
                         <div class="flex border-b border-brand-200 shrink-0">
-                            <button class="flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base"><i class="fas fa-user-friends mr-1 sm:mr-2 text-brand-400"></i>家長群</button>
-                            <button class="flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold"><i class="fas fa-user-graduate mr-1 sm:mr-2"></i>學生群</button>
+                            <button id="chat-tab-parent" onclick="switchChatRole('parent')" class="flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base"><i class="fas fa-user-friends mr-1 sm:mr-2 text-brand-400"></i>家長群</button>
+                            <button id="chat-tab-student" onclick="switchChatRole('student')" class="flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold"><i class="fas fa-user-graduate mr-1 sm:mr-2"></i>學生群</button>
                         </div>
-                        <div class="flex-1 overflow-y-auto custom-scrollbar">
-                            <div class="p-3 border-b border-brand-100 hover:bg-brand-50 cursor-pointer transition flex items-center space-x-3 bg-brand-50/50">
-                                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 border border-brand-200 flex items-center justify-center font-bold shrink-0">01</div>
-                                <div class="flex-1 min-w-0">
-                                    <div class="text-brand-800 font-bold text-sm truncate">01號 家長</div>
-                                    <div class="text-xs text-brand-500 font-medium truncate">老師，請問這週的作業...</div>
-                                </div>
-                            </div>
+                        <!-- 🌟 對話名單 (由 JS 動態產生) -->
+                        <div id="chat-user-list" class="flex-1 overflow-y-auto custom-scrollbar bg-brand-50/30">
                         </div>
                     </div>
                     
-                    <div class="flex-1 bg-brand-50 flex flex-col h-2/3 sm:h-full">
-                        <div class="p-3 sm:p-4 border-b border-brand-200 bg-white flex justify-between items-center shrink-0">
-                            <div class="font-bold text-brand-800 flex items-center"><i class="fas fa-user-circle text-brand-400 mr-2 text-xl"></i> 01號 同學家長</div>
+                    <div class="flex-1 bg-brand-50 flex flex-col h-2/3 sm:h-full relative">
+                        <div class="p-3 sm:p-4 border-b border-brand-200 bg-white flex justify-between items-center shrink-0 shadow-sm z-10">
+                            <div id="chat-title" class="font-bold text-brand-800 flex items-center text-lg"><i class="fas fa-user-circle text-brand-400 mr-2 text-2xl"></i> 01號 同學家長</div>
                         </div>
-                        <div class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar bg-brand-50/50">
-                            <div class="flex justify-start">
-                                <div class="bg-white border border-brand-200 text-brand-800 font-medium px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
-                                    老師您好，01號昨天因為感冒所以國文作業沒有寫完，想請問今天可以補交嗎？
-                                </div>
-                            </div>
-                            <div class="flex justify-end">
-                                <div class="bg-brand-500 text-white font-medium px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
-                                    沒問題的！我會在系統上先註記，請他明天帶來給小老師檢查就可以了。
-                                </div>
-                            </div>
+                        <!-- 🌟 對話泡泡區域 -->
+                        <div id="chat-messages-container" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar bg-brand-50/50">
+                            <!-- 對話會動態載入到這裡 -->
                         </div>
                         <div class="p-3 sm:p-4 bg-white border-t border-brand-200 flex space-x-2 sm:space-x-3 items-center shrink-0">
-                            <input type="text" placeholder="輸入訊息回覆給家長..." class="flex-1 bg-brand-50 text-brand-800 font-medium px-4 py-2.5 sm:py-3 rounded-full border border-brand-200 focus:outline-none focus:border-brand-400 text-sm sm:text-base">
-                            <button class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition shadow-md shrink-0"><i class="fas fa-paper-plane"></i></button>
+                            <input type="text" id="chat-input" placeholder="輸入訊息回覆..." class="flex-1 bg-brand-50 text-brand-800 font-medium px-4 py-2.5 sm:py-3 rounded-full border border-brand-200 focus:outline-none focus:border-brand-400 text-sm sm:text-base" onkeypress="if(event.key === 'Enter') sendDirectMessage()">
+                            <button id="chat-send-btn" onclick="sendDirectMessage()" class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition shadow-md shrink-0"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
                 </div>
@@ -748,21 +734,43 @@
             else { overlay.classList.remove('hidden'); setTimeout(() => overlay.style.opacity = '1', 10); }
         });
 
-        function handleLogin() {
-            const email = document.getElementById('login-email').value; const pwd = document.getElementById('login-pwd').value; const errEl = document.getElementById('login-error');
-            if(!email || !pwd) { errEl.innerText = "請輸入 Email 與密碼"; errEl.classList.remove('hidden'); return; }
-            auth.signInWithEmailAndPassword(email, pwd).then(() => errEl.classList.add('hidden')).catch(() => { errEl.innerText = "登入失敗：帳號或密碼錯誤"; errEl.classList.remove('hidden'); });
-        }
-        function handleLogout() { auth.signOut().then(() => { alert("已安全登出！"); window.location.reload(); }).catch(e => alert("登出發生錯誤：" + e.message)); }
-
         const todayStr = new Date().toISOString().split('T')[0];
         let globalHWMap = {}; let globalStudentsData = null; let bindingsData = null; let lineParentsData = null; let lineStudentsData = null; let globalApprovedLeaves = [];
         
-        let allExamsData = null; let currentEditingExamId = null; let analysisExamId = null; let currentAnalysisTab = 'overview'; let currentAnalysisSubject = 'chi'; let currentAnalysisSeat = '1';
+        let allExamsData = null; 
+        let currentEditingExamId = null; 
+        let analysisExamId = null;
+        let currentAnalysisTab = 'overview';
+        let currentAnalysisSubject = 'chi';
+        let currentAnalysisSeat = '1';
         const subjectMap = { 'chi': '國文', 'eng': '英文', 'math': '數學', 'sci': '自然', 'soc': '社會' };
         const analysisMainSubjects = ['chi', 'eng', 'math', 'sci', 'soc'];
         let charts = { classRadar: null, avgDist: null, subjBar: null, subjTrend: null, subjPie: null, stuRadar: null, stuTrend: null };
 
+        // 🌟 GAS 網址設定
+        const PARENT_GAS_URL = "https://script.google.com/macros/s/AKfycbyJc_3BVpgIg0fhHYXDmdI-aIfzDKdLVZ19D35w4Kr6mCvaiPDzSPuLc4NcN-L6plR3KA/exec"; 
+        const STUDENT_GAS_URL = "https://script.google.com/macros/s/AKfycbzNEfq2yD9Z88GFQGn7bv7-J2-FviQZ2You3UtYYRyVzNjl4Il3wscM9bBkNDqVL7Fmnw/exec";
+
+        // 🌟 修復錯誤：新增缺少的 getMergedSocietyScore 函數
+        function getMergedSocietyScore(data) {
+            if (!data) return 0;
+            let sum = 0;
+            let count = 0;
+            
+            if (data.hist !== undefined && data.hist !== "") { sum += Number(data.hist); count++; }
+            if (data.geo !== undefined && data.geo !== "") { sum += Number(data.geo); count++; }
+            if (data.civics !== undefined && data.civics !== "") { sum += Number(data.civics); count++; }
+            
+            // 如果有歷史、地理、公民的分數，就計算這三科的平均作為社會科分數
+            if (count > 0) {
+                return Math.round((sum / count) * 10) / 10;
+            }
+            
+            // 如果沒有分科分數，則退回尋找原始的 'soc' 社會科欄位
+            return data.soc !== undefined && data.soc !== "" ? Number(data.soc) : 0;
+        }
+
+        // DOM 載入後初始化表格與選單
         window.addEventListener('DOMContentLoaded', () => {
             const tbody = document.getElementById('score-table-body'); 
             let html = '';
@@ -783,10 +791,24 @@
             }
             tbody.innerHTML = html;
 
+            // 初始化分析報表的動態選單與預設圖表樣式
             initAnalysisStudentSelector();
             initAnalysisSubjectButtons();
-            if(window.Chart) { Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif"; Chart.defaults.color = '#805d46'; }
+            if(window.Chart) {
+                Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+                Chart.defaults.color = '#805d46';
+            }
+            
+            // 初始化對話紀錄版面
+            initChat();
         });
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value; const pwd = document.getElementById('login-pwd').value; const errEl = document.getElementById('login-error');
+            if(!email || !pwd) { errEl.innerText = "請輸入 Email 與密碼"; errEl.classList.remove('hidden'); return; }
+            auth.signInWithEmailAndPassword(email, pwd).then(() => errEl.classList.add('hidden')).catch(() => { errEl.innerText = "登入失敗：帳號或密碼錯誤"; errEl.classList.remove('hidden'); });
+        }
+        function handleLogout() { auth.signOut().then(() => { alert("已安全登出！"); window.location.reload(); }).catch(e => alert("登出發生錯誤：" + e.message)); }
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function openBatchImportModal() { document.getElementById('batch-import-data').value = ''; document.getElementById('modal-batch-import').classList.remove('hidden'); }
@@ -804,10 +826,23 @@
             tbody.innerHTML = html;
         }
 
+        // 🌟 處理 Firestore 權限錯誤的共用函式
+        function handleFirestoreError(err) {
+            console.error("Firestore 同步錯誤:", err);
+            if (err.code === 'permission-denied') {
+                alert("【資料庫權限不足】\n存取被拒絕。請確認您的「導師帳號」是否已經成功登入，且網路連線正常。");
+                const errStatus = document.getElementById('db-status');
+                if(errStatus) {
+                    errStatus.className = "w-full sm:w-auto text-morandi-pink font-bold text-sm bg-red-50 px-4 py-2.5 rounded-xl border border-red-200 shadow-sm flex items-center justify-center sm:justify-start";
+                    errStatus.innerHTML = '<i class="fas fa-exclamation-triangle mr-2"></i> 權限遭拒';
+                }
+            }
+        }
+
         function initDataListeners() {
-            db.collection("class_settings").doc("bindings").onSnapshot((doc) => { bindingsData = doc.exists ? doc.data().studentBindings : null; renderBindingTable(); });
-            db.collection("class_settings").doc("line_parents").onSnapshot((doc) => { lineParentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
-            db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
+            db.collection("class_settings").doc("bindings").onSnapshot((doc) => { bindingsData = doc.exists ? doc.data().studentBindings : null; renderBindingTable(); }, handleFirestoreError);
+            db.collection("class_settings").doc("line_parents").onSnapshot((doc) => { lineParentsData = doc.exists ? doc.data() : null; renderBindingTable(); }, handleFirestoreError);
+            db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); }, handleFirestoreError);
 
             db.collection("class_settings").doc("scores").onSnapshot((doc) => {
                 if (doc.exists) {
@@ -816,7 +851,7 @@
                     updateAnalysisExamSelector(); 
                     if(document.getElementById('tab-score-analysis').classList.contains('active')) { renderCurrentAnalysisTab(); }
                 }
-            });
+            }, handleFirestoreError);
 
             db.collection("board_settings").doc("current").onSnapshot((doc) => {
                 markConnected();
@@ -856,7 +891,7 @@
                         calculateWeeklyReport();
                     }
                 }
-            });
+            }, handleFirestoreError);
 
             db.collection("audit_logs").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
                 const container = document.getElementById('audit-log-container');
@@ -870,7 +905,7 @@
                     html += `<div class="flex items-start space-x-2 border-b border-brand-100 pb-2"><span class="text-brand-400 whitespace-nowrap text-xs sm:text-sm mt-0.5">${timeStr}</span><span class="${roleColor} whitespace-nowrap font-bold">[${log.role}]</span><span class="text-brand-800 flex-1 leading-snug font-medium">${log.action}</span></div>`;
                 });
                 container.innerHTML = html;
-            });
+            }, handleFirestoreError);
 
             db.collection("leave_requests").onSnapshot((snapshot) => {
                 const pendingContainer = document.getElementById('leave-requests-container');
@@ -915,7 +950,7 @@
                 }
                 if(approvedContainer) approvedContainer.innerHTML = a_html;
                 if(!document.getElementById('modal-manage-leaves').classList.contains('hidden')) renderManageLeavesList();
-            });
+            }, handleFirestoreError);
         } 
 
         function unbindParent(seat) { let sId = String(seat).padStart(2,'0'); if(!confirm(`確定解除 ${sId} 號家長的 LINE 綁定嗎？`)) return; db.collection("class_settings").doc("line_parents").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() }).then(() => alert(`✅ 成功解除！`)).catch(e => { if(e.code === 'not-found') db.collection("class_settings").doc("line_parents").set({}).then(() => alert(`✅ 成功解除！`)); else alert("失敗: " + e.message); }); }
@@ -941,151 +976,6 @@
         function setMarqueePreset(text) { document.getElementById('marquee-input').value = text; }
         function sendMarquee() { const val = document.getElementById('marquee-input').value; if(!val) return alert('請輸入廣播內容！'); db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => { const msg = document.getElementById('marquee-success'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000); }).catch(err => alert('失敗: ' + err.message)); }
         function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
-
-        // ==========================================
-        // 🌟 核心修復：跨 5 天結算演算法 (每週報表)
-        // ==========================================
-        async function calculateWeeklyReport() {
-            const tbody = document.getElementById('weekly-table-body');
-            const honorContainer = document.getElementById('honor-list-container');
-            if(!tbody || !honorContainer) return;
-            
-            // 顯示載入動畫
-            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-brand-400 font-bold text-center"><i class="fas fa-spinner fa-spin mr-2"></i>正在從資料庫抓取本週 5 天的紀錄，請稍候...</td></tr>';
-            honorContainer.innerHTML = '<span class="text-brand-400 text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i>計算中...</span>';
-
-            const today = new Date();
-            const dayOfWeek = today.getDay(); // 0 是週日, 1 是週一...
-            const monday = new Date(today);
-            monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-            
-            const weekDates = [];
-            for (let i = 0; i < 5; i++) {
-                const d = new Date(monday);
-                d.setDate(monday.getDate() + i);
-                const tzOffset = d.getTimezoneOffset() * 60000; 
-                const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, -1);
-                weekDates.push(localISOTime.split('T')[0]);
-            }
-
-            let aggregated = {};
-            for(let i=1; i<=24; i++) {
-                aggregated[i] = { lateCount: 0, missingCount: 0, cleanBad: 0, goalDays: 0, trackedDays: 0 };
-            }
-
-            try {
-                // 平行抓取週一到週五的五份點名表
-                const promises = weekDates.map(dateStr => db.collection('daily_records').doc(dateStr).get());
-                const docs = await Promise.all(promises);
-                
-                docs.forEach(doc => {
-                    if(doc.exists) {
-                        const sData = doc.data().studentsData;
-                        if(sData) {
-                            for(let seat=1; seat<=24; seat++) {
-                                let st = sData[seat];
-                                if(st) {
-                                    aggregated[seat].trackedDays++;
-                                    // 扣分條件 1：遲到或未到
-                                    if(st.attendance === '遲到' || st.attendance === '未到') aggregated[seat].lateCount++;
-                                    // 扣分條件 2：作業有缺交
-                                    if(st.missingHW && st.missingHW.length > 0) aggregated[seat].missingCount += st.missingHW.length;
-                                    // 扣分條件 3：常規或打掃待改進
-                                    if(st.clean === '待改進') aggregated[seat].cleanBad++;
-                                    if(st.discipline === '待改進') aggregated[seat].cleanBad++;
-                                    // 加分條件：目標達成
-                                    if(st.goal === '已經做到' || st.goal === '表現優良') aggregated[seat].goalDays++;
-                                }
-                            }
-                        }
-                    }
-                });
-
-                let html = '';
-                let honorList = [];
-                for(let i=1; i<=24; i++) {
-                    let lateCount = aggregated[i].lateCount;
-                    let missingCount = aggregated[i].missingCount;
-                    let cleanBad = aggregated[i].cleanBad;
-                    let goalDays = aggregated[i].goalDays;
-                    let trackedDays = aggregated[i].trackedDays;
-                    let rating = '';
-                    let ratingColor = '';
-
-                    if(trackedDays === 0) {
-                        rating = '無資料';
-                        ratingColor = 'text-brand-300';
-                    } else if(lateCount > 0 || missingCount > 0 || cleanBad > 0) {
-                        // 只要有任何一項大於 0 就不是優良
-                        rating = missingCount >= 2 ? '需留意作業' : '一般';
-                        ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500';
-                    } else {
-                        // 完美的 0 缺失
-                        rating = '<i class="fas fa-medal mr-1"></i> 表現優良';
-                        ratingColor = 'text-brand-600 font-bold';
-                        honorList.push(String(i).padStart(2,'0'));
-                    }
-
-                    html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
-                        <td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td>
-                        <td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td>
-                        <td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td>
-                        <td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="常規待改進">${cleanBad}</td>
-                        <td class="p-3 sm:text-center ${goalDays >= trackedDays && trackedDays > 0 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/${trackedDays || 5}</td>
-                        <td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td>
-                    </tr>`;
-                }
-
-                tbody.innerHTML = html;
-                
-                // 渲染榮譽榜預覽
-                if(honorList.length > 0) {
-                    honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join('');
-                } else {
-                    honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
-                }
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-morandi-pink font-bold text-center">載入失敗：${err.message}</td></tr>`;
-                honorContainer.innerHTML = '<span class="text-morandi-pink text-sm">讀取發生錯誤</span>';
-            }
-        }
-
-        // ==========================================
-        // 🌟 呼叫 GAS 推播 API 
-        // ==========================================
-        function triggerWeeklyReport(target) {
-            if(!confirm(`確定要結算本週榮譽榜，並發送 LINE 訊息給全班【${target === 'parent' ? '家長' : '學生'}】嗎？`)) return;
-            
-            const btnId = target === 'parent' ? 'btn-send-weekly-parent' : 'btn-send-weekly-student';
-            const btn = document.getElementById(btnId);
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 發送中...';
-            btn.disabled = true;
-
-            // ⚠️ 請在這裡分別貼上您「家長端」與「學生端」的 GAS 網址
-            const parentGasUrl = "https://script.google.com/macros/s/AKfycbyJc_3BVpgIg0fhHYXDmdI-aIfzDKdLVZ19D35w4Kr6mCvaiPDzSPuLc4NcN-L6plR3KA/exec"; 
-            const studentGasUrl = "https://script.google.com/macros/s/AKfycbzNEfq2yD9Z88GFQGn7bv7-J2-FviQZ2You3UtYYRyVzNjl4Il3wscM9bBkNDqVL7Fmnw/exec"; 
-            
-            const gasUrl = target === 'parent' ? parentGasUrl : studentGasUrl;
-            
-            fetch(gasUrl, {
-                method: 'POST',
-                body: JSON.stringify({ action: "sendWeeklyReport" })
-            })
-            .then(response => response.text())
-            .then(result => {
-                alert(result);
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            })
-            .catch(error => {
-                alert("連線發生錯誤：" + error);
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            });
-        }
 
         function handleSmartExcelUpload(e) { 
             const file = e.target.files[0]; if (!file) return; 
@@ -1391,6 +1281,271 @@
                 type: 'line',
                 data: { labels: tLabels, datasets: [{ label: '個人平均', data: tData, borderColor: '#805d46', backgroundColor: '#805d46', borderWidth: 3, pointRadius: 5, tension: 0.3 }] },
                 options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        // ==========================================
+        // 🌟 核心修復：跨 5 天結算演算法 (每週報表)
+        // ==========================================
+        async function calculateWeeklyReport() {
+            const tbody = document.getElementById('weekly-table-body');
+            const honorContainer = document.getElementById('honor-list-container');
+            if(!tbody || !honorContainer) return;
+            
+            // 顯示載入動畫
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-brand-400 font-bold text-center"><i class="fas fa-spinner fa-spin mr-2"></i>正在從資料庫抓取本週 5 天的紀錄，請稍候...</td></tr>';
+            honorContainer.innerHTML = '<span class="text-brand-400 text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i>計算中...</span>';
+
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 是週日, 1 是週一...
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            
+            const weekDates = [];
+            for (let i = 0; i < 5; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const tzOffset = d.getTimezoneOffset() * 60000; 
+                const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, -1);
+                weekDates.push(localISOTime.split('T')[0]);
+            }
+
+            let aggregated = {};
+            for(let i=1; i<=24; i++) {
+                aggregated[i] = { lateCount: 0, missingCount: 0, cleanBad: 0, goalDays: 0, trackedDays: 0 };
+            }
+
+            try {
+                // 平行抓取週一到週五的五份點名表
+                const promises = weekDates.map(dateStr => db.collection('daily_records').doc(dateStr).get());
+                const docs = await Promise.all(promises);
+                
+                docs.forEach(doc => {
+                    if(doc.exists) {
+                        const sData = doc.data().studentsData;
+                        if(sData) {
+                            for(let seat=1; seat<=24; seat++) {
+                                let st = sData[seat];
+                                if(st) {
+                                    aggregated[seat].trackedDays++;
+                                    // 扣分條件 1：遲到或未到
+                                    if(st.attendance === '遲到' || st.attendance === '未到') aggregated[seat].lateCount++;
+                                    // 扣分條件 2：作業有缺交
+                                    if(st.missingHW && st.missingHW.length > 0) aggregated[seat].missingCount += st.missingHW.length;
+                                    // 扣分條件 3：常規或打掃待改進
+                                    if(st.clean === '待改進') aggregated[seat].cleanBad++;
+                                    if(st.discipline === '待改進') aggregated[seat].cleanBad++;
+                                    // 加分條件：目標達成
+                                    if(st.goal === '已經做到' || st.goal === '表現優良') aggregated[seat].goalDays++;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                let html = '';
+                let honorList = [];
+                for(let i=1; i<=24; i++) {
+                    let lateCount = aggregated[i].lateCount;
+                    let missingCount = aggregated[i].missingCount;
+                    let cleanBad = aggregated[i].cleanBad;
+                    let goalDays = aggregated[i].goalDays;
+                    let trackedDays = aggregated[i].trackedDays;
+                    let rating = '';
+                    let ratingColor = '';
+
+                    if(trackedDays === 0) {
+                        rating = '無資料';
+                        ratingColor = 'text-brand-300';
+                    } else if(lateCount > 0 || missingCount > 0 || cleanBad > 0) {
+                        // 只要有任何一項大於 0 就不是優良
+                        rating = missingCount >= 2 ? '需留意作業' : '一般';
+                        ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500';
+                    } else {
+                        // 完美的 0 缺失
+                        rating = '<i class="fas fa-medal mr-1"></i> 表現優良';
+                        ratingColor = 'text-brand-600 font-bold';
+                        honorList.push(String(i).padStart(2,'0'));
+                    }
+
+                    html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
+                        <td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td>
+                        <td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td>
+                        <td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td>
+                        <td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="常規待改進">${cleanBad}</td>
+                        <td class="p-3 sm:text-center ${goalDays >= trackedDays && trackedDays > 0 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/${trackedDays || 5}</td>
+                        <td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td>
+                    </tr>`;
+                }
+
+                tbody.innerHTML = html;
+                
+                // 渲染榮譽榜預覽
+                if(honorList.length > 0) {
+                    honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join('');
+                } else {
+                    honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
+                }
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-morandi-pink font-bold text-center">載入失敗：${err.message}</td></tr>`;
+                honorContainer.innerHTML = '<span class="text-morandi-pink text-sm">讀取發生錯誤</span>';
+            }
+        }
+
+        // ==========================================
+        // 🌟 呼叫 GAS 推播 API 
+        // ==========================================
+        function triggerWeeklyReport(target) {
+            if(!confirm(`確定要結算本週榮譽榜，並發送 LINE 訊息給全班【${target === 'parent' ? '家長' : '學生'}】嗎？`)) return;
+            
+            const btnId = target === 'parent' ? 'btn-send-weekly-parent' : 'btn-send-weekly-student';
+            const btn = document.getElementById(btnId);
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 發送中...';
+            btn.disabled = true;
+
+            const gasUrl = target === 'parent' ? PARENT_GAS_URL : STUDENT_GAS_URL;
+            
+            fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: "sendWeeklyReport" })
+            })
+            .then(response => response.text())
+            .then(result => {
+                alert(result);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            })
+            .catch(error => {
+                alert("連線發生錯誤：" + error);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            });
+        }
+
+        // ==========================================
+        // 🌟 LINE@ 溝通紀錄專用功能
+        // ==========================================
+        let currentChatRole = 'parent';
+        let currentChatSeat = 1;
+        let chatUnsubscribe = null;
+
+        function initChat() {
+            renderChatList();
+            loadChatMessages();
+        }
+
+        function switchChatRole(role) {
+            currentChatRole = role;
+            document.getElementById('chat-tab-parent').className = role === 'parent' ? "flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base" : "flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold";
+            document.getElementById('chat-tab-student').className = role === 'student' ? "flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base" : "flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold";
+            currentChatSeat = 1; 
+            renderChatList();
+            loadChatMessages();
+        }
+
+        function selectChatSeat(seat) {
+            currentChatSeat = seat;
+            renderChatList();
+            loadChatMessages();
+        }
+
+        function renderChatList() {
+            let html = '';
+            for(let i=1; i<=24; i++) {
+                let isActive = (i === currentChatSeat);
+                let bgClass = isActive ? "bg-brand-100 border-l-4 border-brand-500 shadow-sm" : "bg-white hover:bg-brand-50 border-b border-brand-100";
+                html += `
+                <div onclick="selectChatSeat(${i})" class="p-3 cursor-pointer transition flex items-center space-x-3 ${bgClass}">
+                    <div class="w-10 h-10 rounded-xl bg-brand-200 text-brand-800 flex items-center justify-center font-bold shadow-inner shrink-0">${String(i).padStart(2,'0')}</div>
+                    <div class="flex-1 min-w-0">
+                        <div class="text-brand-800 font-bold text-sm truncate">${String(i).padStart(2,'0')}號 ${currentChatRole === 'parent' ? '家長' : '學生'}</div>
+                    </div>
+                </div>`;
+            }
+            document.getElementById('chat-user-list').innerHTML = html;
+            document.getElementById('chat-title').innerHTML = `<i class="fas fa-user-circle text-brand-400 mr-2 text-xl"></i> ${String(currentChatSeat).padStart(2,'0')}號 ${currentChatRole === 'parent' ? '同學家長' : '同學'}`;
+        }
+
+        function loadChatMessages() {
+            if(chatUnsubscribe) chatUnsubscribe();
+            const chatId = `${currentChatRole}_${currentChatSeat}`;
+            
+            chatUnsubscribe = db.collection("line_messages")
+                .where("chatId", "==", chatId)
+                .orderBy("timestamp", "asc")
+                .onSnapshot(snapshot => {
+                    const container = document.getElementById('chat-messages-container');
+                    if(snapshot.empty) {
+                        container.innerHTML = '<div class="text-center text-brand-400 font-bold mt-20"><i class="fas fa-comment-slash text-4xl mb-3 block text-brand-300"></i>目前尚無對話紀錄。</div>';
+                        return;
+                    }
+                    let html = '';
+                    snapshot.forEach(doc => {
+                        let data = doc.data();
+                        let timeStr = new Date(parseInt(data.timestamp)).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'});
+                        
+                        if(data.sender === 'user') { // 家長或學生傳來的
+                            html += `
+                            <div class="flex justify-start">
+                                <div class="bg-white border border-brand-200 text-brand-800 font-medium px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
+                                    ${data.text}
+                                    <div class="text-[10px] text-brand-400 mt-1.5 text-right font-bold">${timeStr}</div>
+                                </div>
+                            </div>`;
+                        } else { // 老師傳出去的
+                            html += `
+                            <div class="flex justify-end">
+                                <div class="bg-brand-500 text-white font-medium px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-md">
+                                    ${data.text}
+                                    <div class="text-[10px] text-brand-200 mt-1.5 text-right font-bold">${timeStr}</div>
+                                </div>
+                            </div>`;
+                        }
+                    });
+                    container.innerHTML = html;
+                    // 自動捲動到最底下
+                    setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
+                }, handleFirestoreError);
+        }
+
+        function sendDirectMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if(!text) return;
+            
+            input.value = '';
+            const btn = document.getElementById('chat-send-btn');
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            const gasUrl = currentChatRole === 'parent' ? PARENT_GAS_URL : STUDENT_GAS_URL;
+                
+            fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: "sendDirectMessage", seat: currentChatSeat, text: text })
+            })
+            .then(res => res.text())
+            .then(resText => {
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                btn.disabled = false;
+                if(resText.startsWith("Error") || resText.startsWith("❌")) { alert("發送失敗: " + resText); } 
+                else {
+                    // 同步存入資料庫顯示在畫面上
+                    db.collection("line_messages").add({
+                        chatId: `${currentChatRole}_${currentChatSeat}`,
+                        sender: 'teacher',
+                        text: text,
+                        timestamp: Date.now()
+                    });
+                }
+            })
+            .catch(err => {
+                alert("連線異常: " + err);
+                btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
+                btn.disabled = false;
             });
         }
     </script>
