@@ -11,6 +11,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- 加入 Chart.js 繪圖套件 -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
         // 設定 Tailwind 自訂主題色 (米棕色系與莫蘭迪粉)
@@ -128,6 +131,10 @@
             <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
                 <i class="fas fa-file-excel w-5 text-brand-500"></i><span>LINE@ 成績系統</span>
             </button>
+            <!-- 🌟 新增成績分析報表選單 -->
+            <button onclick="switchTab('score-analysis')" id="nav-score-analysis" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-chart-bar w-5 text-brand-500"></i><span>成績分析報表</span>
+            </button>
             <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
                 <i class="fas fa-calendar-check w-5 text-brand-500"></i><span>每週結算推播</span>
             </button>
@@ -148,7 +155,6 @@
 
     <main class="flex-1 h-full overflow-y-auto bg-brand-50 p-4 pt-20 md:pt-8 md:p-8">
         
-        <!-- ==================== 1. 今日班級總覽 ==================== -->
         <section id="tab-dashboard" class="tab-content active space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
@@ -213,7 +219,6 @@
             </div>
         </section>
 
-        <!-- ==================== 2. 大屏廣播遙控 ==================== -->
         <section id="tab-broadcast" class="tab-content space-y-6">
             <div>
                 <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">大屏廣播遙控器</h2>
@@ -245,7 +250,6 @@
             </div>
         </section>
 
-        <!-- ==================== 3. LINE@ 帳號綁定管理 ==================== -->
         <section id="tab-binding" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
@@ -282,7 +286,6 @@
             </div>
         </section>
 
-        <!-- ==================== 4. 幹部權限管理 ==================== -->
         <section id="tab-cadre" class="tab-content space-y-6">
             <div>
                 <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">幹部密碼管理</h2>
@@ -335,7 +338,6 @@
             </div>
         </section>
 
-        <!-- ==================== 5. LINE@ 成績系統 ==================== -->
         <section id="tab-scores" class="tab-content space-y-6">
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
                 <div>
@@ -353,7 +355,7 @@
                 </div>
             </div>
 
-            <!-- 🌟 歷史測驗管理面板 (新增區塊) -->
+            <!-- 歷史測驗管理面板 -->
             <div class="glass-panel p-4 rounded-xl border-l-4 border-l-brand-600 flex flex-wrap items-center gap-3">
                 <span class="font-bold text-brand-700 mr-2"><i class="fas fa-history mr-1"></i> 歷史紀錄管理：</span>
                 <select id="history-exam-select" class="bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 flex-1 min-w-[200px]">
@@ -363,7 +365,7 @@
                 <button onclick="deleteExamData()" id="btn-delete-exam" class="hidden bg-red-50 hover:bg-red-100 text-morandi-pink px-4 py-2.5 rounded-lg text-sm font-bold transition shadow-sm border border-red-200"><i class="fas fa-trash-alt mr-1"></i> 刪除此測驗</button>
             </div>
 
-            <!-- 🌟 全新測驗設定面板 -->
+            <!-- 全新測驗設定面板 -->
             <div class="glass-panel p-4 rounded-xl border-l-4 border-l-brand-400 flex flex-wrap items-center gap-3">
                 <span class="font-bold text-brand-700 mr-2"><i class="fas fa-cog mr-1"></i> 本次測驗設定：</span>
                 <select id="new-exam-grade" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2">
@@ -407,7 +409,7 @@
                             <th class="p-4 font-bold">數學</th>
                             <th class="p-4 font-bold">自然</th>
                             <th class="p-4 font-bold">社會</th>
-                            <!-- 🌟 新增歷史、地理、公民獨立欄位 -->
+                            <!-- 新增歷史、地理、公民獨立欄位 -->
                             <th class="p-4 font-bold text-brand-600 bg-brand-50">歷史</th>
                             <th class="p-4 font-bold text-brand-600 bg-brand-50">地理</th>
                             <th class="p-4 font-bold text-brand-600 bg-brand-50">公民</th>
@@ -421,7 +423,168 @@
             </div>
         </section>
 
-        <!-- ==================== 6. 每週結算與推播 ==================== -->
+        <section id="tab-score-analysis" class="tab-content space-y-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-chart-pie mr-2 text-brand-500"></i>成績分析報表</h2>
+                    <p class="text-brand-500 text-sm sm:text-base font-medium">班級總覽、各科表現與個別學生追蹤。</p>
+                </div>
+                <!-- 報表子頁籤切換 -->
+                <div class="flex space-x-2 bg-brand-100 p-1.5 rounded-xl w-full sm:w-auto overflow-x-auto custom-scrollbar">
+                    <button onclick="switchAnalysisTab('overview')" id="analysis-tab-overview" class="analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition bg-white text-brand-800 shadow-sm flex-shrink-0"><i class="fas fa-layer-group mr-1.5 text-brand-500"></i>單次總覽</button>
+                    <button onclick="switchAnalysisTab('subject')" id="analysis-tab-subject" class="analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition text-brand-600 hover:bg-white/50 flex-shrink-0"><i class="fas fa-book-open mr-1.5 text-brand-500"></i>各科表現</button>
+                    <button onclick="switchAnalysisTab('student')" id="analysis-tab-student" class="analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition text-brand-600 hover:bg-white/50 flex-shrink-0"><i class="fas fa-user-graduate mr-1.5 text-brand-500"></i>個別學生</button>
+                </div>
+            </div>
+
+            <!-- 全局考試選擇器 -->
+            <div class="glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center gap-4">
+                <label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-filter mr-2 text-brand-500"></i>分析資料來源：</label>
+                <select id="analysis-exam-selector" onchange="handleAnalysisExamChange(this.value)" class="flex-1 w-full bg-brand-50 text-brand-800 px-4 py-2.5 rounded-lg border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm">
+                    <option value="">讀取中...</option>
+                </select>
+            </div>
+
+            <!-- 分析視圖容器 -->
+            <div class="relative min-h-[500px]">
+                
+                <!-- A. 單次總覽 -->
+                <div id="view-overview" class="analysis-content space-y-6">
+                    <!-- 指標卡片 -->
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">班級總平均</span>
+                            <span class="text-2xl font-black text-brand-800" id="overview-avg">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">班級最高平均</span>
+                            <span class="text-2xl font-black text-brand-800" id="overview-max">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">總平均及格率</span>
+                            <span class="text-2xl font-black text-brand-800" id="overview-pass-rate">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink">
+                            <span class="text-xs text-brand-500 font-bold mb-1">需關懷人數</span>
+                            <span class="text-2xl font-black text-morandi-pink" id="overview-fail-count">--</span>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-bullseye mr-2 text-brand-500"></i>班級五育平均</h3>
+                            <div class="w-full aspect-square max-h-[250px] mx-auto relative"><canvas id="classRadarChart"></canvas></div>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-chart-bar mr-2 text-brand-500"></i>平均分數區間分佈</h3>
+                            <div class="w-full h-[250px] relative"><canvas id="avgDistributionChart"></canvas></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-trophy mr-2 text-yellow-500"></i>總平均優異表現 (Top 5)</h3>
+                            <ul id="overview-top-list" class="space-y-1"></ul>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-morandi-pink">
+                            <h3 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-hand-holding-heart mr-2 text-morandi-pink"></i>需關懷名單 (平均不及格)</h3>
+                            <ul id="overview-bottom-list" class="space-y-1"></ul>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- B. 各科表現 -->
+                <div id="view-subject" class="analysis-content hidden space-y-6">
+                    <div class="flex gap-2 mb-2 overflow-x-auto custom-scrollbar pb-2" id="subject-buttons">
+                        <!-- 由 JS 產生 -->
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">該科班平均</span>
+                            <span class="text-2xl font-black text-brand-800" id="subj-avg">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">該科最高分</span>
+                            <span class="text-2xl font-black text-brand-800" id="subj-max">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">該科及格率</span>
+                            <span class="text-2xl font-black text-brand-800" id="subj-pass-rate">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink">
+                            <span class="text-xs text-brand-500 font-bold mb-1">不及格人數</span>
+                            <span class="text-2xl font-black text-morandi-pink" id="subj-fail-count">--</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl lg:col-span-1 flex flex-col">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">級距比例</h3>
+                            <div class="w-full aspect-square max-h-[200px] mx-auto relative flex-1"><canvas id="subjectPieChart"></canvas></div>
+                        </div>
+                        
+                        <div class="glass-panel p-5 rounded-2xl lg:col-span-2 border-l-4 border-l-brand-400">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2 flex justify-between items-center">
+                                <span><i class="fas fa-exchange-alt mr-2 text-brand-500"></i>與前次測驗比較</span>
+                            </h3>
+                            <div class="grid grid-cols-2 gap-6 h-full">
+                                <div>
+                                    <h4 class="text-sm font-bold text-emerald-600 mb-2"><i class="fas fa-arrow-up mr-1"></i>進步最多前三名</h4>
+                                    <div id="subj-improved-list" class="space-y-1"></div>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-morandi-pink mb-2"><i class="fas fa-arrow-down mr-1"></i>退步最多需關心</h4>
+                                    <div id="subj-regressed-list" class="space-y-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 id="subject-dist-title" class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">單科分數分佈</h3>
+                            <div class="w-full h-[250px] relative"><canvas id="subjectBarChart"></canvas></div>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">該科歷次班級平均走勢</h3>
+                            <div class="w-full h-[250px] relative"><canvas id="subjectTrendChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- C. 個別學生 -->
+                <div id="view-student" class="analysis-content hidden space-y-6">
+                    <div class="glass-panel p-4 rounded-xl flex items-center gap-4 bg-brand-100/50">
+                        <label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-user mr-2 text-brand-500"></i>切換學生座號：</label>
+                        <select id="analysis-student-selector" onchange="handleAnalysisStudentChange()" class="w-40 bg-white text-brand-800 px-4 py-2 rounded-lg border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm shadow-sm">
+                            <!-- 由 JS 產生 1~24 號 -->
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-1 glass-panel p-5 rounded-2xl flex flex-col">
+                            <h3 class="text-md font-bold text-brand-800 mb-2 border-b border-brand-100 pb-2">個人表現雷達圖</h3>
+                            <div class="w-full aspect-square max-h-[250px] mx-auto relative mb-4">
+                                <canvas id="studentRadarChart"></canvas>
+                            </div>
+                            <div class="mt-auto grid grid-cols-2 gap-2" id="student-mini-scores">
+                                <!-- JS 產生 -->
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">個人歷次總平均走勢</h3>
+                            <div class="w-full h-[300px] sm:h-[400px] relative">
+                                <canvas id="studentTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </section>
+
         <section id="tab-weekly" class="tab-content space-y-6">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
                 <div>
@@ -454,7 +617,6 @@
             </div>
         </section>
 
-        <!-- ==================== 7. LINE@ 溝通紀錄 ==================== -->
         <section id="tab-chat" class="tab-content h-[calc(100vh-100px)]">
             <div class="flex flex-col h-full space-y-4">
                 <div class="mb-2 shrink-0">
@@ -563,6 +725,11 @@
                 if(sidebar) sidebar.classList.add('-translate-x-full');
                 if(overlay) overlay.classList.add('hidden');
             }
+
+            // 如果切換到分析報表，重新渲染以防視窗大小改變導致圖表破版
+            if(tabId === 'score-analysis' && allExamsData) {
+                renderCurrentAnalysisTab();
+            }
         }
 
         const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645", storageBucket: "smart-class-system-a1645.firebasestorage.app", messagingSenderId: "236576763126", appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7" };
@@ -583,11 +750,22 @@
 
         const todayStr = new Date().toISOString().split('T')[0];
         let globalHWMap = {}; let globalStudentsData = null; let bindingsData = null; let lineParentsData = null; let lineStudentsData = null; let globalApprovedLeaves = [];
-        let allExamsData = null; let currentEditingExamId = null; // 🌟 儲存歷史紀錄與當前編輯狀態
+        
+        // 成績資料與分析相關變數
+        let allExamsData = null; 
+        let currentEditingExamId = null; 
+        let analysisExamId = null;
+        let currentAnalysisTab = 'overview';
+        let currentAnalysisSubject = 'chi';
+        let currentAnalysisSeat = '1';
+        const subjectMap = { 'chi': '國文', 'eng': '英文', 'math': '數學', 'sci': '自然', 'soc': '社會' };
+        const analysisMainSubjects = ['chi', 'eng', 'math', 'sci', 'soc'];
+        let charts = { classRadar: null, avgDist: null, subjBar: null, subjTrend: null, subjPie: null, stuRadar: null, stuTrend: null };
 
-        // 🌟 這裡更新了成績表格，加入了歷史、地理、公民的輸入框
+        // DOM 載入後初始化表格與選單
         window.addEventListener('DOMContentLoaded', () => {
-            const tbody = document.getElementById('score-table-body'); let html = '';
+            const tbody = document.getElementById('score-table-body'); 
+            let html = '';
             for(let i=1; i<=24; i++) {
                 html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
                     <td class="p-3 font-bold text-brand-800 bg-brand-50 sticky left-0 z-10 border-r border-brand-200">${String(i).padStart(2,'0')}</td>
@@ -604,6 +782,14 @@
                 </tr>`;
             }
             tbody.innerHTML = html;
+
+            // 初始化分析報表的動態選單與預設圖表樣式
+            initAnalysisStudentSelector();
+            initAnalysisSubjectButtons();
+            if(window.Chart) {
+                Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif";
+                Chart.defaults.color = '#805d46';
+            }
         });
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
@@ -627,11 +813,15 @@
             db.collection("class_settings").doc("line_parents").onSnapshot((doc) => { lineParentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
             db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
 
-            // 🌟 監聽所有成績紀錄以產出歷史清單
+            // 監聽所有成績紀錄
             db.collection("class_settings").doc("scores").onSnapshot((doc) => {
                 if (doc.exists) {
                     allExamsData = doc.data();
                     renderExamHistorySelect();
+                    updateAnalysisExamSelector(); // 同步更新成績分析報表的選單
+                    if(document.getElementById('tab-score-analysis').classList.contains('active')) {
+                        renderCurrentAnalysisTab();
+                    }
                 }
             });
 
@@ -765,10 +955,7 @@
         function updateBinding(seat) { const val = document.getElementById(`bind-id-${seat}`).value.trim(); if(!val) return alert('請輸入密碼！'); db.collection("class_settings").doc("bindings").set({ studentBindings: { [seat]: { id6: val } } }, { merge: true }).then(() => alert(`${String(seat).padStart(2,'0')} 號設定成功！`)).catch(e => alert("錯誤: " + e)); }
         function approveLeave(docId, seatNo, type) { if(!confirm(`確定核准 ${seatNo} 號的 ${type} 申請？`)) return; db.collection('leave_requests').doc(docId).update({ status: 'approved' }).catch(e => alert('核准失敗: ' + e.message)); }
         
-        function openManageLeavesModal() {
-            document.getElementById('modal-manage-leaves').classList.remove('hidden');
-            renderManageLeavesList();
-        }
+        function openManageLeavesModal() { document.getElementById('modal-manage-leaves').classList.remove('hidden'); renderManageLeavesList(); }
 
         function renderManageLeavesList() {
             const container = document.getElementById('manage-leaves-list');
@@ -776,9 +963,7 @@
                 container.innerHTML = '<div class="text-brand-500 text-center py-8 font-bold">目前無已核准的紀錄。</div>';
                 return;
             }
-            
             globalApprovedLeaves.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
-            
             let html = '<div class="space-y-3">';
             globalApprovedLeaves.forEach(data => {
                 html += `
@@ -797,24 +982,12 @@
             container.innerHTML = html;
         }
 
-        function deleteLeaveRecord(docId) {
-            if(!confirm("確定要刪除這筆已核准的請假紀錄嗎？刪除後統計時數將會重新計算。")) return;
-            db.collection("leave_requests").doc(docId).delete().catch(e => alert("刪除失敗：" + e.message));
-        }
-
-        function clearAuditLogs() {
-            if(!confirm("確定要清空所有的幹部操作日誌嗎？此動作無法復原。")) return;
-            db.collection("audit_logs").get().then(snapshot => {
-                snapshot.docs.forEach(doc => {
-                    doc.ref.delete();
-                });
-            }).catch(e => alert("清空失敗：" + e.message));
-        }
-
+        function deleteLeaveRecord(docId) { if(!confirm("確定要刪除這筆已核准的請假紀錄嗎？刪除後統計時數將會重新計算。")) return; db.collection("leave_requests").doc(docId).delete().catch(e => alert("刪除失敗：" + e.message)); }
+        function clearAuditLogs() { if(!confirm("確定要清空所有的幹部操作日誌嗎？此動作無法復原。")) return; db.collection("audit_logs").get().then(snapshot => { snapshot.docs.forEach(doc => { doc.ref.delete(); }); }).catch(e => alert("清空失敗：" + e.message)); }
         function setMarqueePreset(text) { document.getElementById('marquee-input').value = text; }
         function sendMarquee() { const val = document.getElementById('marquee-input').value; if(!val) return alert('請輸入廣播內容！'); db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => { const msg = document.getElementById('marquee-success'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000); }).catch(err => alert('失敗: ' + err.message)); }
-        
-        // 🌟 智慧判斷 Excel 表頭，支援歷史、地理、公民
+        function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
+
         function handleSmartExcelUpload(e) { 
             const file = e.target.files[0]; if (!file) return; 
             const reader = new FileReader(); 
@@ -845,7 +1018,7 @@
                         else if(text.includes('PR') || text.includes('校排')) colMap.pr = idx;
                     });
 
-                    // 備案：如果都找不到名字，照舊順序排 (但不包含歷史地理公民)
+                    // 備案
                     if(colMap.seat === -1) colMap = { seat: 0, chi: 1, eng: 2, math: 3, sci: 4, soc: 5, avg: 6, pr: 7, hist: -1, geo: -1, civics: -1 };
 
                     let successCount = 0; 
@@ -870,13 +1043,11 @@
             reader.readAsArrayBuffer(file); 
         }
 
-        // 🌟 算繪歷史紀錄下拉選單
         function renderExamHistorySelect() {
             const select = document.getElementById('history-exam-select');
-            const currentVal = select.value; // 記住目前的選擇
+            const currentVal = select.value;
             let html = '<option value="">➕ --- 建立全新測驗 --- (預設)</option>';
             if (allExamsData && allExamsData.exam_list) {
-                // 照時間排序 (新的在最上面)
                 let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
                 sortedExams.forEach(exam => {
                     html += `<option value="${exam.id}">[${exam.grade}${exam.semester}] ${exam.name}</option>`;
@@ -886,19 +1057,16 @@
             if([...select.options].some(o => o.value === currentVal)) select.value = currentVal;
         }
 
-        // 🌟 載入歷史成績到表格中
         function loadExamData() {
             const selectVal = document.getElementById('history-exam-select').value;
             const btnDelete = document.getElementById('btn-delete-exam');
             const btnSave = document.getElementById('btn-save-scores');
 
-            // 選擇了「建立全新測驗」
             if (!selectVal) {
                 currentEditingExamId = null;
                 btnDelete.classList.add('hidden');
                 btnSave.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布';
                 
-                // 清空表格與設定
                 for(let i=1; i<=24; i++) {
                     ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
                         const el = document.getElementById(`score-${sub}-${i}`);
@@ -910,7 +1078,6 @@
                 return;
             }
 
-            // 載入舊有測驗
             currentEditingExamId = selectVal;
             const examInfo = allExamsData.exam_list.find(e => e.id === selectVal);
             const examRecords = allExamsData.records[selectVal] ? allExamsData.records[selectVal].students : {};
@@ -927,7 +1094,6 @@
                 }
             }
 
-            // 填入成績
             for(let i=1; i<=24; i++) {
                 let stuScore = examRecords[i] || {};
                 ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
@@ -941,7 +1107,6 @@
             alert(`已載入「${examInfo.name}」的成績資料！\n您可以查看、修改，或重新匯入 Excel 後點擊「覆蓋更新」。`);
         }
 
-        // 🌟 刪除當前編輯的歷史測驗
         function deleteExamData() {
             if(!currentEditingExamId) return;
             if(!confirm("⚠️ 警告：確定要永久刪除此測驗所有成績嗎？刪除後家長將無法查詢，且無法復原。")) return;
@@ -955,18 +1120,17 @@
                     examList = examList.filter(e => e.id !== currentEditingExamId);
 
                     let records = data.records || {};
-                    delete records[currentEditingExamId]; // 刪除整筆成績紀錄
+                    delete records[currentEditingExamId];
 
                     transaction.update(docRef, { exam_list: examList, records: records });
                 });
             }).then(() => {
                 alert("✅ 已成功刪除該次測驗紀錄。");
-                document.getElementById('history-exam-select').value = ""; // 切回新增模式
-                loadExamData(); // 執行清空
+                document.getElementById('history-exam-select').value = ""; 
+                loadExamData(); 
             }).catch(e => alert("刪除失敗: " + e));
         }
 
-        // 🌟 儲存成績與班平均 (支援新增與更新)
         function saveScoresToCloud() { 
             const grade = document.getElementById('new-exam-grade').value;
             const semester = document.getElementById('new-exam-semester').value;
@@ -974,7 +1138,6 @@
             let name = type === '其他' ? document.getElementById('new-exam-custom').value.trim() : type;
             if(type === '其他' && !name) return alert('請輸入自訂測驗名稱！');
 
-            // 判斷是「更新舊測驗」還是「產生新測驗 ID」
             const examId = currentEditingExamId || `exam_${Date.now()}`;
             const examInfo = { id: examId, grade: grade, semester: semester, category: type, name: name, timestamp: Date.now() };
 
@@ -1000,7 +1163,6 @@
             }
             if (Object.keys(scoreData).length === 0) return alert('表格內沒有任何成績資料！');
 
-            // 計算各科班平均
             let classAverage = {};
             ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => {
                 classAverage[sub] = (counts[sub] > 0) ? Math.round((sums[sub] / counts[sub]) * 10) / 10 : 0;
@@ -1013,16 +1175,14 @@
                     let examList = data.exam_list || [];
                     
                     if (currentEditingExamId) {
-                        // 如果是更新，找出舊的標題資訊替換掉
                         const index = examList.findIndex(e => e.id === currentEditingExamId);
                         if(index > -1) {
-                            examInfo.timestamp = examList[index].timestamp; // 保留原始建立時間
+                            examInfo.timestamp = examList[index].timestamp;
                             examList[index] = examInfo;
                         } else {
                             examList.push(examInfo);
                         }
                     } else {
-                        // 新增
                         examList.push(examInfo);
                     }
                     
@@ -1033,7 +1193,6 @@
                 });
             }).then(() => {
                 alert(`🎉 「${grade}${semester} | ${name}」成績已成功${currentEditingExamId ? '更新' : '儲存發布'}！`);
-                // 儲存後保持在該測驗的編輯狀態
                 if(!currentEditingExamId) {
                     currentEditingExamId = examId;
                     document.getElementById('history-exam-select').value = examId;
@@ -1042,8 +1201,6 @@
                 }
             }).catch(e => alert('上傳失敗: ' + e)); 
         }
-
-        function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
 
         function renderDashboardHW() {
             if(!globalStudentsData) return;
@@ -1077,6 +1234,279 @@
             for(let i=1; i<=24; i++) { let st = globalStudentsData[i]; let lateCount = (st.attendance === '遲到' || st.attendance === '未到') ? 1 : 0; let missingCount = st.missingHW ? st.missingHW.length : 0; let cleanBad = st.clean === '待改進' ? 1 : 0; let goalDays = (st.goal === '已經做到' || st.goal === '表現優良') ? 5 : 4; let rating = ''; let ratingColor = ''; if(lateCount > 0 || missingCount > 0 || cleanBad > 0 || goalDays < 5) { rating = missingCount >= 2 ? '需留意作業' : '一般'; ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500'; } else { rating = '<i class="fas fa-medal mr-1"></i> 表現優良'; ratingColor = 'text-brand-600 font-bold'; honorList.push(String(i).padStart(2,'0')); } html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td><td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td><td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td><td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="打掃待改進">${cleanBad}</td><td class="p-3 sm:text-center ${goalDays === 5 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/5</td><td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td></tr>`; }
             tbody.innerHTML = html; const honorContainer = document.getElementById('honor-list-container');
             if(honorList.length > 0) honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join(''); else honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
+        }
+
+        function switchAnalysisTab(tabId) {
+            currentAnalysisTab = tabId;
+            document.querySelectorAll('.analysis-btn').forEach(btn => {
+                btn.className = "analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition text-brand-600 hover:bg-white/50 flex-shrink-0";
+            });
+            document.getElementById(`analysis-tab-${tabId}`).className = "analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition bg-white text-brand-800 shadow-sm flex-shrink-0";
+            
+            document.querySelectorAll('.analysis-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            
+            renderCurrentAnalysisTab();
+        }
+
+        function initAnalysisStudentSelector() {
+            const sel = document.getElementById('analysis-student-selector');
+            let html = '';
+            for(let i=1; i<=24; i++) { html += `<option value="${i}">${String(i).padStart(2,'0')} 號</option>`; }
+            sel.innerHTML = html;
+        }
+
+        function initAnalysisSubjectButtons() {
+            const container = document.getElementById('subject-buttons');
+            let html = '';
+            analysisMainSubjects.forEach(sub => {
+                html += `<button onclick="setAnalysisSubject('${sub}')" id="btn-ana-sub-${sub}" class="ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition ${sub === currentAnalysisSubject ? 'bg-brand-500 text-white border-brand-500 shadow-sm' : 'bg-white text-brand-600 border-brand-200 hover:bg-brand-50'}">${subjectMap[sub]}</button>`;
+            });
+            container.innerHTML = html;
+        }
+
+        function setAnalysisSubject(subKey) {
+            currentAnalysisSubject = subKey;
+            document.querySelectorAll('.ana-sub-btn').forEach(btn => {
+                btn.className = "ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-white text-brand-600 border-brand-200 hover:bg-brand-50";
+            });
+            const activeBtn = document.getElementById(`btn-ana-sub-${subKey}`);
+            if(activeBtn) activeBtn.className = "ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-brand-500 text-white border-brand-500 shadow-sm";
+            if(currentAnalysisTab === 'subject') renderAnalysisSubject();
+        }
+
+        function updateAnalysisExamSelector() {
+            const sel = document.getElementById('analysis-exam-selector');
+            if(!allExamsData || !allExamsData.exam_list || allExamsData.exam_list.length === 0) {
+                sel.innerHTML = '<option value="">尚無成績資料</option>';
+                return;
+            }
+            let html = '';
+            let exams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
+            exams.forEach(ex => {
+                html += `<option value="${ex.id}" ${ex.id === analysisExamId ? 'selected' : ''}>[${ex.grade}${ex.semester}] ${ex.name}</option>`;
+            });
+            sel.innerHTML = html;
+            
+            if(!analysisExamId && exams.length > 0) {
+                analysisExamId = exams[0].id;
+                sel.value = analysisExamId;
+            }
+        }
+
+        function handleAnalysisExamChange(val) {
+            analysisExamId = val;
+            renderCurrentAnalysisTab();
+        }
+
+        function handleAnalysisStudentChange() {
+            currentAnalysisSeat = document.getElementById('analysis-student-selector').value;
+            if(currentAnalysisTab === 'student') renderAnalysisStudent();
+        }
+
+        function renderCurrentAnalysisTab() {
+            if(!analysisExamId || !allExamsData || !allExamsData.records[analysisExamId]) return;
+            if(currentAnalysisTab === 'overview') renderAnalysisOverview();
+            else if(currentAnalysisTab === 'subject') renderAnalysisSubject();
+            else if(currentAnalysisTab === 'student') renderAnalysisStudent();
+        }
+
+        function getMergedSocietyScore(scoresObj) {
+            if (!scoresObj) return null;
+            if (scoresObj.soc !== undefined && scoresObj.soc !== "") return Number(scoresObj.soc);
+            let sum = 0, count = 0;
+            if (scoresObj.hist !== undefined && scoresObj.hist !== "") { sum += Number(scoresObj.hist); count++; }
+            if (scoresObj.geo !== undefined && scoresObj.geo !== "") { sum += Number(scoresObj.geo); count++; }
+            if (scoresObj.civics !== undefined && scoresObj.civics !== "") { sum += Number(scoresObj.civics); count++; }
+            if (count > 0) return Math.round((sum / count) * 10) / 10;
+            return null;
+        }
+
+        function renderAnalysisOverview() {
+            const examData = allExamsData.records[analysisExamId];
+            const avg = examData.class_average || {};
+            const students = examData.students || {};
+
+            let validStudents = [];
+            Object.keys(students).forEach(seat => {
+                let a = Number(students[seat].avg);
+                if(!isNaN(a)) validStudents.push({seat: seat, avg: a});
+            });
+            validStudents.sort((a,b) => b.avg - a.avg);
+
+            let totalAvg = validStudents.reduce((sum, s) => sum + s.avg, 0) / validStudents.length || 0;
+            let maxAvg = validStudents.length > 0 ? validStudents[0].avg : '--';
+            let passCount = validStudents.filter(s => s.avg >= 60).length;
+            let passRate = validStudents.length > 0 ? Math.round((passCount / validStudents.length) * 100) : 0;
+            let failCount = validStudents.length - passCount;
+
+            document.getElementById('overview-avg').innerText = totalAvg.toFixed(1);
+            document.getElementById('overview-max').innerText = maxAvg;
+            document.getElementById('overview-pass-rate').innerText = passRate + '%';
+            document.getElementById('overview-fail-count').innerText = failCount + '人';
+
+            let topHtml = '';
+            validStudents.slice(0, 5).forEach((s, idx) => {
+                topHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><span class="w-6 inline-block text-brand-400 font-bold">${idx+1}.</span> ${String(s.seat).padStart(2,'0')}號</span><span class="font-bold text-brand-900">${s.avg}</span></li>`;
+            });
+            document.getElementById('overview-top-list').innerHTML = topHtml || '<li class="text-brand-400 py-2 text-sm">無資料</li>';
+
+            let bottomHtml = '';
+            validStudents.filter(s => s.avg < 60).forEach(s => {
+                bottomHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><i class="fas fa-exclamation-circle text-morandi-pink mr-2"></i>${String(s.seat).padStart(2,'0')}號</span><span class="font-bold text-morandi-pink">${s.avg}</span></li>`;
+            });
+            document.getElementById('overview-bottom-list').innerHTML = bottomHtml || '<li class="text-brand-400 py-2 text-sm">無不及格學生，表現優異！</li>';
+
+            const radarData = [avg.chi || 0, avg.eng || 0, avg.math || 0, avg.sci || 0, getMergedSocietyScore(avg) || 0];
+            if(charts.classRadar) charts.classRadar.destroy();
+            charts.classRadar = new Chart(document.getElementById('classRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['國文', '英文', '數學', '自然', '社會'],
+                    datasets: [{ label: '班級平均', data: radarData, backgroundColor: 'rgba(176, 142, 111, 0.2)', borderColor: '#b08e6f', pointBackgroundColor: '#b08e6f', borderWidth: 2 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display:false } } }, plugins: { legend: { display: false } } }
+            });
+
+            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 };
+            validStudents.forEach(st => { const a = st.avg; if(a>=90) dist['90+']++; else if(a>=80) dist['80-89']++; else if(a>=70) dist['70-79']++; else if(a>=60) dist['60-69']++; else dist['不及格']++; });
+            if(charts.avgDist) charts.avgDist.destroy();
+            charts.avgDist = new Chart(document.getElementById('avgDistributionChart').getContext('2d'), {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(dist),
+                    datasets: [{ label: '人數', data: Object.values(dist), backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'], borderRadius: 6 }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderAnalysisSubject() {
+            const examData = allExamsData.records[analysisExamId];
+            const students = examData.students || {};
+            document.getElementById('subject-dist-title').innerText = `${subjectMap[currentAnalysisSubject]} 單科分數分佈 (依座號)`;
+
+            let subjScores = [];
+            for(let i=1; i<=24; i++) {
+                const st = students[i];
+                if(st) {
+                    let score = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(st) : st[currentAnalysisSubject];
+                    if(score !== undefined && score !== null && score !== "") subjScores.push({ seat: i, score: Number(score) });
+                }
+            }
+
+            let sortedScores = [...subjScores].sort((a,b) => b.score - a.score);
+            let s_total = sortedScores.reduce((sum, s) => sum + s.score, 0);
+            document.getElementById('subj-avg').innerText = sortedScores.length > 0 ? (s_total / sortedScores.length).toFixed(1) : '--';
+            document.getElementById('subj-max').innerText = sortedScores.length > 0 ? sortedScores[0].score : '--';
+            let s_passCount = sortedScores.filter(s => s.score >= 60).length;
+            document.getElementById('subj-fail-count').innerText = (sortedScores.length - s_passCount) + '人';
+            document.getElementById('subj-pass-rate').innerText = (sortedScores.length > 0 ? Math.round((s_passCount / sortedScores.length) * 100) : 0) + '%';
+
+            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 };
+            sortedScores.forEach(s => { if(s.score>=90) dist['90+']++; else if(s.score>=80) dist['80-89']++; else if(s.score>=70) dist['70-79']++; else if(s.score>=60) dist['60-69']++; else dist['不及格']++; });
+            if(charts.subjPie) charts.subjPie.destroy();
+            charts.subjPie = new Chart(document.getElementById('subjectPieChart').getContext('2d'), {
+                type: 'doughnut', data: { labels: Object.keys(dist), datasets: [{ data: Object.values(dist), backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right' } } }
+            });
+
+            let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
+            let currentIdx = sortedExams.findIndex(ex => ex.id === analysisExamId);
+            let prevExamId = (currentIdx !== -1 && currentIdx + 1 < sortedExams.length) ? sortedExams[currentIdx + 1].id : null;
+            let diffList = [];
+
+            if (prevExamId && allExamsData.records[prevExamId]) {
+                let prevStudents = allExamsData.records[prevExamId].students || {};
+                subjScores.forEach(s => {
+                    let p_st = prevStudents[s.seat];
+                    if (p_st) {
+                        let p_score = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(p_st) : p_st[currentAnalysisSubject];
+                        if(p_score !== undefined && p_score !== null && p_score !== "") diffList.push({ seat: s.seat, diff: s.score - Number(p_score) });
+                    }
+                });
+            }
+
+            diffList.sort((a,b) => b.diff - a.diff);
+            let impHtml = '', regHtml = '';
+            if (diffList.length > 0) {
+                diffList.filter(d => d.diff > 0).slice(0, 3).forEach(d => { impHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50"><span class="text-sm font-bold text-brand-700">${String(d.seat).padStart(2,'0')}號</span><span class="text-sm font-bold text-emerald-600">+${d.diff}</span></div>`; });
+                diffList.filter(d => d.diff < 0).slice(-3).reverse().forEach(d => { regHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50"><span class="text-sm font-bold text-brand-700">${String(d.seat).padStart(2,'0')}號</span><span class="text-sm font-bold text-morandi-pink">${d.diff}</span></div>`; });
+            }
+            document.getElementById('subj-improved-list').innerHTML = impHtml || '<div class="text-brand-400 text-sm py-2">無比對資料</div>';
+            document.getElementById('subj-regressed-list').innerHTML = regHtml || '<div class="text-brand-400 text-sm py-2">無比對資料</div>';
+
+            let labels = [], dataPoints = [];
+            subjScores.sort((a,b) => a.seat - b.seat).forEach(s => { labels.push(s.seat); dataPoints.push(s.score); });
+            if(charts.subjBar) charts.subjBar.destroy();
+            charts.subjBar = new Chart(document.getElementById('subjectBarChart').getContext('2d'), {
+                type: 'bar', data: { labels: labels, datasets: [{ label: '分數', data: dataPoints, backgroundColor: dataPoints.map(v => v < 60 ? '#d98b8b' : '#b08e6f'), borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
+
+            let trendExams = [...sortedExams].reverse();
+            let trendLabels = [], trendData = [];
+            trendExams.forEach(ex => {
+                const rec = allExamsData.records[ex.id];
+                if(rec && rec.class_average) {
+                    let s = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(rec.class_average) : rec.class_average[currentAnalysisSubject];
+                    if(s !== undefined && s !== null) { trendLabels.push(ex.name.substring(0,8)); trendData.push(Number(s)); }
+                }
+            });
+            if(charts.subjTrend) charts.subjTrend.destroy();
+            charts.subjTrend = new Chart(document.getElementById('subjectTrendChart').getContext('2d'), {
+                type: 'line', data: { labels: trendLabels, datasets: [{ label: '平均', data: trendData, borderColor: '#805d46', backgroundColor: 'rgba(128, 93, 70, 0.1)', borderWidth: 3, fill: true, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
+        }
+
+        function renderAnalysisStudent() {
+            const examData = allExamsData.records[analysisExamId];
+            const stData = (examData.students || {})[currentAnalysisSeat] || {};
+            const clsAvg = examData.class_average || {};
+
+            const myRadar = [stData.chi || 0, stData.eng || 0, stData.math || 0, stData.sci || 0, getMergedSocietyScore(stData) || 0];
+            const avgRadar = [clsAvg.chi || 0, clsAvg.eng || 0, clsAvg.math || 0, clsAvg.sci || 0, getMergedSocietyScore(clsAvg) || 0];
+
+            if(charts.stuRadar) charts.stuRadar.destroy();
+            charts.stuRadar = new Chart(document.getElementById('studentRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: {
+                    labels: ['國文', '英文', '數學', '自然', '社會'],
+                    datasets: [
+                        { label: '個人', data: myRadar, borderColor: '#b08e6f', backgroundColor: 'rgba(176,142,111,0.3)', borderWidth:2 },
+                        { label: '班平均', data: avgRadar, borderColor: '#e8ddce', borderDash: [5,5], fill:false, borderWidth:2 }
+                    ]
+                },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false } } }, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            let html = '';
+            analysisMainSubjects.forEach(sub => {
+                let score = (sub === 'soc') ? getMergedSocietyScore(stData) : stData[sub];
+                let val = (score !== undefined && score !== null && score !== "") ? score : '--';
+                let color = (val !== '--' && Number(val) < 60) ? 'text-morandi-pink' : 'text-brand-800';
+                html += `<div class="bg-brand-50 p-2 rounded-lg text-center border border-brand-100"><div class="text-[10px] text-brand-500 font-bold">${subjectMap[sub]}</div><div class="text-sm font-black ${color}">${val}</div></div>`;
+            });
+            html += `<div class="bg-brand-100 p-2 rounded-lg text-center border border-brand-200 col-span-2"><div class="text-[10px] text-brand-700 font-bold">總平均</div><div class="text-base font-black text-brand-900">${stData.avg || '--'}</div></div>`;
+            document.getElementById('student-mini-scores').innerHTML = html;
+
+            let trendExams = [...allExamsData.exam_list].sort((a,b) => a.timestamp - b.timestamp);
+            let tLabels = [], tData = [];
+            trendExams.forEach(ex => {
+                const rec = allExamsData.records[ex.id];
+                if(rec && rec.students && rec.students[currentAnalysisSeat]) {
+                    let a = rec.students[currentAnalysisSeat].avg;
+                    if(a !== undefined && a !== "") { tLabels.push(ex.name.substring(0,8)); tData.push(Number(a)); }
+                }
+            });
+
+            if(charts.stuTrend) charts.stuTrend.destroy();
+            charts.stuTrend = new Chart(document.getElementById('studentTrendChart').getContext('2d'), {
+                type: 'line',
+                data: { labels: tLabels, datasets: [{ label: '個人平均', data: tData, borderColor: '#805d46', backgroundColor: '#805d46', borderWidth: 3, pointRadius: 5, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
         }
     </script>
 </body>
