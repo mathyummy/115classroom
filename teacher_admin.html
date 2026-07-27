@@ -154,7 +154,6 @@
 
     <main class="flex-1 h-full overflow-y-auto bg-brand-50 p-4 pt-20 md:pt-8 md:p-8">
         
-        <!-- 各大區塊與前面版本完全一致，這裡保持原樣... -->
         <section id="tab-dashboard" class="tab-content active space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
@@ -338,11 +337,12 @@
             </div>
         </section>
 
+        <!-- ==================== 🌟 成績系統 (已更新年級平均輸入) ==================== -->
         <section id="tab-scores" class="tab-content space-y-6">
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fab fa-line mr-2 text-brand-500"></i>成績系統 (資料庫)</h2>
-                    <p class="text-brand-500 text-sm sm:text-base font-medium">手動輸入或匯入 Excel 成績，存檔後供家長 LINE 查詢。</p>
+                    <p class="text-brand-500 text-sm sm:text-base font-medium">手動輸入或匯入 Excel 成績，存檔後供家長 LINE 查詢與趨勢分析。</p>
                 </div>
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full xl:w-auto">
                     <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleSmartExcelUpload(event)">
@@ -388,18 +388,25 @@
                 </select>
                 <input type="text" id="new-exam-custom" placeholder="輸入自訂名稱..." class="hidden bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 w-40">
             </div>
-            
-            <div class="bg-brand-100 border border-brand-200 p-4 rounded-xl flex items-start space-x-3 text-brand-800 text-sm mb-2 font-medium">
-                <i class="fas fa-info-circle text-brand-500 text-xl mt-0.5"></i>
-                <div class="leading-relaxed">
-                    <strong>智慧匯入說明：</strong> 系統會自動辨識 Excel 表頭名稱（不限順序）。<br>
-                    <span class="text-brand-600 font-bold">支援抓取的欄位包含：</span> 座號、國文、英文、數學、自然(理化)、社會、歷史、地理、公民、平均、PR值。<br>
-                    <span class="text-morandi-pink font-bold">✨ 分科儲存設計：</span> 匯入時各科獨立儲存，家長查詢時能看到最完整的明細！
+
+            <div class="bg-brand-100 border border-brand-200 p-4 rounded-xl flex flex-col space-y-2 text-brand-800 text-sm mb-2 font-medium">
+                <div class="flex items-start space-x-3">
+                    <i class="fas fa-info-circle text-brand-500 text-xl mt-0.5"></i>
+                    <div class="leading-relaxed">
+                        <strong>智慧匯入說明：</strong> 系統會自動辨識 Excel 表頭名稱（不限順序）。<br>
+                        <span class="text-brand-600 font-bold">支援抓取的欄位包含：</span> 座號、國文、英文、數學、自然(理化)、社會、歷史、地理、公民、平均、PR值。<br>
+                    </div>
+                </div>
+                <div class="flex items-start space-x-3 bg-white p-3 rounded-lg border border-brand-200 mt-2">
+                     <i class="fas fa-star text-yellow-500 text-lg mt-0.5"></i>
+                     <div class="leading-relaxed">
+                        <span class="text-brand-700 font-bold">🌟 新增「年級平均」輸入區：</span> 請在表格最下方的<span class="bg-brand-200 px-1 rounded text-brand-800">藍色橫列</span>手動輸入各科「全年級平均」。<br>系統將利用此數據計算客觀的「實力表現指標」，以排除考題難易度造成的圖表波動。
+                     </div>
                 </div>
             </div>
 
             <!-- 成績表格水平捲動 -->
-            <div class="glass-panel rounded-2xl overflow-x-auto shadow-sm custom-scrollbar">
+            <div class="glass-panel rounded-2xl overflow-x-auto shadow-sm custom-scrollbar relative">
                 <table class="w-full text-center text-sm whitespace-nowrap min-w-[900px]">
                     <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
                         <tr>
@@ -418,7 +425,23 @@
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="score-table-body">
+                        <!-- JS 產生 1~24 號輸入框 -->
                     </tbody>
+                    <!-- 🌟 固定的年級平均輸入列 -->
+                    <tfoot class="bg-brand-200/50 border-t-2 border-brand-300">
+                        <tr>
+                            <td class="p-3 font-bold text-brand-800 bg-brand-200 sticky left-0 z-10 border-r border-brand-300 text-xs text-center"><i class="fas fa-chart-line block mb-1"></i>年級平均</td>
+                            <td class="p-2"><input type="number" id="grade-avg-chi" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2"><input type="number" id="grade-avg-eng" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2"><input type="number" id="grade-avg-math" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2"><input type="number" id="grade-avg-sci" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2"><input type="number" id="grade-avg-soc" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2 bg-brand-100/50"><input type="number" id="grade-avg-hist" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2 bg-brand-100/50"><input type="number" id="grade-avg-geo" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2 bg-brand-100/50"><input type="number" id="grade-avg-civics" step="0.1" class="w-16 bg-white border border-brand-300 rounded-lg text-center px-1 py-1.5 focus:border-brand-500 text-brand-900 outline-none font-bold placeholder-brand-300" placeholder="年均"></td>
+                            <td class="p-2" colspan="2"><span class="text-xs text-brand-600 font-bold bg-white px-2 py-1.5 rounded-lg border border-brand-300 inline-block w-full"><i class="fas fa-info-circle text-brand-500 mr-1"></i>總平均將由系統加總左側單科自動推算</span></td>
+                        </tr>
+                    </tfoot>
                 </table>
             </div>
         </section>
@@ -1179,22 +1202,36 @@
             const selectVal = document.getElementById('history-exam-select').value;
             const btnDelete = document.getElementById('btn-delete-exam');
             const btnSave = document.getElementById('btn-save-scores');
+            
+            // 清空所有欄位
+            for(let i=1; i<=24; i++) { ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { const el = document.getElementById(`score-${sub}-${i}`); if(el) el.value = ''; }); }
+            ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => { const el = document.getElementById(`grade-avg-${sub}`); if(el) el.value = ''; });
+
             if (!selectVal) {
                 currentEditingExamId = null; btnDelete.classList.add('hidden'); btnSave.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布';
-                for(let i=1; i<=24; i++) { ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { const el = document.getElementById(`score-${sub}-${i}`); if(el) el.value = ''; }); }
                 document.getElementById('new-exam-custom').value = ''; alert("表格已清空，可開始輸入新測驗成績。"); return;
             }
             currentEditingExamId = selectVal;
             const examInfo = allExamsData.exam_list.find(e => e.id === selectVal);
             const examRecords = allExamsData.records[selectVal] ? allExamsData.records[selectVal].students : {};
+            const gradeAvgData = allExamsData.records[selectVal] ? allExamsData.records[selectVal].grade_average : {};
+
             if(examInfo) {
                 document.getElementById('new-exam-grade').value = examInfo.grade; document.getElementById('new-exam-semester').value = examInfo.semester; document.getElementById('new-exam-type').value = examInfo.category;
                 if(examInfo.category === '其他') { document.getElementById('new-exam-custom').classList.remove('hidden'); document.getElementById('new-exam-custom').value = examInfo.name; } else document.getElementById('new-exam-custom').classList.add('hidden');
             }
+            
+            // 載入學生個人成績
             for(let i=1; i<=24; i++) {
                 let stuScore = examRecords[i] || {};
                 ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { const el = document.getElementById(`score-${sub}-${i}`); if(el) el.value = stuScore[sub] !== undefined ? stuScore[sub] : ''; });
             }
+            
+            // 載入年級平均
+            if(gradeAvgData) {
+                ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => { const el = document.getElementById(`grade-avg-${sub}`); if(el && gradeAvgData[sub] !== undefined) el.value = gradeAvgData[sub]; });
+            }
+
             btnDelete.classList.remove('hidden'); btnSave.innerHTML = '<i class="fas fa-save mr-2"></i> 覆蓋更新';
             alert(`已載入「${examInfo.name}」的成績資料！\n您可以查看、修改，或重新匯入 Excel 後點擊「覆蓋更新」。`);
         }
@@ -1216,24 +1253,45 @@
             let name = type === '其他' ? document.getElementById('new-exam-custom').value.trim() : type; if(type === '其他' && !name) return alert('請輸入自訂測驗名稱！');
             const examId = currentEditingExamId || `exam_${Date.now()}`;
             const examInfo = { id: examId, grade: grade, semester: semester, category: type, name: name, timestamp: Date.now() };
-            let scoreData = {}; let sums = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 }; let counts = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 };
+            
+            let scoreData = {}; 
+            let sums = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 }; 
+            let counts = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 };
+            
+            // 處理學生個人成績
             for(let i=1; i<=24; i++) { 
                 let studentScore = {}; let hasData = false;
                 ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
                     const val = document.getElementById(`score-${sub}-${i}`)?.value;
-                    if(val !== "" && val !== undefined) { let num = Number(val); studentScore[sub] = num; if(['chi','eng','math','sci','soc','hist','geo','civics'].includes(sub)) { sums[sub] += num; counts[sub]++; } hasData = true; }
+                    if(val !== "" && val !== undefined) { 
+                        let num = Number(val); 
+                        studentScore[sub] = num; 
+                        if(['chi','eng','math','sci','soc','hist','geo','civics'].includes(sub)) { sums[sub] += num; counts[sub]++; } 
+                        hasData = true; 
+                    }
                 }); 
                 if(hasData) scoreData[i] = studentScore;
             }
             if (Object.keys(scoreData).length === 0) return alert('表格內沒有任何成績資料！');
+            
+            // 計算班級平均
             let classAverage = {};
             ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => { classAverage[sub] = (counts[sub] > 0) ? Math.round((sums[sub] / counts[sub]) * 10) / 10 : 0; });
+            
+            // 抓取年級平均輸入值
+            let gradeAverage = {};
+            ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => { 
+                const val = document.getElementById(`grade-avg-${sub}`)?.value;
+                if(val !== "" && val !== undefined) { gradeAverage[sub] = Number(val); }
+            });
+
             const docRef = db.collection("class_settings").doc("scores");
             db.runTransaction(transaction => {
                 return transaction.get(docRef).then(doc => {
                     let data = doc.exists ? doc.data() : {}; let examList = data.exam_list || [];
                     if (currentEditingExamId) { const index = examList.findIndex(e => e.id === currentEditingExamId); if(index > -1) { examInfo.timestamp = examList[index].timestamp; examList[index] = examInfo; } else examList.push(examInfo); } else examList.push(examInfo);
-                    let records = data.records || {}; records[examId] = { class_average: classAverage, students: scoreData, updatedAt: new Date().toISOString() };
+                    let records = data.records || {}; 
+                    records[examId] = { class_average: classAverage, grade_average: gradeAverage, students: scoreData, updatedAt: new Date().toISOString() };
                     transaction.set(docRef, { exam_list: examList, records: records }, { merge: true });
                 });
             }).then(() => {
