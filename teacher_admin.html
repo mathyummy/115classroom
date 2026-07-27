@@ -1473,18 +1473,23 @@
             if(chatUnsubscribe) chatUnsubscribe();
             const chatId = `${currentChatRole}_${currentChatSeat}`;
             
+            // 🌟 移除 .orderBy() 避開 Firebase 複合索引限制，改在前端排序
             chatUnsubscribe = db.collection("line_messages")
                 .where("chatId", "==", chatId)
-                .orderBy("timestamp", "asc")
                 .onSnapshot(snapshot => {
                     const container = document.getElementById('chat-messages-container');
                     if(snapshot.empty) {
                         container.innerHTML = '<div class="text-center text-brand-400 font-bold mt-20"><i class="fas fa-comment-slash text-4xl mb-3 block text-brand-300"></i>目前尚無對話紀錄。</div>';
                         return;
                     }
+                    
+                    // 🌟 新增：把資料拿出來，用 JavaScript 按照時間排序
+                    let msgs = [];
+                    snapshot.forEach(doc => msgs.push(doc.data()));
+                    msgs.sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
+                    
                     let html = '';
-                    snapshot.forEach(doc => {
-                        let data = doc.data();
+                    msgs.forEach(data => {
                         let timeStr = new Date(parseInt(data.timestamp)).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'});
                         
                         if(data.sender === 'user') { // 家長或學生傳來的
