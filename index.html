@@ -2,568 +2,417 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>班級數位平台</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- 引入 Firebase 核心與 Firestore -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 
+    <script>
+        // 設定 Tailwind 自訂主題色 (米棕色系與莫蘭迪粉)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#faf8f5',  // 燕麥白背景
+                            100: '#f4efe6', // 淺米色區塊
+                            200: '#e8ddce', // 奶茶色邊框
+                            300: '#d8c5b0',
+                            400: '#c2a88d', // 主按鈕色
+                            500: '#b08e6f',
+                            600: '#9b7658', // 深棕色圖示
+                            700: '#805d46',
+                            800: '#6b4d3d', // 主要文字
+                            900: '#563e32',
+                        },
+                        morandi: {
+                            pink: '#d98b8b', // 莫蘭迪粉 (跑馬燈與強調)
+                            blue: '#8b9bb4', // 莫蘭迪灰藍 (完成狀態)
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { background-color: #121815; color: #e5e7eb; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
-        .bg-blackboard { background-color: #1a241d; }
-        .bg-blackboard-dark { background-color: #121815; }
-        .text-emerald { color: #34d399; }
-        .border-emerald { border-color: #34d399; }
-        .hidden { display: none !important; }
-        .modal-overlay { background-color: rgba(0, 0, 0, 0.75); backdrop-filter: blur(4px); }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #1a241d; }
-        ::-webkit-scrollbar-thumb { background: #374151; border-radius: 4px; }
-        ::-webkit-scrollbar-thumb:hover { background: #4b5563; }
+        body { background-color: #faf8f5; color: #563e32; font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; overflow-x: hidden; }
+        .modal-overlay { background-color: rgba(86, 62, 50, 0.4); backdrop-filter: blur(8px); }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d8c5b0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c2a88d; }
         marquee { line-height: 1.5; }
+        
+        .board-text-scaling { font-size: 1rem; }
+        @media (min-width: 1024px) { .board-text-scaling { font-size: 1.15rem; } }
+        @media (min-width: 1536px) { .board-text-scaling { font-size: 1.35rem; } }
+        
+        .soft-shadow { box-shadow: 0 4px 20px -2px rgba(107, 77, 61, 0.05), 0 0 3px rgba(107, 77, 61, 0.02); }
     </style>
 </head>
-<body class="bg-blackboard-dark text-gray-200 min-h-screen flex flex-col">
+<body class="min-h-screen flex flex-col">
 
     <!-- 頂部跑馬燈 -->
-    <div class="bg-[#2c1316] text-[#fb7185] px-4 py-2 flex items-center border-b border-red-900/50 shadow-md">
-        <i class="fas fa-bullhorn animate-pulse mr-3 text-lg"></i>
-        <marquee scrollamount="5" class="font-bold tracking-wider text-lg" id="marquee-text">
+    <div class="bg-white border-b border-brand-100 px-4 py-2 sm:py-3 flex items-center shadow-sm">
+        <i class="fas fa-bullhorn mr-3 text-lg sm:text-xl text-morandi-pink animate-pulse"></i>
+        <marquee scrollamount="6" class="font-bold tracking-widest text-sm sm:text-lg text-morandi-pink" id="marquee-text">
             班級系統連線中，請稍候...
         </marquee>
     </div>
 
     <!-- 頂部狀態列 -->
-    <header class="px-6 py-4 flex justify-between items-start">
-        <div class="flex items-center">
-            <div class="w-12 h-12 bg-emerald-700 rounded-full flex items-center justify-center text-white text-xl font-bold border-2 border-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.3)]">
-                701
+    <header class="px-4 sm:px-6 py-4 sm:py-5 flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 bg-white/50 border-b border-brand-100">
+        <div class="flex items-center w-full xl:w-auto justify-between xl:justify-start">
+            <div class="flex items-center">
+                <div class="w-12 h-12 sm:w-14 sm:h-14 bg-brand-100 rounded-2xl flex items-center justify-center text-brand-700 text-xl sm:text-2xl font-bold border border-brand-200 shrink-0">
+                    701
+                </div>
+                <div class="ml-4 flex flex-col justify-center">
+                    <h1 class="text-xl sm:text-3xl font-bold text-brand-800 tracking-wide">班級數位平台</h1>
+                    <p class="text-xs text-brand-500 mt-1">尊重他人，勇於負責 | 面對問題，創造方法</p>
+                </div>
             </div>
-            <div class="ml-4">
-                <h1 class="text-2xl font-bold text-white tracking-wide">班級數位平台</h1>
-                <p class="text-xs text-emerald-400/80 mt-1">尊重他人，勇於負責 | 面對問題，創造方法</p>
+            
+            <!-- 出席人數按鈕 -->
+            <div class="relative z-50 ml-4 sm:ml-8">
+                <button onclick="toggleAttendanceDetails()" class="h-12 sm:h-14 flex items-center justify-center text-brand-700 bg-white hover:bg-brand-50 px-4 sm:px-5 rounded-2xl text-sm sm:text-base border border-brand-200 transition shadow-sm font-bold">
+                    <span id="display-attendance-main">連線中...</span>
+                    <i id="attendance-info-icon" class="fas fa-search-plus ml-2 text-brand-500 hidden"></i>
+                </button>
+                <div id="attendance-details-popover" class="hidden absolute top-14 sm:top-16 left-0 w-56 bg-white border border-brand-200 rounded-xl shadow-xl p-4 z-50">
+                    <div class="text-xs sm:text-sm text-brand-600 border-b border-brand-100 pb-2 mb-2 font-bold">缺席與遲到名單</div>
+                    <div id="attendance-details-content" class="space-y-2 text-sm text-brand-800"></div>
+                </div>
             </div>
         </div>
 
-        <div class="flex space-x-8 text-sm pt-2">
-            <div class="text-center">
-                <div class="text-gray-400 text-xs mb-1" id="countdown-label">一段倒數</div>
-                <div class="text-2xl font-bold text-white" id="display-countdown">--</div>
+        <!-- 數據儀表板 -->
+        <div class="w-full xl:w-auto flex flex-wrap sm:flex-nowrap justify-between sm:space-x-8 text-sm sm:text-base pt-3 border-t border-brand-100 xl:border-none xl:pt-0 mt-2 xl:mt-0">
+            <div class="text-center w-1/3 sm:w-auto mb-2 sm:mb-0">
+                <div class="text-brand-500 text-xs sm:text-sm mb-1 font-medium" id="countdown-label">一段倒數</div>
+                <div class="text-xl sm:text-2xl font-bold text-morandi-pink mt-1" id="display-countdown">--</div>
             </div>
-            <div class="text-center">
-                <div class="text-gray-400 text-xs mb-1">今日壽星</div>
-                <div class="text-xl font-bold mt-1" id="display-bday-today">無</div>
+            <div class="text-center w-1/3 sm:w-auto mb-2 sm:mb-0">
+                <div class="text-brand-500 text-xs sm:text-sm mb-1 font-medium">今日壽星</div>
+                <div class="text-xl sm:text-2xl font-bold mt-1 text-brand-800" id="display-bday-today">無</div>
             </div>
-            <div class="text-center">
-                <div class="text-gray-400 text-xs mb-1">下一個生日</div>
-                <div class="text-xl font-bold text-white mt-1" id="display-bday-next">--</div>
+            <div class="text-center w-1/3 sm:w-auto mb-2 sm:mb-0">
+                <div class="text-brand-500 text-xs sm:text-sm mb-1 font-medium">下個生日</div>
+                <div class="text-xl sm:text-2xl font-bold text-brand-700 mt-1" id="display-bday-next">--</div>
             </div>
-            <div class="text-center border-l border-gray-700 pl-6">
-                <div class="text-gray-400 text-xs mb-1">黑板</div>
-                <div class="text-lg font-bold text-white" id="display-duty-board">--</div>
+            <div class="hidden sm:block text-center border-l border-brand-200 pl-6">
+                <div class="text-brand-500 text-xs sm:text-sm mb-1 font-medium">黑板</div>
+                <div class="text-xl sm:text-2xl font-bold text-brand-800 mt-1" id="display-duty-board">--</div>
             </div>
-            <div class="text-center">
-                <div class="text-gray-400 text-xs mb-1">發作業</div>
-                <div class="text-lg font-bold text-white" id="display-duty-hw">--</div>
+            <div class="hidden sm:block text-center">
+                <div class="text-brand-500 text-xs sm:text-sm mb-1 font-medium">發作業</div>
+                <div class="text-xl sm:text-2xl font-bold text-brand-800 mt-1" id="display-duty-hw">--</div>
             </div>
-            <div class="text-center">
-                <div class="text-gray-400 text-xs mb-1">環境/電器</div>
-                <div class="text-lg font-bold text-white" id="display-duty-env">--</div>
+            <div class="hidden sm:block text-center">
+                <div class="text-brand-500 text-xs sm:text-sm mb-1 font-medium">環境</div>
+                <div class="text-xl sm:text-2xl font-bold text-brand-800 mt-1" id="display-duty-env">--</div>
             </div>
         </div>
     </header>
 
-    <!-- 主要黑板區 -->
-    <main class="flex-grow px-6 pb-20 flex gap-6 mt-2">
-        <div class="flex-grow bg-blackboard rounded-xl border border-gray-700/50 shadow-lg p-6 flex flex-col relative">
-            <div class="flex justify-between items-center border-b border-gray-700 pb-4 mb-6">
-                <div class="flex items-center space-x-4">
-                    <i class="fas fa-book-open text-emerald-400 text-xl"></i>
-                    <h2 class="text-xl font-bold text-white tracking-widest">今日聯絡簿</h2>
-                    <span class="text-emerald-300 bg-emerald-900/30 px-3 py-1 rounded text-sm" id="display-date">讀取中...</span>
-                    
-                    <div class="relative">
-                        <button onclick="toggleAttendanceDetails()" class="flex items-center text-gray-300 bg-gray-800 hover:bg-gray-700 px-3 py-1 rounded text-sm border border-gray-600 transition">
-                            <span id="display-attendance-main">連線中...</span>
-                            <i id="attendance-info-icon" class="fas fa-search-plus ml-2 text-emerald-400 hidden"></i>
-                        </button>
-                        <div id="attendance-details-popover" class="hidden absolute top-10 left-0 w-48 bg-gray-900 border border-gray-600 rounded-lg shadow-xl p-3 z-50">
-                            <div class="text-xs text-gray-400 border-b border-gray-700 pb-2 mb-2">缺席與遲到名單</div>
-                            <div id="attendance-details-content" class="space-y-2 text-sm text-gray-300"></div>
-                        </div>
-                    </div>
+    <main class="flex-grow px-4 sm:px-6 pb-28 flex flex-col lg:flex-row gap-4 sm:gap-6 mt-4">
+        
+        <!-- 左側：大黑板 -->
+        <div class="flex-grow bg-white rounded-2xl border border-brand-100 soft-shadow p-5 sm:p-8 flex flex-col relative min-h-[500px]">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center border-b border-brand-100 pb-4 mb-6 gap-4">
+                <div class="flex flex-wrap items-center gap-3">
+                    <i class="fas fa-book-open text-brand-400 text-xl sm:text-2xl"></i>
+                    <h2 class="text-lg sm:text-2xl font-bold text-brand-800 tracking-wider">今日聯絡簿</h2>
+                    <span class="text-brand-700 font-bold text-base sm:text-lg ml-2" id="display-date">讀取中...</span>
                 </div>
-                <div class="flex space-x-2">
-                    <button onclick="changeFontSize('reset')" class="w-8 h-8 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center justify-center border border-gray-600 transition">A</button>
-                    <button onclick="changeFontSize('increase')" class="w-8 h-8 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center justify-center border border-gray-600 transition">A+</button>
-                    <button onclick="toggleFullScreen()" class="w-8 h-8 rounded bg-gray-800 hover:bg-gray-700 text-gray-300 flex items-center justify-center border border-gray-600 transition"><i class="fas fa-expand"></i></button>
-                    <button onclick="openEditBoardModal()" class="ml-4 px-3 py-1 rounded bg-emerald-900/50 hover:bg-emerald-800 text-emerald-400 border border-emerald-700/50 transition text-sm flex items-center">
+                
+                <div class="flex space-x-2 w-full sm:w-auto justify-end">
+                    <button onclick="changeFontSize('reset')" class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 flex items-center justify-center border border-brand-200 transition font-medium text-sm">A</button>
+                    <button onclick="changeFontSize('increase')" class="w-9 h-9 sm:w-10 sm:h-10 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 flex items-center justify-center border border-brand-200 transition font-medium text-sm">A+</button>
+                    <button onclick="toggleFullScreen()" class="hidden sm:flex w-10 h-10 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 items-center justify-center border border-brand-200 transition"><i class="fas fa-expand text-sm"></i></button>
+                    <button onclick="openEditBoardModal()" class="px-4 py-2 sm:py-2.5 rounded-lg bg-brand-50 hover:bg-brand-100 text-brand-700 border border-brand-200 transition text-sm font-bold flex items-center shadow-sm whitespace-nowrap">
                         <i class="fas fa-edit mr-2"></i> 編輯聯絡簿
                     </button>
                 </div>
             </div>
 
-            <div id="board-content-area" class="grid grid-cols-2 gap-8 flex-grow" style="font-size: 1rem;">
-                <div class="space-y-8">
+            <!-- 黑板內容網格 -->
+            <div id="board-content-area" class="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 flex-grow board-text-scaling">
+                <div class="space-y-8 md:space-y-10">
                     <div>
-                        <h3 class="text-gray-400 flex items-center mb-4"><i class="fas fa-home mr-2"></i> 回家作業及應帶物品</h3>
-                        <ol class="list-decimal list-inside space-y-3 text-white" id="list-homework"></ol>
+                        <h3 class="text-brand-600 flex items-center mb-3 font-bold border-b border-brand-100 pb-2 text-sm sm:text-base"><i class="fas fa-home mr-2 text-brand-400"></i> 回家作業及應帶物品</h3>
+                        <ol class="list-decimal list-inside space-y-3 text-brand-800 pl-1 font-medium" id="list-homework"></ol>
                     </div>
                     <div class="mt-8">
-                        <h3 class="text-[#fb7185] flex items-center mb-4"><i class="fas fa-exclamation-circle mr-2"></i> 特別叮嚀 <span class="text-sm ml-2 opacity-70">(請用紅筆)</span></h3>
-                        <ul class="space-y-3 text-[#fecdd3]" id="list-urgent"></ul>
+                        <h3 class="text-morandi-pink flex items-center mb-3 font-bold border-b border-brand-100 pb-2 text-sm sm:text-base"><i class="fas fa-exclamation-circle mr-2"></i> 特別叮嚀 <span class="text-xs ml-2 font-normal text-brand-500">(請用紅筆抄寫)</span></h3>
+                        <ul class="space-y-3 text-brand-800 pl-1 font-medium" id="list-urgent"></ul>
                     </div>
                 </div>
-                <div class="space-y-8 border-l border-gray-700/50 pl-8">
+                <div class="space-y-8 md:space-y-10 md:border-l border-brand-100 md:pl-10 pt-6 md:pt-0 border-t md:border-t-0">
                     <div>
-                        <h3 class="text-gray-400 flex items-center mb-4"><i class="fas fa-quote-left mr-2"></i> 留言板</h3>
-                        <div class="bg-[#121815] p-4 rounded border border-gray-700">
-                            <span class="bg-emerald-900 text-emerald-300 text-xs px-2 py-1 rounded mr-2" id="board-note-type">佳句</span>
-                            <span class="text-gray-300 leading-relaxed" id="board-note-content">連線中...</span>
+                        <h3 class="text-brand-600 flex items-center mb-3 font-bold text-sm sm:text-base border-b border-brand-100 pb-2"><i class="fas fa-quote-left mr-2 text-brand-400"></i> 留言板</h3>
+                        <div class="mt-4 pl-1">
+                            <span class="bg-brand-200 text-brand-800 text-xs px-2 py-1 rounded mr-2 font-bold align-middle" id="board-note-type">佳句</span>
+                            <span class="text-brand-800 leading-relaxed font-medium align-middle" id="board-note-content">連線中...</span>
                         </div>
                     </div>
                     <div>
-                        <h3 class="text-gray-400 flex items-center mb-4"><i class="fas fa-bullseye mr-2"></i> 今日目標</h3>
-                        <ul class="space-y-2 text-white" id="list-goals"></ul>
+                        <h3 class="text-brand-600 flex items-center mb-3 font-bold border-b border-brand-100 pb-2 text-sm sm:text-base"><i class="fas fa-bullseye mr-2 text-brand-400"></i> 今日目標</h3>
+                        <ul class="space-y-3 text-brand-800 pl-1 font-medium" id="list-goals"></ul>
                     </div>
                     <div>
-                        <h3 class="text-blue-400 flex items-center mb-4"><i class="fas fa-info-circle mr-2"></i> 重要提醒</h3>
-                        <ol class="list-decimal list-inside space-y-2 text-blue-200" id="list-reminders"></ol>
+                        <h3 class="text-brand-600 flex items-center mb-3 font-bold border-b border-brand-100 pb-2 text-sm sm:text-base"><i class="fas fa-info-circle mr-2 text-brand-400"></i> 重要提醒</h3>
+                        <ol class="list-decimal list-inside space-y-3 text-brand-800 pl-1 font-medium" id="list-reminders"></ol>
                     </div>
                 </div>
             </div>
         </div>
 
-        <div class="w-80 flex flex-col gap-4">
-            <div class="bg-blackboard rounded-xl border border-gray-700/50 shadow-lg p-5">
-                <h3 class="text-white font-bold mb-1 flex items-center"><i class="fas fa-tasks text-emerald-400 mr-2"></i> 作業繳交概況</h3>
-                <p class="text-xs text-gray-500 mb-4">(不公開座號名單)</p>
-                <div id="hw-progress-container" class="space-y-4 mb-4"></div>
-                <button onclick="openStudentSubmitModal()" class="w-full py-2 bg-gray-800 hover:bg-gray-700 text-white rounded border border-gray-600 transition flex items-center justify-center">
-                    <i class="fas fa-hand-paper text-yellow-500 mr-2"></i> 我要補交作業
+        <!-- 右側：數據側邊欄 -->
+        <div class="w-full lg:w-[340px] flex flex-col gap-4 sm:gap-6 shrink-0">
+            <div class="bg-white rounded-2xl border border-brand-100 soft-shadow p-5">
+                <h3 class="text-brand-800 font-bold text-base mb-1 flex items-center"><i class="fas fa-tasks text-brand-400 mr-2"></i> 作業繳交概況</h3>
+                <p class="text-xs text-brand-500 mb-4 border-b border-brand-100 pb-2">自動保護隱私，不公開缺交座號</p>
+                <div id="hw-progress-container" class="space-y-4 mb-5 max-h-[30vh] lg:max-h-[40vh] overflow-y-auto pr-2 custom-scrollbar"></div>
+                <button onclick="openStudentSubmitModal()" class="w-full py-3 bg-brand-50 hover:bg-brand-100 text-brand-800 rounded-xl border border-brand-200 transition flex items-center justify-center font-bold text-sm shadow-sm">
+                    <i class="fas fa-hand-paper text-brand-500 mr-2"></i> 我要補交作業
                 </button>
             </div>
 
-            <div class="bg-blackboard rounded-xl border border-gray-700/50 shadow-lg p-5 flex-grow">
-                <h3 class="text-white font-bold mb-4 flex items-center"><i class="fas fa-star text-yellow-400 mr-2"></i> 當天常規表現</h3>
-                <div class="space-y-6">
+            <div class="bg-white rounded-2xl border border-brand-100 soft-shadow p-5 flex-grow">
+                 <h3 class="text-brand-800 font-bold text-base mb-4 flex items-center"><i class="fas fa-star text-brand-400 mr-2"></i> 當天常規表現</h3>
+                <div class="space-y-5">
                     <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="text-gray-300">秩序 (風紀)</span></div>
-                        <div class="h-3 w-full bg-gray-700 rounded-full overflow-hidden flex" id="bar-discipline">
-                            <div class="bg-red-500 h-full w-[0%]"></div><div class="bg-emerald-500 h-full w-[100%]"></div><div class="bg-yellow-400 h-full w-[0%]"></div>
+                        <div class="flex justify-between text-xs sm:text-sm mb-1.5 font-bold"><span class="text-brand-600">秩序 (風紀)</span></div>
+                        <div class="h-3 sm:h-3.5 w-full bg-brand-100 rounded-full overflow-hidden flex" id="bar-discipline">
+                            <div class="bg-brand-300 h-full w-[0%] transition-all"></div><div class="bg-brand-400 h-full w-[100%] transition-all"></div><div class="bg-brand-600 h-full w-[0%] transition-all"></div>
                         </div>
                     </div>
                     <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="text-gray-300">打掃 (衛生)</span></div>
-                        <div class="h-3 w-full bg-gray-700 rounded-full overflow-hidden flex" id="bar-clean">
-                            <div class="bg-red-500 h-full w-[0%]"></div><div class="bg-emerald-500 h-full w-[100%]"></div><div class="bg-yellow-400 h-full w-[0%]"></div>
+                        <div class="flex justify-between text-xs sm:text-sm mb-1.5 font-bold"><span class="text-brand-600">打掃 (衛生)</span></div>
+                        <div class="h-3 sm:h-3.5 w-full bg-brand-100 rounded-full overflow-hidden flex" id="bar-clean">
+                            <div class="bg-brand-300 h-full w-[0%] transition-all"></div><div class="bg-brand-400 h-full w-[100%] transition-all"></div><div class="bg-brand-600 h-full w-[0%] transition-all"></div>
                         </div>
                     </div>
                     <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="text-gray-300">目標 (班長)</span></div>
-                        <div class="h-3 w-full bg-gray-700 rounded-full overflow-hidden flex" id="bar-goal">
-                            <div class="bg-red-500 h-full w-[0%]"></div><div class="bg-emerald-500 h-full w-[100%]"></div><div class="bg-yellow-400 h-full w-[0%]"></div>
+                        <div class="flex justify-between text-xs sm:text-sm mb-1.5 font-bold"><span class="text-brand-600">目標 (班長)</span></div>
+                        <div class="h-3 sm:h-3.5 w-full bg-brand-100 rounded-full overflow-hidden flex" id="bar-goal">
+                            <div class="bg-brand-300 h-full w-[0%] transition-all"></div><div class="bg-brand-400 h-full w-[100%] transition-all"></div><div class="bg-brand-600 h-full w-[0%] transition-all"></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
+
     </main>
 
-    <footer class="fixed bottom-0 w-full bg-blackboard/90 backdrop-blur border-t border-gray-800 p-2 flex justify-between items-center z-40">
-        <div class="flex space-x-2 px-4">
-            <button onclick="window.open('teacher_admin.html', '_blank')" class="px-4 py-1.5 rounded-full bg-blue-900/50 hover:bg-blue-800 text-blue-300 text-sm border border-blue-700/50 transition flex items-center font-bold">
-                👨‍🏫 導師登入
-            </button>
-            <div class="w-px h-6 bg-gray-700 mx-2 self-center"></div>
-            <button onclick="openCadreAuth('monitor')" class="px-4 py-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-600 transition flex items-center">👑 班長</button>
-            <button onclick="openCadreAuth('vice')" class="px-4 py-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-600 transition flex items-center">📋 副班長</button>
-            <button onclick="openCadreAuth('discipline')" class="px-4 py-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-600 transition flex items-center">👮 風紀</button>
-            <button onclick="openCadreAuth('academic')" class="px-4 py-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-600 transition flex items-center">📚 小老師</button>
-            <button onclick="openCadreAuth('health')" class="px-4 py-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-600 transition flex items-center">🧹 衛生</button>
+    <!-- 底部功能列 -->
+    <footer class="fixed bottom-0 w-full bg-white/90 backdrop-blur-md border-t border-brand-200 p-3 sm:p-4 flex flex-col sm:flex-row justify-between items-center z-40 gap-3 sm:gap-0">
+        <div class="flex space-x-2 w-full sm:w-auto overflow-x-auto pb-1 sm:pb-0 custom-scrollbar justify-start px-2">
+            <button onclick="window.open('teacher_admin.html', '_blank')" class="shrink-0 px-4 py-2 rounded-full bg-brand-100 hover:bg-brand-200 text-brand-800 text-xs sm:text-sm border border-brand-300 transition flex items-center font-bold">👨‍🏫 導師</button>
+            <div class="w-px h-5 bg-brand-300 mx-1 self-center shrink-0"></div>
+            <button onclick="openCadreAuth('monitor')" class="shrink-0 px-4 py-2 rounded-full bg-white hover:bg-brand-50 text-brand-700 text-xs sm:text-sm border border-brand-200 transition flex items-center font-bold shadow-sm">👑 班長</button>
+            <button onclick="openCadreAuth('vice')" class="shrink-0 px-4 py-2 rounded-full bg-white hover:bg-brand-50 text-brand-700 text-xs sm:text-sm border border-brand-200 transition flex items-center font-bold shadow-sm">📋 副班長</button>
+            <button onclick="openCadreAuth('discipline')" class="shrink-0 px-4 py-2 rounded-full bg-white hover:bg-brand-50 text-brand-700 text-xs sm:text-sm border border-brand-200 transition flex items-center font-bold shadow-sm">👮 風紀</button>
+            <button onclick="openCadreAuth('academic')" class="shrink-0 px-4 py-2 rounded-full bg-white hover:bg-brand-50 text-brand-700 text-xs sm:text-sm border border-brand-200 transition flex items-center font-bold shadow-sm">📚 小老師</button>
+            <button onclick="openCadreAuth('health')" class="shrink-0 px-4 py-2 rounded-full bg-white hover:bg-brand-50 text-brand-700 text-xs sm:text-sm border border-brand-200 transition flex items-center font-bold shadow-sm">🧹 衛生</button>
         </div>
-        <div class="px-4 relative">
-            <button onclick="toggleLinksMenu()" class="px-4 py-1.5 rounded-full bg-gray-800 hover:bg-gray-700 text-gray-300 text-sm border border-gray-600 transition flex items-center">
-                <i class="fas fa-link mr-2"></i> 常用連結
+        
+        <div class="px-4 relative hidden sm:block">
+            <button onclick="toggleLinksMenu()" class="px-4 py-2 rounded-full bg-white hover:bg-brand-50 text-brand-700 text-xs sm:text-sm border border-brand-200 transition flex items-center font-bold shadow-sm">
+                <i class="fas fa-link mr-2 text-brand-400"></i> 常用連結
             </button>
-            <div id="links-menu" class="hidden absolute bottom-12 right-4 bg-blackboard border border-gray-600 rounded-lg shadow-xl w-48 py-2 z-50">
-                <a href="http://www.ycjh.hlc.edu.tw" target="_blank" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition"><i class="fas fa-globe mr-2 text-blue-400"></i> 宜昌國中官網</a>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition"><i class="fas fa-chalkboard mr-2 text-pink-400"></i> 班級 Padlet</a>
-                <a href="#" class="block px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition"><i class="fas fa-th mr-2 text-yellow-400"></i> 換座位系統</a>
+            <div id="links-menu" class="hidden absolute bottom-12 right-4 bg-white border border-brand-200 rounded-xl shadow-xl w-48 py-2 z-50">
+                <a href="#" class="block px-4 py-2 text-sm text-brand-700 hover:bg-brand-50 transition"><i class="fas fa-globe mr-3 text-brand-400"></i>學校官網</a>
+                <a href="#" class="block px-4 py-2 text-sm text-brand-700 hover:bg-brand-50 transition"><i class="fas fa-chalkboard mr-3 text-brand-400"></i>班級 Padlet</a>
+                <a href="#" class="block px-4 py-2 text-sm text-brand-700 hover:bg-brand-50 transition"><i class="fas fa-th mr-3 text-brand-400"></i>換座位系統</a>
             </div>
         </div>
     </footer>
 
-    <!-- 密碼 Modal -->
-    <div id="modal-auth" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50">
-        <!-- 內容同前... (省略不必要的版面標籤，直接保留功能) -->
-        <div class="bg-blackboard rounded-lg border border-gray-600 shadow-2xl w-80 overflow-hidden">
-            <div class="bg-gray-800 px-4 py-3 flex justify-between items-center border-b border-gray-700">
-                <h3 class="text-white font-bold" id="auth-title">幹部登入</h3>
-                <button onclick="closeModal('modal-auth')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    <!-- Modals -->
+    <div id="modal-auth" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-sm overflow-hidden">
+            <div class="bg-brand-50 px-5 py-4 flex justify-between items-center border-b border-brand-100">
+                <h3 class="text-brand-800 font-bold text-base" id="auth-title">幹部登入</h3>
+                <button onclick="closeModal('modal-auth')" class="text-brand-400 hover:text-brand-600"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-5 text-center">
-                <p class="text-sm text-gray-400 mb-4">請輸入專屬密碼 (預設: 1234)</p>
-                <input type="password" id="auth-pwd" class="w-full bg-black text-white px-3 py-2 rounded border border-gray-600 text-center tracking-[0.5em] focus:outline-none focus:border-emerald-500 mb-4">
-                <button onclick="verifyCadre()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition">解鎖進入</button>
+            <div class="p-6 text-center">
+                <p class="text-xs text-brand-500 mb-4 font-bold">請輸入專屬密碼</p>
+                <input type="password" id="auth-pwd" class="w-full bg-brand-50 text-brand-800 px-4 py-3 rounded-xl border border-brand-200 text-center tracking-[0.5em] focus:outline-none focus:border-brand-400 mb-5 text-lg font-mono shadow-inner">
+                <button onclick="verifyCadre()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 rounded-xl transition text-sm shadow-md">解鎖進入</button>
             </div>
         </div>
     </div>
 
-    <!-- 幹部工作區 Modal -->
-    <div id="modal-cadre-work" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-        <div class="bg-blackboard rounded-lg border border-gray-600 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
-            <div class="bg-gray-800 px-4 py-3 flex justify-between items-center border-b border-gray-700">
-                <h3 class="text-white font-bold text-lg" id="work-title">幹部登記區</h3>
-                <button onclick="closeModal('modal-cadre-work')" class="text-gray-400 hover:text-white text-xl"><i class="fas fa-times"></i></button>
+    <div id="modal-cadre-work" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-2 sm:p-4">
+        <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-3xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+            <div class="bg-brand-50 px-5 py-4 flex justify-between items-center border-b border-brand-100 shrink-0">
+                <h3 class="text-brand-800 font-bold text-base sm:text-lg" id="work-title">幹部登記區</h3>
+                <button onclick="closeModal('modal-cadre-work')" class="text-brand-400 hover:text-brand-600 text-lg"><i class="fas fa-times"></i></button>
             </div>
-            <div id="cadre-controls" class="hidden px-4 py-3 bg-[#121815] border-b border-gray-700 flex justify-between items-center">
-                <div class="flex items-center space-x-2">
-                    <label class="text-gray-400 text-sm">登記日期：</label>
-                    <input type="date" id="cadre-date" class="bg-black text-white px-2 py-1 rounded border border-gray-600 text-sm">
+            <div id="cadre-controls" class="hidden px-5 py-3 bg-white border-b border-brand-100 flex justify-between items-center shrink-0">
+                <div class="flex items-center space-x-3">
+                    <label class="text-brand-600 text-xs sm:text-sm font-bold">登記日期：</label>
+                    <input type="date" id="cadre-date" class="bg-brand-50 text-brand-800 px-3 py-1.5 rounded-lg border border-brand-200 text-xs sm:text-sm outline-none focus:border-brand-400">
                 </div>
-                <button onclick="resetCadreDefaults()" class="text-sm bg-gray-800 hover:bg-gray-700 text-gray-300 px-3 py-1 rounded border border-gray-600 transition">
-                    <i class="fas fa-undo mr-1"></i> 還原今日預設
+                <button onclick="resetCadreDefaults()" class="text-xs sm:text-sm bg-white hover:bg-brand-50 text-brand-600 px-3 py-1.5 rounded-lg border border-brand-200 transition font-bold shadow-sm">
+                    <i class="fas fa-undo mr-1.5"></i> 還原預設
                 </button>
             </div>
-            <div class="p-4 overflow-y-auto flex-grow" id="work-content"></div>
-            <div class="p-4 border-t border-gray-700 bg-gray-800/50">
-                <button onclick="saveCadreRecord()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded shadow-lg transition text-lg flex justify-center items-center">
+            <div class="p-4 sm:p-6 overflow-y-auto flex-grow custom-scrollbar bg-brand-50/30" id="work-content"></div>
+            <div class="p-4 border-t border-brand-100 bg-brand-50 shrink-0">
+                <button onclick="saveCadreRecord()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 sm:py-3.5 rounded-xl shadow-md transition text-sm sm:text-base flex justify-center items-center">
                     <i class="fas fa-cloud-upload-alt mr-2"></i> 儲存並同步至雲端
                 </button>
             </div>
         </div>
     </div>
 
-    <!-- 編輯聯絡簿 Modal -->
-    <div id="modal-edit-board" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-        <div class="bg-blackboard rounded-lg border border-gray-600 shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh]">
-            <div class="bg-gray-800 px-4 py-3 flex justify-between items-center border-b border-gray-700">
-                <h3 class="text-white font-bold"><i class="fas fa-edit text-emerald-400 mr-2"></i> 編輯聯絡簿</h3>
-                <button onclick="closeModal('modal-edit-board')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    <div id="modal-edit-board" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-2 sm:p-4">
+        <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-4xl flex flex-col max-h-[95vh] sm:max-h-[90vh]">
+            <div class="bg-brand-50 px-5 py-4 flex justify-between items-center border-b border-brand-100 shrink-0">
+                <h3 class="text-brand-800 font-bold text-base sm:text-lg"><i class="fas fa-edit text-brand-500 mr-2"></i> 編輯聯絡簿</h3>
+                <button onclick="closeModal('modal-edit-board')" class="text-brand-400 hover:text-brand-600 text-lg"><i class="fas fa-times"></i></button>
             </div>
-            <div class="flex border-b border-gray-700 bg-gray-900 px-2 pt-2">
-                <button onclick="switchBoardTab('hw')" id="tab-hw" class="px-4 py-2 text-sm font-bold text-emerald-400 border-b-2 border-emerald-400">作業與物品</button>
-                <button onclick="switchBoardTab('note')" id="tab-note" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-200">留言板</button>
-                <button onclick="switchBoardTab('goal')" id="tab-goal" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-200">今日目標</button>
-                <button onclick="switchBoardTab('reminder')" id="tab-reminder" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-200">重要提醒</button>
-                <button onclick="switchBoardTab('urgent')" id="tab-urgent" class="px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-200">特別叮嚀</button>
+            <div class="flex border-b border-brand-100 bg-white px-2 pt-2 overflow-x-auto custom-scrollbar shrink-0">
+                <button onclick="switchBoardTab('hw')" id="tab-hw" class="shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-600 border-b-2 border-brand-500">作業與物品</button>
+                <button onclick="switchBoardTab('note')" id="tab-note" class="shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-400 hover:text-brand-600 border-b-2 border-transparent">留言板</button>
+                <button onclick="switchBoardTab('goal')" id="tab-goal" class="shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-400 hover:text-brand-600 border-b-2 border-transparent">今日目標</button>
+                <button onclick="switchBoardTab('reminder')" id="tab-reminder" class="shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-400 hover:text-brand-600 border-b-2 border-transparent">重要提醒</button>
+                <button onclick="switchBoardTab('urgent')" id="tab-urgent" class="shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-400 hover:text-brand-600 border-b-2 border-transparent">特別叮嚀</button>
             </div>
-            <div class="p-6 overflow-y-auto flex-grow" id="edit-board-content"></div>
-            <div class="p-4 border-t border-gray-700 bg-gray-800/50">
-                <button onclick="saveBoardEdits()" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition">套用並同步至雲端</button>
+            <div class="p-4 sm:p-6 overflow-y-auto flex-grow custom-scrollbar bg-brand-50/30" id="edit-board-content"></div>
+            <div class="p-4 border-t border-brand-100 bg-brand-50 shrink-0">
+                <button onclick="saveBoardEdits()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3 sm:py-3.5 rounded-xl shadow-md transition text-sm sm:text-base flex justify-center items-center">
+                    <i class="fas fa-check-circle mr-2"></i> 套用並同步
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- 學生補交作業 Modal -->
-    <div id="modal-student-submit" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-4">
-        <div class="bg-blackboard rounded-lg border border-gray-600 shadow-2xl w-full max-w-lg flex flex-col">
-            <div class="bg-gray-800 px-4 py-3 flex justify-between items-center border-b border-gray-700">
-                <h3 class="text-white font-bold text-lg flex items-center"><i class="fas fa-hand-paper text-yellow-500 mr-2"></i> 我要補交作業</h3>
-                <button onclick="closeModal('modal-student-submit')" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    <div id="modal-student-submit" class="hidden fixed inset-0 modal-overlay flex items-center justify-center z-50 p-2 sm:p-4">
+        <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[95vh]">
+            <div class="bg-brand-50 px-5 py-4 flex justify-between items-center border-b border-brand-100 shrink-0">
+                <h3 class="text-brand-800 font-bold text-base sm:text-lg flex items-center"><i class="fas fa-hand-paper text-brand-500 mr-2"></i> 補交作業登記</h3>
+                <button onclick="closeModal('modal-student-submit')" class="text-brand-400 hover:text-brand-600 text-lg"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-6 flex-grow">
-                <p class="text-gray-300 mb-4">請點選您的座號：</p>
-                <div class="grid grid-cols-6 gap-2 mb-6" id="student-btn-grid"></div>
-                <div id="student-missing-area" class="hidden border-t border-gray-700 pt-4 mt-4">
-                    <h4 class="text-emerald-400 font-bold mb-2" id="student-name-display">座號 XX</h4>
-                    <div id="student-missing-list" class="space-y-2"></div>
+            <div class="p-4 sm:p-6 flex-grow overflow-y-auto custom-scrollbar bg-brand-50/30">
+                <p class="text-brand-600 mb-4 font-bold text-sm">請點選您的座號：</p>
+                <div class="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-2 sm:gap-3 mb-6" id="student-btn-grid"></div>
+                
+                <div id="student-missing-area" class="hidden border-t border-brand-100 pt-6 mt-6">
+                    <h4 class="text-brand-800 font-bold mb-4 text-lg" id="student-name-display">座號 XX</h4>
+                    <div id="student-missing-list" class="space-y-3"></div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // ==========================================
-        // 1. Firebase 初始化
-        // ==========================================
-        const firebaseConfig = {
-            apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA",
-            authDomain: "smart-class-system-a1645.firebaseapp.com",
-            projectId: "smart-class-system-a1645",
-            storageBucket: "smart-class-system-a1645.firebasestorage.app",
-            messagingSenderId: "236576763126",
-            appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const db = firebase.firestore();
+        const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645", storageBucket: "smart-class-system-a1645.firebasestorage.app", messagingSenderId: "236576763126", appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7" };
+        firebase.initializeApp(firebaseConfig); const db = firebase.firestore();
 
-        // 預設資料結構 (當資料庫沒東西時)
-        const CLASS_SIZE = 24;
-        let currentFontSize = 1; 
-        let currentCadreRole = '';
-        
-        let topBoardInfo = {
-            countdownName: '一段倒數', countdownDate: '2026-10-15',
-            bdayToday: '無', bdayNext: '--',
-            dutyBoard: '--', dutyHW: '--', dutyEnv: '--',
-            monitorMsg: '', marqueeText: '班級系統已成功上線！'
-        };
-
-        let boardData = {
-            homework: [], note: { type: '佳句', text: '「開始，就是成功的一半。」' },
-            goals: [], reminders: [], urgent: []
-        };
-
+        const CLASS_SIZE = 24; let currentFontSize = 1; let currentCadreRole = '';
+        let topBoardInfo = { countdownName: '一段倒數', countdownDate: '2026-10-15', bdayToday: '無', bdayNext: '--', dutyBoard: '--', dutyHW: '--', dutyEnv: '--', monitorMsg: '', marqueeText: '班級系統已成功上線！' };
+        let boardData = { homework: [], note: { type: '佳句', text: '「開始，就是成功的一半。」' }, goals: [], reminders: [], urgent: [] };
         let studentsData = {};
-        function initStudentsData() {
-            for (let i = 1; i <= CLASS_SIZE; i++) {
-                studentsData[i] = { attendance: '到校', missingHW: [], discipline: '已經做到', clean: '已經做到', goal: '已經做到' };
-            }
-        }
+        function initStudentsData() { for (let i = 1; i <= CLASS_SIZE; i++) { studentsData[i] = { attendance: '到校', missingHW: [], discipline: '已經做到', clean: '已經做到', goal: '已經做到' }; } }
         initStudentsData();
 
-        // 🌟 新增：存放雲端密碼的變數
-        let cadrePasswords = {
-            'edit_board': '1234', 'monitor': '1234', 'vice': '1234', 
-            'discipline': '1234', 'academic': '1234', 'health': '1234'
-        };
-
-        // ==========================================
-        // 2. 雲端監聽與自動同步 (含錯誤捕捉)
-        // ==========================================
-        function getTodayISO() {
-            const el = document.getElementById('cadre-date');
-            return el && el.value ? el.value : new Date().toISOString().split('T')[0];
-        }
+        function getTodayISO() { const el = document.getElementById('cadre-date'); return el && el.value ? el.value : new Date().toISOString().split('T')[0]; }
 
         window.onload = () => {
             document.getElementById('display-date').innerText = getFormattedDate();
             document.getElementById('cadre-date').value = new Date().toISOString().split('T')[0];
-            
-            // 監聽聯絡簿與頂部設定
             db.collection("board_settings").doc("current").onSnapshot((doc) => {
                 if (doc.exists) {
-                    const data = doc.data();
-                    if(data.topBoardInfo) topBoardInfo = data.topBoardInfo;
-                    if(data.boardData) boardData = data.boardData;
-                    if(data.passwords) cadrePasswords = Object.assign(cadrePasswords, data.passwords); // 同步最新密碼
-                    renderTopBoard();
-                    renderBoard();
-                    renderHWProgress();
-                } else {
-                    pushToFirebase(); // 無資料自動建立
-                }
-            }, (error) => {
-                showFirebaseError(error);
-            });
-
-            // 監聽學生每日狀態
+                    const data = doc.data(); if(data.topBoardInfo) topBoardInfo = data.topBoardInfo; if(data.boardData) boardData = data.boardData;
+                    renderTopBoard(); renderBoard(); renderHWProgress();
+                } else pushToFirebase(); 
+            }, showFirebaseError);
             db.collection("daily_records").doc(getTodayISO()).onSnapshot((doc) => {
-                if (doc.exists) {
-                    studentsData = doc.data().studentsData;
-                } else {
-                    initStudentsData();
-                }
-                updateAttendanceTopBar();
-                renderBehaviorBars();
-                renderHWProgress();
-                
-                // 如果幹部視窗開著，即時更新畫面
+                if (doc.exists) studentsData = doc.data().studentsData; else initStudentsData();
+                updateAttendanceTopBar(); renderBehaviorBars(); renderHWProgress();
                 if(!document.getElementById('modal-cadre-work').classList.contains('hidden')) {
-                    if (currentCadreRole === 'vice' || currentCadreRole === 'academic' || ['monitor', 'discipline', 'health'].includes(currentCadreRole)) {
-                        openCadreWorkModal(); 
-                    }
+                    if (['vice', 'academic', 'monitor', 'discipline', 'health'].includes(currentCadreRole)) openCadreWorkModal(); 
                 }
-            }, (error) => {
-                showFirebaseError(error);
-            });
+            }, showFirebaseError);
         };
 
-        // 錯誤顯示函數
-        function showFirebaseError(error) {
-            console.error("Firebase 連線被阻擋:", error);
-            document.getElementById('display-attendance-main').innerText = "連線失敗 (權限不足)";
-            document.getElementById('display-attendance-main').classList.add("text-red-400");
-            alert("⚠️ 無法讀取資料庫！\n請至 Firebase 控制台的「Rules」開放權限。\n錯誤代碼：" + error.message);
-        }
+        function showFirebaseError(error) { console.error("Error:", error); document.getElementById('display-attendance-main').innerText = "連線失敗"; document.getElementById('display-attendance-main').classList.add("text-morandi-pink"); }
+        function pushToFirebase() { db.collection("board_settings").doc("current").set({ topBoardInfo: topBoardInfo, boardData: boardData }, { merge: true }); db.collection("daily_records").doc(getTodayISO()).set({ studentsData: studentsData, date: getTodayISO() }, { merge: true }); }
+        document.getElementById('cadre-date').addEventListener('change', () => { db.collection("daily_records").doc(getTodayISO()).get().then(doc => { if(doc.exists) studentsData = doc.data().studentsData; else initStudentsData(); openCadreWorkModal(); }); });
 
-        // 寫入雲端函數
-        function pushToFirebase() {
-            db.collection("board_settings").doc("current").set({
-                topBoardInfo: topBoardInfo,
-                boardData: boardData
-            }, { merge: true }).catch(showFirebaseError);
-
-            db.collection("daily_records").doc(getTodayISO()).set({
-                studentsData: studentsData,
-                date: getTodayISO()
-            }, { merge: true }).catch(showFirebaseError);
-        }
-
-        // 切換日期讀取
-        document.getElementById('cadre-date').addEventListener('change', () => {
-            const dateStr = getTodayISO();
-            db.collection("daily_records").doc(dateStr).get().then(doc => {
-                if(doc.exists) {
-                    studentsData = doc.data().studentsData;
-                } else {
-                    initStudentsData();
-                }
-                openCadreWorkModal();
-            }).catch(showFirebaseError);
-        });
-
-        // ==========================================
-        // 3. UI 渲染邏輯 (與先前完全相同)
-        // ==========================================
-        function getFormattedDate() {
-            const d = new Date();
-            const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六'];
-            return `${d.getMonth() + 1}月${d.getDate()}日 ${days[d.getDay()]}`;
-        }
-        function calculateCountdownDays(targetDateStr) {
-            if(!targetDateStr) return 0;
-            const target = new Date(targetDateStr);
-            const today = new Date();
-            today.setHours(0,0,0,0);
-            target.setHours(0,0,0,0);
-            const diffTime = target - today;
-            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-            return diffDays > 0 ? diffDays : 0;
-        }
+        function getFormattedDate() { const d = new Date(); const days = ['星期日', '星期一', '星期二', '星期三', '星期四', '星期五', '星期六']; return `${d.getMonth() + 1}月${d.getDate()}日 ${days[d.getDay()]}`; }
+        function calculateCountdownDays(targetDateStr) { if(!targetDateStr) return 0; const target = new Date(targetDateStr); const today = new Date(); today.setHours(0,0,0,0); target.setHours(0,0,0,0); const diffDays = Math.ceil((target - today) / (1000 * 60 * 60 * 24)); return diffDays > 0 ? diffDays : 0; }
 
         function renderTopBoard() {
-            document.getElementById('countdown-label').innerText = topBoardInfo.countdownName || '倒數';
-            document.getElementById('display-countdown').innerText = calculateCountdownDays(topBoardInfo.countdownDate);
-            
-            const bdayEl = document.getElementById('display-bday-today');
-            bdayEl.innerText = topBoardInfo.bdayToday;
-            if(topBoardInfo.bdayToday === '無' || topBoardInfo.bdayToday === '') {
-                bdayEl.className = "text-xl font-bold mt-1 text-gray-500 opacity-50";
-            } else {
-                bdayEl.className = "text-xl font-bold mt-1 text-yellow-400";
-            }
-
-            document.getElementById('display-bday-next').innerText = topBoardInfo.bdayNext;
-            document.getElementById('display-duty-board').innerText = topBoardInfo.dutyBoard;
-            document.getElementById('display-duty-hw').innerText = topBoardInfo.dutyHW;
-            document.getElementById('display-duty-env').innerText = topBoardInfo.dutyEnv;
-            
-            if(topBoardInfo.marqueeText) {
-                document.getElementById('marquee-text').innerText = topBoardInfo.marqueeText;
-            }
+            document.getElementById('countdown-label').innerText = topBoardInfo.countdownName || '倒數'; document.getElementById('display-countdown').innerText = calculateCountdownDays(topBoardInfo.countdownDate);
+            const bdayEl = document.getElementById('display-bday-today'); bdayEl.innerText = topBoardInfo.bdayToday; bdayEl.className = (topBoardInfo.bdayToday === '無' || topBoardInfo.bdayToday === '') ? "text-xl sm:text-2xl font-bold mt-1 text-brand-400 opacity-50" : "text-xl sm:text-2xl font-bold mt-1 text-brand-800";
+            document.getElementById('display-bday-next').innerText = topBoardInfo.bdayNext; document.getElementById('display-duty-board').innerText = topBoardInfo.dutyBoard; document.getElementById('display-duty-hw').innerText = topBoardInfo.dutyHW; document.getElementById('display-duty-env').innerText = topBoardInfo.dutyEnv;
+            if(topBoardInfo.marqueeText) document.getElementById('marquee-text').innerText = topBoardInfo.marqueeText;
         }
 
         function renderBoard() {
-            const hwList = document.getElementById('list-homework');
-            hwList.innerHTML = '';
-            boardData.homework.forEach(hw => {
-                let linkStr = hw.url ? `<a href="${hw.url}" target="_blank" class="text-blue-400 hover:text-blue-300 ml-2"><i class="fas fa-link"></i></a>` : '';
-                hwList.innerHTML += `<li>${hw.text} ${linkStr}</li>`;
-            });
-            document.getElementById('board-note-type').innerText = boardData.note.type;
-            document.getElementById('board-note-content').innerText = boardData.note.text;
-            
-            const goalList = document.getElementById('list-goals');
-            goalList.innerHTML = '';
-            boardData.goals.forEach(g => { goalList.innerHTML += `<li><i class="far fa-square text-gray-500 mr-2"></i>${g.text}</li>`; });
-            
-            const remList = document.getElementById('list-reminders');
-            remList.innerHTML = '';
-            boardData.reminders.forEach(r => {
-                let linkStr = r.url ? `<a href="${r.url}" target="_blank" class="text-blue-400 hover:text-blue-300 ml-2"><i class="fas fa-link"></i></a>` : '';
-                remList.innerHTML += `<li>${r.text} ${linkStr}</li>`;
-            });
-            
-            const urgList = document.getElementById('list-urgent');
-            urgList.innerHTML = '';
-            boardData.urgent.forEach(u => {
-                let linkStr = u.url ? `<a href="${u.url}" target="_blank" class="text-blue-400 hover:text-blue-300 ml-2"><i class="fas fa-link"></i></a>` : '';
-                urgList.innerHTML += `<li><i class="far fa-square text-[#9f1239] mr-2"></i>${u.text} ${linkStr}</li>`;
-            });
+            const hwList = document.getElementById('list-homework'); hwList.innerHTML = '';
+            boardData.homework.forEach(hw => { let linkStr = hw.url ? `<a href="${hw.url}" target="_blank" class="text-brand-500 hover:text-brand-700 ml-2"><i class="fas fa-link"></i></a>` : ''; hwList.innerHTML += `<li>${hw.text} ${linkStr}</li>`; });
+            document.getElementById('board-note-type').innerText = boardData.note.type; document.getElementById('board-note-content').innerText = boardData.note.text;
+            const goalList = document.getElementById('list-goals'); goalList.innerHTML = ''; boardData.goals.forEach(g => { goalList.innerHTML += `<li><i class="far fa-square text-brand-400 mr-2 text-sm"></i>${g.text}</li>`; });
+            const remList = document.getElementById('list-reminders'); remList.innerHTML = ''; boardData.reminders.forEach(r => { let linkStr = r.url ? `<a href="${r.url}" target="_blank" class="text-brand-500 hover:text-brand-700 ml-2"><i class="fas fa-link"></i></a>` : ''; remList.innerHTML += `<li>${r.text} ${linkStr}</li>`; });
+            const urgList = document.getElementById('list-urgent'); urgList.innerHTML = ''; boardData.urgent.forEach(u => { let linkStr = u.url ? `<a href="${u.url}" target="_blank" class="text-brand-500 hover:text-brand-700 ml-2"><i class="fas fa-link"></i></a>` : ''; urgList.innerHTML += `<li><i class="far fa-square text-morandi-pink mr-2 text-sm"></i>${u.text} ${linkStr}</li>`; });
         }
 
         function renderHWProgress() {
-            const container = document.getElementById('hw-progress-container');
-            container.innerHTML = '';
-            let trackableIds = new Set();
+            const container = document.getElementById('hw-progress-container'); container.innerHTML = ''; let trackableIds = new Set();
             boardData.homework.filter(h => h.checkTomorrow).forEach(h => trackableIds.add(h.id));
-
-            if(trackableIds.size === 0) {
-                container.innerHTML = '<div class="text-gray-400 text-sm">目前無作業追蹤紀錄</div>';
-                return;
-            }
-
+            if(trackableIds.size === 0) { container.innerHTML = '<div class="text-brand-500 text-xs font-medium">目前無作業追蹤紀錄</div>'; return; }
             trackableIds.forEach(id => {
-                let hwObj = boardData.homework.find(h => h.id === id);
-                let hwName = hwObj ? hwObj.text : `作業 (${id})`;
-                let missingCount = 0;
+                let hwObj = boardData.homework.find(h => h.id === id); let hwName = hwObj ? hwObj.text : `作業 (${id})`; let missingCount = 0;
                 for(let i=1; i<=CLASS_SIZE; i++) if(studentsData[i].missingHW.includes(id)) missingCount++;
-                let submitted = CLASS_SIZE - missingCount;
-                let percent = Math.round((submitted / CLASS_SIZE) * 100);
-                let colorClass = percent === 100 ? 'bg-emerald-500' : (percent >= 80 ? 'bg-blue-500' : 'bg-yellow-500');
-                container.innerHTML += `
-                    <div>
-                        <div class="flex justify-between text-sm mb-1"><span class="text-gray-300">${hwName}</span><span class="text-gray-400">${percent}%</span></div>
-                        <div class="h-2 w-full bg-gray-700 rounded-full overflow-hidden"><div class="${colorClass} h-full transition-all duration-500" style="width: ${percent}%"></div></div>
-                    </div>
-                `;
+                let percent = Math.round(((CLASS_SIZE - missingCount) / CLASS_SIZE) * 100);
+                let completedCount = CLASS_SIZE - missingCount;
+                
+                // 改用棕色系作為進度條顏色
+                let colorClass = percent === 100 ? 'bg-brand-600' : (percent >= 80 ? 'bg-brand-400' : 'bg-brand-300');
+                container.innerHTML += `<div><div class="flex justify-between text-xs sm:text-sm mb-1.5 font-bold"><span class="text-brand-700 truncate pr-2">${hwName}</span><span class="text-brand-600">${completedCount}/${CLASS_SIZE} 人 (${percent}%)</span></div><div class="h-2.5 sm:h-3 w-full bg-brand-100 rounded-full overflow-hidden flex"><div class="${colorClass} h-full transition-all duration-700" style="width: ${percent}%"></div></div></div>`;
             });
         }
 
-        function renderBehaviorBars() {
-            updateBar('discipline', 'bar-discipline');
-            updateBar('clean', 'bar-clean');
-            updateBar('goal', 'bar-goal');
-        }
-        
+        function renderBehaviorBars() { updateBar('discipline', 'bar-discipline'); updateBar('clean', 'bar-clean'); updateBar('goal', 'bar-goal'); }
+
+        // 🌟 修正了導致當機的語法範圍錯誤！
         function updateBar(metric, elementId) {
             let counts = { '待改進': 0, '已經做到': 0, '表現優良': 0 };
             for(let i=1; i<=CLASS_SIZE; i++) counts[studentsData[i][metric]]++;
             let el = document.getElementById(elementId);
-            el.children[0].style.width = (counts['待改進'] / CLASS_SIZE * 100) + '%';
-            el.children[1].style.width = (counts['已經做到'] / CLASS_SIZE * 100) + '%';
+            el.children[0].style.width = (counts['待改進'] / CLASS_SIZE * 100) + '%'; 
+            el.children[1].style.width = (counts['已經做到'] / CLASS_SIZE * 100) + '%'; 
             el.children[2].style.width = (counts['表現優良'] / CLASS_SIZE * 100) + '%';
         }
 
-function updateAttendanceTopBar() {
-            let present = 0;
-            let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] };
-            
-            for(let i=1; i<=CLASS_SIZE; i++){
-                let st = studentsData[i].attendance;
-                if(st === '到校' || st === '遲到') present++;
-                if (st !== '到校' && absentGroups[st]) absentGroups[st].push(String(i).padStart(2,'0'));
-            }
-            
+        function updateAttendanceTopBar() {
+            let present = 0; let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] };
+            for(let i=1; i<=CLASS_SIZE; i++){ let st = studentsData[i].attendance; if(st === '到校' || st === '遲到') present++; if (st !== '到校') absentGroups[st].push(String(i).padStart(2,'0')); }
             document.getElementById('display-attendance-main').innerText = `出席 ${present}/${CLASS_SIZE} 人`;
-
-            
-            let absentTexts = [];
-            let hasAbsentees = false;
+            let absentTexts = []; let hasAbsentees = false;
             for (const [type, seats] of Object.entries(absentGroups)) {
                 if (seats.length > 0) {
-                    hasAbsentees = true;
-                    let color = 'text-gray-300';
-                    if(type === '病假') color = 'text-yellow-400';
-                    else if(type === '事假') color = 'text-blue-400';
-                    else if(type === '遲到' || type === '未到') color = 'text-red-400';
-                    else if(type === '公假') color = 'text-purple-400';
+                    hasAbsentees = true; let color = 'text-brand-600';
+                    if(type === '病假') color = 'text-brand-500'; else if(type === '事假') color = 'text-morandi-blue'; else if(type === '遲到' || type === '未到') color = 'text-morandi-pink'; else if(type === '公假') color = 'text-brand-400';
                     absentTexts.push(`<div><span class="${color} font-bold mr-2">${type}</span>${seats.join(', ')}</div>`);
                 }
             }
-            
-            const icon = document.getElementById('attendance-info-icon');
-            const content = document.getElementById('attendance-details-content');
-            if (hasAbsentees) {
-                icon.classList.remove('hidden');
-                content.innerHTML = absentTexts.join('');
-            } else {
-                icon.classList.add('hidden');
-                content.innerHTML = '<div class="text-emerald-400 font-bold"><i class="fas fa-check-circle mr-1"></i> 全員到齊</div>';
-            }
+            const icon = document.getElementById('attendance-info-icon'); const content = document.getElementById('attendance-details-content');
+            if (hasAbsentees) { icon.classList.remove('hidden'); content.innerHTML = absentTexts.join(''); } else { icon.classList.add('hidden'); content.innerHTML = '<div class="text-brand-500 font-bold"><i class="fas fa-check-circle mr-1"></i> 全員到齊</div>'; }
         }
 
-        // ==========================================
-        // 4. 事件觸發與 Modals (同先前)
-        // ==========================================
         function toggleAttendanceDetails() { document.getElementById('attendance-details-popover').classList.toggle('hidden'); }
-        function changeFontSize(action) { const area = document.getElementById('board-content-area'); if (action === 'reset') currentFontSize = 1; else if (action === 'increase') currentFontSize += 0.2; area.style.fontSize = currentFontSize + 'rem'; }
+        function changeFontSize(action) { const area = document.getElementById('board-content-area'); if (action === 'reset') currentFontSize = 1; else if (action === 'increase') currentFontSize += 0.15; area.style.fontSize = currentFontSize + 'rem'; }
         function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
         function toggleLinksMenu() { document.getElementById('links-menu').classList.toggle('hidden'); }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
@@ -573,12 +422,14 @@ function updateAttendanceTopBar() {
 
         function verifyCadre() {
             const pwd = document.getElementById('auth-pwd').value;
-            // 🌟 修正：對比雲端密碼，而不是寫死的 1234
-            if (pwd === cadrePasswords[currentCadreRole]) {
-                closeModal('modal-auth');
-                if (currentCadreRole === 'edit_board') { document.getElementById('modal-edit-board').classList.remove('hidden'); switchBoardTab('hw'); } 
-                else openCadreWorkModal();
-            } else alert('密碼錯誤！');
+            db.collection("board_settings").doc("current").get().then(doc => {
+                const correctPwd = doc.exists && doc.data().passwords ? (doc.data().passwords[currentCadreRole] || '1234') : '1234';
+                if (pwd === correctPwd) {
+                    closeModal('modal-auth');
+                    if (currentCadreRole === 'edit_board') { document.getElementById('modal-edit-board').classList.remove('hidden'); switchBoardTab('hw'); } 
+                    else openCadreWorkModal();
+                } else alert('密碼錯誤！');
+            });
         }
 
         let currentEditTab = 'hw';
@@ -586,58 +437,49 @@ function updateAttendanceTopBar() {
             currentEditTab = tab;
             ['hw', 'note', 'goal', 'reminder', 'urgent'].forEach(t => {
                 const btn = document.getElementById(`tab-${t}`);
-                if(t === tab) btn.className = "px-4 py-2 text-sm font-bold text-emerald-400 border-b-2 border-emerald-400";
-                else btn.className = "px-4 py-2 text-sm font-bold text-gray-400 hover:text-gray-200 border-b-2 border-transparent";
+                if(t === tab) btn.className = "shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-700 border-b-2 border-brand-600";
+                else btn.className = "shrink-0 px-4 py-2.5 text-xs sm:text-sm font-bold text-brand-400 hover:text-brand-600 border-b-2 border-transparent";
             });
-            const container = document.getElementById('edit-board-content');
-            container.innerHTML = '';
+            const container = document.getElementById('edit-board-content'); container.innerHTML = '';
             if (tab === 'hw' || tab === 'reminder' || tab === 'urgent') {
                 let dataList = tab === 'hw' ? boardData.homework : (tab === 'reminder' ? boardData.reminders : boardData.urgent);
                 let html = `<div class="space-y-3 mb-4" id="edit-list-container">`;
                 dataList.forEach((item, index) => {
-                    html += `<div class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-700">
-                        <input type="text" value="${item.text}" class="flex-grow bg-black text-white px-2 py-1 rounded border border-gray-600 text-sm" placeholder="項目名稱" id="edit-val-${tab}-${index}">
-                        <input type="text" value="${item.url || ''}" class="w-32 bg-black text-white px-2 py-1 rounded border border-gray-600 text-sm" placeholder="網址(選填)" id="edit-url-${tab}-${index}">
-                        ${tab === 'hw' ? `<label class="flex items-center text-sm text-gray-300 whitespace-nowrap"><input type="checkbox" class="mr-1" ${item.checkTomorrow ? 'checked' : ''} id="edit-chk-${tab}-${index}"> 翌日檢核</label>` : ''}
-                        <button onclick="removeEditItem('${tab}', ${index})" class="text-red-400 hover:text-red-300 px-2"><i class="fas fa-trash"></i></button>
+                    html += `<div class="flex flex-col sm:flex-row sm:items-center space-y-2 sm:space-y-0 sm:space-x-3 bg-white p-3 rounded-xl border border-brand-200 shadow-sm">
+                        <input type="text" value="${item.text}" class="flex-grow bg-brand-50 text-brand-800 px-3 py-2 rounded-lg border border-brand-200 text-sm outline-none focus:border-brand-400 w-full" placeholder="項目名稱" id="edit-val-${tab}-${index}">
+                        <input type="text" value="${item.url || ''}" class="w-full sm:w-32 bg-brand-50 text-brand-800 px-3 py-2 rounded-lg border border-brand-200 text-sm outline-none focus:border-brand-400" placeholder="網址(選填)" id="edit-url-${tab}-${index}">
+                        <div class="flex items-center justify-between w-full sm:w-auto">
+                            ${tab === 'hw' ? `<label class="flex items-center text-xs text-brand-600 font-bold"><input type="checkbox" class="mr-2 w-4 h-4 accent-brand-500" ${item.checkTomorrow ? 'checked' : ''} id="edit-chk-${tab}-${index}"> 翌日檢核</label>` : '<div></div>'}
+                            <button onclick="removeEditItem('${tab}', ${index})" class="bg-red-50 text-morandi-pink hover:bg-red-100 px-3 py-2 rounded-lg transition ml-3 border border-red-100 font-bold"><i class="fas fa-trash"></i></button>
+                        </div>
                     </div>`;
                 });
-                html += `</div><button onclick="addEditItem('${tab}')" class="text-sm bg-gray-800 hover:bg-gray-700 text-emerald-400 px-3 py-1 rounded border border-gray-600"><i class="fas fa-plus mr-1"></i> 新增一筆</button>`;
+                html += `</div><button onclick="addEditItem('${tab}')" class="w-full sm:w-auto font-bold bg-white hover:bg-brand-50 text-brand-600 px-4 py-2 rounded-lg border border-brand-200 shadow-sm text-sm"><i class="fas fa-plus mr-2"></i> 新增項目</button>`;
                 container.innerHTML = html;
             } else if (tab === 'note') {
-                container.innerHTML = `<div class="mb-4"><label class="block text-gray-400 text-sm mb-1">標籤類型</label><select id="edit-note-type" class="bg-black text-white px-3 py-2 rounded border border-gray-600 w-full sm:w-1/3"><option value="佳句" ${boardData.note.type === '佳句' ? 'selected' : ''}>佳句</option><option value="札記題目" ${boardData.note.type === '札記題目' ? 'selected' : ''}>札記題目</option></select></div>
-                    <div><label class="block text-gray-400 text-sm mb-1">內容文字</label><textarea id="edit-note-text" rows="4" class="w-full bg-black text-white px-3 py-2 rounded border border-gray-600">${boardData.note.text}</textarea></div>`;
+                container.innerHTML = `<div class="mb-4"><label class="block text-brand-600 text-xs font-bold mb-1.5">標籤類型</label><select id="edit-note-type" class="bg-white text-brand-800 px-3 py-2 rounded-lg border border-brand-200 w-full sm:w-1/3 text-sm outline-none focus:border-brand-400"><option value="佳句" ${boardData.note.type === '佳句' ? 'selected' : ''}>佳句</option><option value="札記題目" ${boardData.note.type === '札記題目' ? 'selected' : ''}>札記題目</option></select></div>
+                    <div><label class="block text-brand-600 text-xs font-bold mb-1.5">內容文字</label><textarea id="edit-note-text" rows="4" class="w-full bg-white text-brand-800 px-3 py-2 rounded-lg border border-brand-200 text-sm outline-none focus:border-brand-400">${boardData.note.text}</textarea></div>`;
             } else if (tab === 'goal') {
                 let html = `<div class="space-y-3 mb-4" id="edit-list-container">`;
-                boardData.goals.forEach((item, index) => { html += `<div class="flex items-center space-x-2 bg-gray-800 p-2 rounded border border-gray-700"><input type="text" value="${item.text}" class="flex-grow bg-black text-white px-2 py-1 rounded border border-gray-600 text-sm" id="edit-val-goal-${index}"><button onclick="removeEditItem('goal', ${index})" class="text-red-400 hover:text-red-300 px-2"><i class="fas fa-trash"></i></button></div>`; });
-                html += `</div><button onclick="addEditItem('goal')" class="text-sm bg-gray-800 hover:bg-gray-700 text-emerald-400 px-3 py-1 rounded border border-gray-600"><i class="fas fa-plus mr-1"></i> 新增一筆</button>`;
+                boardData.goals.forEach((item, index) => { html += `<div class="flex items-center space-x-3 bg-white p-2.5 rounded-xl border border-brand-200 shadow-sm"><input type="text" value="${item.text}" class="flex-grow bg-brand-50 text-brand-800 px-3 py-2 rounded-lg border border-brand-200 text-sm outline-none focus:border-brand-400" id="edit-val-goal-${index}"><button onclick="removeEditItem('goal', ${index})" class="bg-red-50 text-morandi-pink hover:bg-red-100 px-3 py-2 rounded-lg transition border border-red-100 font-bold"><i class="fas fa-trash"></i></button></div>`; });
+                html += `</div><button onclick="addEditItem('goal')" class="w-full sm:w-auto font-bold bg-white hover:bg-brand-50 text-brand-600 px-4 py-2 rounded-lg border border-brand-200 shadow-sm text-sm"><i class="fas fa-plus mr-2"></i> 新增項目</button>`;
                 container.innerHTML = html;
             }
         }
 
         function removeEditItem(tab, index) { syncCurrentEditTab(); if(tab==='hw') boardData.homework.splice(index, 1); if(tab==='reminder') boardData.reminders.splice(index, 1); if(tab==='urgent') boardData.urgent.splice(index, 1); if(tab==='goal') boardData.goals.splice(index, 1); switchBoardTab(tab); }
         function addEditItem(tab) { syncCurrentEditTab(); let newId = Date.now().toString(); if(tab==='hw') boardData.homework.push({id: newId, text: '', url: '', checkTomorrow: false}); if(tab==='reminder') boardData.reminders.push({id: newId, text: '', url: ''}); if(tab==='urgent') boardData.urgent.push({id: newId, text: '', url: ''}); if(tab==='goal') boardData.goals.push({id: newId, text: ''}); switchBoardTab(tab); }
-
         function syncCurrentEditTab() {
             if (currentEditTab === 'hw' || currentEditTab === 'reminder' || currentEditTab === 'urgent') {
                 let dataList = currentEditTab === 'hw' ? boardData.homework : (currentEditTab === 'reminder' ? boardData.reminders : boardData.urgent);
                 dataList.forEach((item, index) => { let valEl = document.getElementById(`edit-val-${currentEditTab}-${index}`); let urlEl = document.getElementById(`edit-url-${currentEditTab}-${index}`); if(valEl) item.text = valEl.value; if(urlEl) item.url = urlEl.value; if(currentEditTab === 'hw') { let chkEl = document.getElementById(`edit-chk-${currentEditTab}-${index}`); if(chkEl) item.checkTomorrow = chkEl.checked; } });
-            } else if (currentEditTab === 'note') {
-                let typeEl = document.getElementById('edit-note-type'); let textEl = document.getElementById('edit-note-text'); if(typeEl) boardData.note.type = typeEl.value; if(textEl) boardData.note.text = textEl.value;
-            } else if (currentEditTab === 'goal') {
-                boardData.goals.forEach((item, index) => { let valEl = document.getElementById(`edit-val-goal-${index}`); if(valEl) item.text = valEl.value; });
-            }
+            } else if (currentEditTab === 'note') { let typeEl = document.getElementById('edit-note-type'); let textEl = document.getElementById('edit-note-text'); if(typeEl) boardData.note.type = typeEl.value; if(textEl) boardData.note.text = textEl.value;
+            } else if (currentEditTab === 'goal') { boardData.goals.forEach((item, index) => { let valEl = document.getElementById(`edit-val-goal-${index}`); if(valEl) item.text = valEl.value; }); }
         }
 
-        function saveBoardEdits() { 
-            syncCurrentEditTab(); 
-            pushToFirebase(); 
-            closeModal('modal-edit-board'); 
-            
-            // 🌟 寫入日誌
-            db.collection("audit_logs").add({ role: '編輯聯絡簿', action: '修改了聯絡簿內容', timestamp: Date.now() });
-        }
+        function logAudit(role, action) { db.collection("audit_logs").add({ role: role, action: action, timestamp: new Date().toISOString() }); }
 
+        function saveBoardEdits() { syncCurrentEditTab(); pushToFirebase(); logAudit('編輯聯絡簿', '修改了聯絡簿或作業清單'); closeModal('modal-edit-board'); }
         function resetCadreDefaults() {
             if (currentCadreRole === 'vice') for(let i=1; i<=CLASS_SIZE; i++) studentsData[i].attendance = '到校';
             else if (currentCadreRole === 'monitor') for(let i=1; i<=CLASS_SIZE; i++) { studentsData[i].goal = '已經做到'; studentsData[i].discipline = '已經做到'; }
@@ -658,37 +500,37 @@ function updateAttendanceTopBar() {
                 let html = '<div class="grid grid-cols-1 md:grid-cols-2 gap-3">';
                 for(let i=1; i<=CLASS_SIZE; i++) {
                     let st = studentsData[i].attendance;
-                    html += `<div class="bg-gray-800 p-3 rounded flex items-center justify-between border border-gray-700"><span class="text-white font-bold w-12">${String(i).padStart(2,'0')} 號</span><div class="flex space-x-1">${['到校','病假','事假','公假','遲到','未到'].map(state => `<button onclick="setAttendance(${i}, '${state}')" class="px-2 py-1 text-xs rounded border ${st === state ? (state === '到校' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-red-600 text-white border-red-500') : 'bg-black text-gray-400 border-gray-600'} transition">${state}</button>`).join('')}</div></div>`;
+                    html += `<div class="bg-white p-3 rounded-xl flex flex-col sm:flex-row items-center sm:justify-between border border-brand-200 gap-3 shadow-sm"><span class="text-brand-800 font-bold w-10 text-base shrink-0">${String(i).padStart(2,'0')}</span><div class="flex flex-wrap justify-center gap-1.5 w-full sm:w-auto">${['到校','病假','事假','公假','遲到','未到'].map(state => `<button onclick="setAttendance(${i}, '${state}')" class="flex-1 sm:flex-none px-2 py-1.5 text-xs rounded-lg border font-bold ${st === state ? (state === '到校' ? 'bg-brand-600 text-white border-brand-500 shadow-inner' : 'bg-morandi-pink text-white border-morandi-pink shadow-inner') : 'bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100'} transition shadow-sm">${state}</button>`).join('')}</div></div>`;
                 }
                 container.innerHTML = html + '</div>';
             } else if (currentCadreRole === 'academic') {
                 let options = boardData.homework.filter(h => h.checkTomorrow).map(h => `<option value="${h.id}">${h.text}</option>`); options.push(`<option value="other">📌 其他臨時作業...</option>`);
-                container.innerHTML = `<div class="mb-4"><label class="block text-gray-400 text-sm mb-2">請選擇要登記的作業：</label><select id="aca-select" onchange="renderAcaList()" class="w-full bg-black text-white px-3 py-2 rounded border border-gray-600">${options.join('')}</select></div><div id="aca-custom-input" class="hidden mb-4"><label class="block text-emerald-400 text-sm mb-1">輸入臨時作業名稱：</label><input type="text" id="aca-custom-name" placeholder="例如：歷史學習單" class="w-full bg-black text-white px-3 py-2 rounded border border-emerald-600/50"></div><div class="flex space-x-2 mb-3"><button onclick="setAllHomeworkState('missing')" class="flex-1 py-2 bg-red-900/40 hover:bg-red-800 text-red-300 rounded border border-red-700/50 transition text-sm font-bold"><i class="fas fa-times-circle mr-1"></i> 一鍵全班缺交</button><button onclick="setAllHomeworkState('submitted')" class="flex-1 py-2 bg-emerald-900/40 hover:bg-emerald-800 text-emerald-400 rounded border border-emerald-700/50 transition text-sm font-bold"><i class="fas fa-check-circle mr-1"></i> 一鍵全班已交</button></div><div id="aca-student-grid" class="grid grid-cols-4 sm:grid-cols-6 gap-2"></div>`;
+                container.innerHTML = `<div class="mb-4"><label class="block text-brand-600 text-sm font-bold mb-2">請選擇要登記的作業：</label><select id="aca-select" onchange="renderAcaList()" class="w-full bg-white text-brand-800 px-3 py-2.5 rounded-xl border border-brand-200 outline-none focus:border-brand-400 text-sm shadow-sm">${options.join('')}</select></div><div id="aca-custom-input" class="hidden mb-5"><label class="block text-brand-500 text-xs font-bold mb-1.5">輸入臨時作業名稱：</label><input type="text" id="aca-custom-name" placeholder="例如：歷史學習單" class="w-full bg-white text-brand-800 px-3 py-2.5 rounded-xl border border-brand-300 outline-none focus:border-brand-400 text-sm shadow-sm"></div><div class="flex flex-col sm:flex-row gap-2 mb-5"><button onclick="setAllHomeworkState('missing')" class="flex-1 py-2.5 bg-red-50 hover:bg-red-100 text-morandi-pink rounded-xl border border-red-200 transition text-sm font-bold shadow-sm"><i class="fas fa-times mr-1.5"></i>全班缺交</button><button onclick="setAllHomeworkState('submitted')" class="flex-1 py-2.5 bg-brand-50 hover:bg-brand-100 text-brand-600 rounded-xl border border-brand-200 transition text-sm font-bold shadow-sm"><i class="fas fa-check mr-1.5"></i>全班已交</button></div><div id="aca-student-grid" class="grid grid-cols-4 sm:grid-cols-6 lg:grid-cols-8 gap-2"></div>`;
                 renderAcaList(); 
             } else if (['monitor', 'discipline', 'health'].includes(currentCadreRole)) {
                 let html = '';
                 if (currentCadreRole === 'monitor') {
-                    html += `<div class="mb-6 bg-[#1a241d] p-4 rounded-lg border border-gray-600 shadow-inner"><h4 class="text-emerald-400 font-bold mb-3 flex items-center"><i class="fas fa-desktop mr-2"></i> 頂部看板設定</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-sm"><div><label class="block text-gray-400 text-xs mb-1">一段倒數 (名稱)</label><input type="text" id="board-cfg-cd-name" value="${topBoardInfo.countdownName}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600"></div><div><label class="block text-gray-400 text-xs mb-1">一段倒數 (日期)</label><input type="date" id="board-cfg-cd-date" value="${topBoardInfo.countdownDate}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600"></div><div><label class="block text-gray-400 text-xs mb-1">今日壽星</label><input type="text" id="board-cfg-today" value="${topBoardInfo.bdayToday}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600" placeholder="若無請填: 無"></div><div><label class="block text-gray-400 text-xs mb-1">下一個生日</label><input type="text" id="board-cfg-next" value="${topBoardInfo.bdayNext}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600"></div><div><label class="block text-gray-400 text-xs mb-1">值日生: 黑板</label><input type="text" id="board-cfg-board" value="${topBoardInfo.dutyBoard}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600"></div><div><label class="block text-gray-400 text-xs mb-1">值日生: 發作業</label><input type="text" id="board-cfg-hw" value="${topBoardInfo.dutyHW}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600"></div><div><label class="block text-gray-400 text-xs mb-1">值日生: 環境</label><input type="text" id="board-cfg-env" value="${topBoardInfo.dutyEnv}" class="w-full bg-black text-white px-2 py-1.5 rounded border border-gray-600"></div></div></div><h4 class="text-gray-300 font-bold mb-3"><i class="fas fa-check-square mr-2"></i> 目標與秩序登記</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+                    html += `<div class="mb-6 bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 shadow-sm"><h4 class="text-brand-600 font-bold mb-4 flex items-center text-sm"><i class="fas fa-desktop mr-2"></i> 頂部看板設定</h4><div class="grid grid-cols-2 md:grid-cols-3 gap-3 text-xs font-bold"><div><label class="block text-brand-500 mb-1">一段倒數 (標題)</label><input type="text" id="board-cfg-cd-name" value="${topBoardInfo.countdownName}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400"></div><div><label class="block text-brand-500 mb-1">一段倒數 (日期)</label><input type="date" id="board-cfg-cd-date" value="${topBoardInfo.countdownDate}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400"></div><div><label class="block text-brand-500 mb-1">今日壽星</label><input type="text" id="board-cfg-today" value="${topBoardInfo.bdayToday}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400" placeholder="無"></div><div><label class="block text-brand-500 mb-1">下一個生日</label><input type="text" id="board-cfg-next" value="${topBoardInfo.bdayNext}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400"></div><div><label class="block text-brand-500 mb-1">值日生: 黑板</label><input type="text" id="board-cfg-board" value="${topBoardInfo.dutyBoard}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400"></div><div><label class="block text-brand-500 mb-1">值日生: 發作業</label><input type="text" id="board-cfg-hw" value="${topBoardInfo.dutyHW}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400"></div><div><label class="block text-brand-500 mb-1">值日生: 環境</label><input type="text" id="board-cfg-env" value="${topBoardInfo.dutyEnv}" class="w-full bg-brand-50 text-brand-800 px-2.5 py-2 rounded-lg border border-brand-200 outline-none focus:border-brand-400"></div></div></div><h4 class="text-brand-600 font-bold mb-3 text-sm"><i class="fas fa-check-square mr-2 text-brand-400"></i> 目標與秩序登記</h4><div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">`;
                     for(let i=1; i<=CLASS_SIZE; i++) {
                         let stGoal = studentsData[i]['goal']; let stDisc = studentsData[i]['discipline'];
-                        const renderBtns = (metric, currentSt) => ['待改進','已經做到','表現優良'].map(state => `<button onclick="setBehavior(${i}, '${metric}', '${state}')" class="px-2 py-1 text-[10px] rounded border ${currentSt === state ? (state === '待改進' ? 'bg-red-600 text-white border-red-500' : (state === '已經做到' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-yellow-500 text-black border-yellow-400')) : 'bg-black text-gray-400 border-gray-600'} transition">${state}</button>`).join('');
-                        html += `<div class="bg-gray-800 p-3 rounded flex flex-col border border-gray-700"><span class="text-white font-bold mb-2">${String(i).padStart(2,'0')} 號</span><div class="flex justify-between items-center mb-1"><span class="text-xs text-gray-400">週目標</span><div class="flex space-x-1">${renderBtns('goal', stGoal)}</div></div><div class="flex justify-between items-center"><span class="text-xs text-gray-400">秩序</span><div class="flex space-x-1">${renderBtns('discipline', stDisc)}</div></div></div>`;
+                        const renderBtns = (metric, currentSt) => ['待改進','已經做到','表現優良'].map(state => `<button onclick="setBehavior(${i}, '${metric}', '${state}')" class="flex-1 px-1 py-1.5 text-[10px] sm:text-xs rounded-md border font-bold ${currentSt === state ? (state === '待改進' ? 'bg-morandi-pink text-white border-morandi-pink shadow-inner' : (state === '已經做到' ? 'bg-brand-600 text-white border-brand-600 shadow-inner' : 'bg-brand-400 text-white border-brand-400 shadow-inner')) : 'bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100'} transition">${state}</button>`).join('');
+                        html += `<div class="bg-white p-3 rounded-xl flex flex-col border border-brand-200 shadow-sm"><span class="text-brand-800 font-bold mb-2 text-sm">${String(i).padStart(2,'0')} 號</span><div class="flex flex-col gap-2"><div class="flex flex-col"><span class="text-[10px] text-brand-400 mb-1 font-bold">週目標</span><div class="flex space-x-1">${renderBtns('goal', stGoal)}</div></div><div class="flex flex-col mt-0.5"><span class="text-[10px] text-brand-400 mb-1 font-bold">秩序</span><div class="flex space-x-1">${renderBtns('discipline', stDisc)}</div></div></div></div>`;
                     }
-                    html += `</div><div class="mt-6 bg-[#1a241d] p-4 rounded-lg border border-gray-600"><h4 class="text-emerald-400 font-bold mb-2"><i class="fas fa-comment-dots mr-2"></i> 給導師的留言 / 班級狀況回報</h4><textarea id="monitor-msg-input" class="w-full bg-black text-white p-2 rounded border border-gray-600 h-24" placeholder="請輸入需要向導師報告的事項...">${topBoardInfo.monitorMsg}</textarea></div>`;
+                    html += `</div><div class="mt-6 bg-white p-4 sm:p-5 rounded-2xl border border-brand-200 shadow-sm"><h4 class="text-brand-600 font-bold mb-3 text-sm"><i class="fas fa-comment-dots mr-2"></i> 給導師的回報留言</h4><textarea id="monitor-msg-input" class="w-full bg-brand-50 text-brand-800 p-3 rounded-xl border border-brand-200 h-24 outline-none focus:border-brand-400 text-sm" placeholder="輸入事項...">${topBoardInfo.monitorMsg}</textarea></div>`;
                     container.innerHTML = html;
                 } else if (['discipline', 'health'].includes(currentCadreRole)) {
                     let metric = currentCadreRole === 'discipline' ? 'discipline' : 'clean'; let metricName = currentCadreRole === 'discipline' ? '秩序表現' : '打掃狀況';
-                    html += `<h4 class="text-gray-300 font-bold mb-3"><i class="fas fa-check-square mr-2"></i> ${metricName}登記</h4><div class="grid grid-cols-1 md:grid-cols-2 gap-3">`;
+                    html += `<h4 class="text-brand-600 font-bold mb-3 text-sm"><i class="fas fa-check-square mr-2 text-brand-400"></i> ${metricName}登記</h4><div class="grid grid-cols-1 sm:grid-cols-2 gap-3">`;
                     for(let i=1; i<=CLASS_SIZE; i++) {
                         let st = studentsData[i][metric];
-                        html += `<div class="bg-gray-800 p-3 rounded flex items-center justify-between border border-gray-700"><span class="text-white font-bold">${String(i).padStart(2,'0')} 號</span><div class="flex space-x-1">${['待改進','已經做到','表現優良'].map(state => `<button onclick="setBehavior(${i}, '${metric}', '${state}')" class="px-2 py-1 text-xs rounded border ${st === state ? (state === '待改進' ? 'bg-red-600 text-white border-red-500' : (state === '已經做到' ? 'bg-emerald-600 text-white border-emerald-500' : 'bg-yellow-500 text-black border-yellow-400')) : 'bg-black text-gray-400 border-gray-600'} transition">${state}</button>`).join('')}</div></div>`;
+                        html += `<div class="bg-white p-3 rounded-xl flex flex-col xl:flex-row items-center xl:justify-between border border-brand-200 gap-2 shadow-sm"><span class="text-brand-800 font-bold text-sm">${String(i).padStart(2,'0')}</span><div class="flex space-x-1.5 w-full xl:w-auto">${['待改進','已經做到','表現優良'].map(state => `<button onclick="setBehavior(${i}, '${metric}', '${state}')" class="flex-1 px-2 py-1.5 text-[11px] sm:text-xs rounded-lg border font-bold ${st === state ? (state === '待改進' ? 'bg-morandi-pink text-white border-morandi-pink shadow-inner' : (state === '已經做到' ? 'bg-brand-600 text-white border-brand-600 shadow-inner' : 'bg-brand-400 text-white border-brand-400 shadow-inner')) : 'bg-brand-50 text-brand-500 border-brand-200 hover:bg-brand-100'} transition">${state}</button>`).join('')}</div></div>`;
                     }
                     container.innerHTML = html + '</div>';
                 }
             }
         }
 
-        function setAttendance(seat, state) { studentsData[seat].attendance = state; openCadreWorkModal(); }
+        function setAttendance(seat, state) { studentsData[seat].attendance = state; openCadreWorkModal(); pushToFirebase(); }
         function setBehavior(seat, metric, state) { studentsData[seat][metric] = state; openCadreWorkModal(); }
         function renderAcaList() {
             const sel = document.getElementById('aca-select').value; const customInput = document.getElementById('aca-custom-input'); const grid = document.getElementById('aca-student-grid');
@@ -696,8 +538,8 @@ function updateAttendanceTopBar() {
             let html = '';
             for(let i=1; i<=CLASS_SIZE; i++) {
                 let hwId = sel === 'other' ? 'other_temp' : sel; let isMissing = studentsData[i].missingHW.includes(hwId);
-                let btnClass = isMissing ? 'bg-red-900 border-red-500 text-red-200' : 'bg-gray-800 border-gray-600 text-gray-400 hover:bg-gray-700'; let statusText = isMissing ? '<span class="text-[10px] text-red-400 mt-0.5">缺交</span>' : '<span class="text-[10px] text-emerald-500 mt-0.5">已交</span>';
-                html += `<button onclick="toggleMissingHW(${i}, '${hwId}')" class="w-full py-1.5 rounded border ${btnClass} text-center transition flex flex-col items-center justify-center"><span class="font-bold">${String(i).padStart(2,'0')}</span>${statusText}</button>`;
+                let btnClass = isMissing ? 'bg-red-50 border-morandi-pink text-morandi-pink shadow-inner' : 'bg-white border-brand-200 text-brand-400 hover:bg-brand-50'; let statusText = isMissing ? '<span class="text-[10px] text-morandi-pink mt-0.5 font-bold">缺交</span>' : '<span class="text-[10px] text-brand-400 mt-0.5 font-bold">已交</span>';
+                html += `<button onclick="toggleMissingHW(${i}, '${hwId}')" class="w-full aspect-square sm:aspect-auto sm:py-2.5 rounded-xl border ${btnClass} text-center transition flex flex-col items-center justify-center shadow-sm"><span class="font-bold text-lg sm:text-xl leading-none">${String(i).padStart(2,'0')}</span>${statusText}</button>`;
             }
             grid.innerHTML = html;
         }
@@ -709,34 +551,33 @@ function updateAttendanceTopBar() {
         }
 
         function saveCadreRecord() {
-            let logAction = "更新了班級常規或點名狀態";
-
+            let logMsg = '';
             if (currentCadreRole === 'monitor') {
                 topBoardInfo.countdownName = document.getElementById('board-cfg-cd-name').value; topBoardInfo.countdownDate = document.getElementById('board-cfg-cd-date').value; topBoardInfo.bdayToday = document.getElementById('board-cfg-today').value; topBoardInfo.bdayNext = document.getElementById('board-cfg-next').value; topBoardInfo.dutyBoard = document.getElementById('board-cfg-board').value; topBoardInfo.dutyHW = document.getElementById('board-cfg-hw').value; topBoardInfo.dutyEnv = document.getElementById('board-cfg-env').value; topBoardInfo.monitorMsg = document.getElementById('monitor-msg-input').value;
-                logAction = "更新了頂部看板資訊與班長留言";
+                logMsg = '更新了頂部看板資訊與目標登記';
             }
             if (currentCadreRole === 'academic') {
-                logAction = "批次更新了作業繳交狀態";
                 const sel = document.getElementById('aca-select').value;
                 if (sel === 'other') {
                     const customName = document.getElementById('aca-custom-name').value.trim() || '未命名臨時作業'; const newId = 'tmp_' + Date.now();
                     boardData.homework.push({ id: newId, text: customName, url: '', checkTomorrow: true });
                     for(let i=1; i<=CLASS_SIZE; i++){ let idx = studentsData[i].missingHW.indexOf('other_temp'); if(idx > -1) studentsData[i].missingHW[idx] = newId; }
-                    logAction = `新增了臨時作業：${customName}`;
                 }
+                logMsg = '登記了作業繳交狀況';
             }
+            if (currentCadreRole === 'vice') logMsg = '登記了出缺勤狀況';
+            if (currentCadreRole === 'discipline') logMsg = '登記了秩序表現';
+            if (currentCadreRole === 'health') logMsg = '登記了打掃狀況';
+            
             pushToFirebase();
+            logAudit(currentCadreRole === 'monitor'?'班長':(currentCadreRole === 'vice'?'副班長':(currentCadreRole === 'discipline'?'風紀':(currentCadreRole === 'health'?'衛生':'小老師'))), logMsg);
             closeModal('modal-cadre-work');
-
-            // 🌟 寫入日誌
-            const roles = {'monitor': '班長', 'vice': '副班長', 'discipline': '風紀', 'academic': '小老師', 'health': '衛生'};
-            db.collection("audit_logs").add({ role: roles[currentCadreRole] || currentCadreRole, action: logAction, timestamp: Date.now() });
         }
 
         function openStudentSubmitModal() {
             document.getElementById('modal-student-submit').classList.remove('hidden'); document.getElementById('student-missing-area').classList.add('hidden');
             const grid = document.getElementById('student-btn-grid'); let html = '';
-            for(let i=1; i<=CLASS_SIZE; i++) html += `<button onclick="showStudentMissing(${i})" class="py-2 bg-gray-800 hover:bg-gray-700 text-gray-300 rounded border border-gray-600 transition font-bold">${String(i).padStart(2,'0')}</button>`;
+            for(let i=1; i<=CLASS_SIZE; i++) html += `<button onclick="showStudentMissing(${i})" class="py-2.5 bg-white hover:bg-brand-50 text-brand-700 rounded-xl border border-brand-200 transition font-bold text-base shadow-sm">${String(i).padStart(2,'0')}</button>`;
             grid.innerHTML = html;
         }
 
@@ -745,21 +586,16 @@ function updateAttendanceTopBar() {
             const list = document.getElementById('student-missing-list');
             let trackableIds = boardData.homework.filter(h => h.checkTomorrow).map(h => h.id); let missingIds = studentsData[seat].missingHW.filter(id => trackableIds.includes(id));
             
-            if(missingIds.length === 0) { list.innerHTML = `<div class="bg-emerald-900/40 border border-emerald-500/50 p-4 rounded text-center"><p class="text-emerald-400 font-bold text-lg mb-1">🎉 太棒了！</p><p class="text-emerald-200/80 text-sm">您目前沒有任何缺交作業</p></div>`; return; }
+            if(missingIds.length === 0) { list.innerHTML = `<div class="bg-brand-50 border border-brand-200 p-5 rounded-xl text-center"><p class="text-brand-600 font-bold text-lg mb-1">太棒了！</p><p class="text-brand-500 text-sm">目前沒有任何缺交作業</p></div>`; return; }
             let html = '';
-            missingIds.forEach(id => { let hwObj = boardData.homework.find(h => h.id === id); let hwName = hwObj ? hwObj.text : `作業 (${id})`; html += `<label class="flex items-center p-3 bg-gray-800 rounded border border-gray-700 hover:border-gray-500 cursor-pointer transition"><input type="checkbox" id="chk-submit-${id}" value="${id}" class="mr-3 w-5 h-5 accent-emerald-500"><span class="text-white">${hwName}</span></label>`; });
-            html += `<button onclick="submitHW(${seat})" class="mt-4 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 rounded transition">送出補交</button>`; list.innerHTML = html;
+            missingIds.forEach(id => { let hwObj = boardData.homework.find(h => h.id === id); let hwName = hwObj ? hwObj.text : `作業 (${id})`; html += `<label class="flex items-center p-3.5 bg-white rounded-xl border border-brand-200 hover:border-brand-300 cursor-pointer transition shadow-sm"><input type="checkbox" id="chk-submit-${id}" value="${id}" class="mr-3 w-5 h-5 accent-brand-500"><span class="text-brand-800 text-base font-bold">${hwName}</span></label>`; });
+            html += `<button onclick="submitHW(${seat})" class="mt-5 w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 rounded-xl transition text-base shadow-md flex items-center justify-center"><i class="fas fa-paper-plane mr-2"></i>確認送出補交</button>`; list.innerHTML = html;
         }
 
         function submitHW(seat) {
             let missingIds = [...studentsData[seat].missingHW]; let submittedCount = 0;
             missingIds.forEach(id => { let chk = document.getElementById(`chk-submit-${id}`); if(chk && chk.checked) { let idx = studentsData[seat].missingHW.indexOf(id); if(idx > -1) studentsData[seat].missingHW.splice(idx, 1); submittedCount++; } });
-            if(submittedCount > 0) { 
-                pushToFirebase(); 
-                closeModal('modal-student-submit'); 
-                // 🌟 寫入日誌
-                db.collection("audit_logs").add({ role: '學生自主', action: `${String(seat).padStart(2,'0')}號 送出了補交紀錄`, timestamp: Date.now() });
-            } else alert('請先勾選要補交的作業項目。');
+            if(submittedCount > 0) { pushToFirebase(); logAudit('學生', `[${String(seat).padStart(2,'0')}號] 自主補交了 ${submittedCount} 項作業`); closeModal('modal-student-submit'); } else alert('請先勾選要補交的項目。');
         }
     </script>
 </body>
