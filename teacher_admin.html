@@ -2,214 +2,288 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>導師管理中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- 引入 Firebase -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
-
-    <!-- 引入 SheetJS 用於解析 Excel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 
+    <script>
+        // 設定 Tailwind 自訂主題色 (米棕色系與莫蘭迪粉)
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#faf8f5',  // 燕麥白背景
+                            100: '#f4efe6', // 淺米色區塊
+                            200: '#e8ddce', // 奶茶色邊框
+                            300: '#d8c5b0',
+                            400: '#c2a88d', // 主按鈕色
+                            500: '#b08e6f',
+                            600: '#9b7658', // 深棕色圖示
+                            700: '#805d46',
+                            800: '#6b4d3d', // 主要文字
+                            900: '#563e32',
+                        },
+                        morandi: {
+                            pink: '#d98b8b', // 莫蘭迪粉 (警示)
+                            blue: '#8b9bb4', // 莫蘭迪灰藍 (完成)
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0f172a; color: #f8fafc; }
-        .sidebar { background-color: #1e293b; border-right: 1px solid #334155; }
-        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .menu-item.active { background-color: #3b82f6; color: white; }
-        ::-webkit-scrollbar { width: 6px; }
-        ::-webkit-scrollbar-track { background: #0f172a; }
-        ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+        body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #faf8f5; color: #6b4d3d; }
+        .sidebar { background-color: #ffffff; border-right: 1px solid #e8ddce; }
+        .glass-panel { background: #ffffff; border: 1px solid #e8ddce; box-shadow: 0 4px 20px -2px rgba(107, 77, 61, 0.05); }
+        
+        .tab-content { display: none !important; }
+        .tab-content.active { display: block !important; }
+        
+        .menu-item.active { background-color: #f4efe6; color: #6b4d3d; font-weight: bold; border-right: 4px solid #b08e6f; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d8c5b0; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #c2a88d; }
         input[type="number"]::-webkit-inner-spin-button, 
         input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+
+        /* 手機版表格轉卡片專用 CSS */
+        @media (max-width: 767px) {
+            .resp-table thead { display: none; }
+            .resp-table tbody tr { display: block; margin-bottom: 1rem; background: #ffffff; border-radius: 0.75rem; border: 1px solid #e8ddce; padding: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+            .resp-table tbody td { display: flex; justify-content: space-between; align-items: center; padding: 0.75rem; border-bottom: 1px solid #f4efe6; text-align: right; }
+            .resp-table tbody td:last-child { border-bottom: none; }
+            .resp-table tbody td::before { content: attr(data-label); font-weight: bold; color: #9b7658; text-align: left; padding-right: 1rem; }
+            .resp-table td input { text-align: right; width: auto !important; max-width: 120px; }
+        }
     </style>
 </head>
 <body class="flex h-screen overflow-hidden">
 
-    <!-- ==================== 登入保護遮罩 ==================== -->
-    <div id="login-overlay" class="fixed inset-0 bg-[#0f172a] z-50 flex items-center justify-center transition-opacity duration-500">
-        <div class="glass-panel p-8 rounded-2xl w-96 max-w-[90%] shadow-[0_0_40px_rgba(59,130,246,0.3)] border border-slate-600">
+    <!-- 登入保護遮罩 -->
+    <div id="login-overlay" class="fixed inset-0 bg-brand-50/90 backdrop-blur-md z-[60] flex items-center justify-center transition-opacity duration-500 p-4">
+        <div class="bg-white p-6 sm:p-8 rounded-2xl w-full max-w-md shadow-2xl border border-brand-200">
             <div class="text-center mb-8">
-                <div class="w-20 h-20 bg-blue-600 rounded-full mx-auto flex items-center justify-center text-white text-3xl font-bold mb-4 shadow-lg border-4 border-blue-400/30">密</div>
-                <h2 class="text-2xl font-bold text-white tracking-widest">導師安全登入</h2>
-                <p class="text-slate-400 text-sm mt-2">請輸入您的導師專屬帳號密碼</p>
+                <div class="w-16 h-16 sm:w-20 sm:h-20 bg-brand-100 rounded-2xl mx-auto flex items-center justify-center text-brand-700 text-2xl sm:text-3xl font-bold mb-4 shadow-sm border border-brand-200">密</div>
+                <h2 class="text-xl sm:text-2xl font-bold text-brand-800 tracking-widest">導師安全登入</h2>
+                <p class="text-brand-500 text-xs sm:text-sm mt-2">請輸入您的導師專屬帳號密碼</p>
             </div>
-            <div class="space-y-5">
+            <div class="space-y-4 sm:space-y-5">
                 <div>
-                    <label class="block text-slate-400 text-sm mb-1.5 font-bold"><i class="fas fa-envelope mr-1"></i> 帳號 (Email)</label>
-                    <input type="email" id="login-email" placeholder="teacher701@school.com" class="w-full bg-slate-900 text-white px-4 py-3 rounded-lg border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+                    <label class="block text-brand-600 text-sm mb-1.5 font-bold"><i class="fas fa-envelope mr-1"></i> 帳號 (Email)</label>
+                    <input type="email" id="login-email" placeholder="teacher701@school.com" class="w-full bg-brand-50 text-brand-800 px-4 py-3 sm:py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 focus:ring-1 focus:ring-brand-400 outline-none transition text-base">
                 </div>
                 <div>
-                    <label class="block text-slate-400 text-sm mb-1.5 font-bold"><i class="fas fa-lock mr-1"></i> 密碼</label>
-                    <input type="password" id="login-pwd" placeholder="••••••••" class="w-full bg-slate-900 text-white px-4 py-3 rounded-lg border border-slate-600 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none transition">
+                    <label class="block text-brand-600 text-sm mb-1.5 font-bold"><i class="fas fa-lock mr-1"></i> 密碼</label>
+                    <input type="password" id="login-pwd" placeholder="••••••••" class="w-full bg-brand-50 text-brand-800 px-4 py-3 sm:py-3.5 rounded-xl border border-brand-200 focus:border-brand-400 focus:ring-1 focus:ring-brand-400 outline-none transition text-base">
                 </div>
-                <button onclick="handleLogin()" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3.5 rounded-lg shadow-lg transition mt-2 flex justify-center items-center">
+                <button onclick="handleLogin()" class="w-full bg-brand-600 hover:bg-brand-500 text-white font-bold py-3.5 sm:py-4 rounded-xl shadow-md transition mt-2 flex justify-center items-center text-lg">
                     <i class="fas fa-sign-in-alt mr-2"></i> 驗證身分並登入
                 </button>
-                <div id="login-error" class="text-red-400 text-sm text-center bg-red-900/30 border border-red-500/50 p-2 rounded hidden"></div>
+                <div id="login-error" class="text-morandi-pink text-sm text-center bg-red-50 border border-red-100 p-3 rounded-lg hidden font-bold"></div>
             </div>
         </div>
     </div>
 
-    <!-- 左側邊欄 -->
-    <aside class="sidebar w-64 h-full flex flex-col transition-all duration-300 z-20">
-        <div class="p-6 border-b border-slate-700 flex items-center space-x-3">
-            <div class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold shadow-lg">701</div>
-            <span class="text-xl font-bold tracking-wider">導師後台</span>
+    <!-- 手機版頂部導覽列 -->
+    <div class="md:hidden fixed top-0 w-full bg-white border-b border-brand-200 z-40 flex justify-between items-center p-4 shadow-sm">
+        <div class="flex items-center space-x-3">
+            <div class="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center text-brand-700 font-bold text-sm border border-brand-200">701</div>
+            <span class="font-bold tracking-wider text-brand-800">導師後台</span>
+        </div>
+        <button onclick="toggleMobileMenu()" class="text-brand-600 hover:text-brand-800 text-2xl focus:outline-none">
+            <i class="fas fa-bars"></i>
+        </button>
+    </div>
+
+    <!-- 側邊欄 Sidebar (響應式) -->
+    <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 w-64 h-full flex flex-col transition-transform duration-300 z-50 shadow-sm">
+        <div class="p-6 border-b border-brand-100 flex justify-between items-center bg-brand-50/50">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 bg-brand-100 rounded-xl flex items-center justify-center text-brand-800 font-bold shadow-sm border border-brand-200">701</div>
+                <span class="text-xl font-bold tracking-wider text-brand-800">導師後台</span>
+            </div>
+            <button onclick="toggleMobileMenu()" class="md:hidden text-brand-400 hover:text-brand-600 text-xl"><i class="fas fa-times"></i></button>
         </div>
         
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fas fa-chart-pie w-5"></i><span>今日班級總覽</span></button>
-            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fas fa-broadcast-tower w-5"></i><span>大屏廣播遙控</span></button>
-            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-orange-400 hover:bg-slate-700 transition"><i class="fas fa-id-card w-5"></i><span>LINE@ 綁定管理</span></button>
-            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-slate-300 hover:bg-slate-700 transition"><i class="fas fa-users-cog w-5"></i><span>幹部權限管理</span></button>
-            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-emerald-400 hover:bg-slate-700 transition"><i class="fas fa-file-excel w-5"></i><span>LINE@ 成績系統</span></button>
-            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-purple-400 hover:bg-slate-700 transition"><i class="fas fa-calendar-check w-5"></i><span>每週結算與推播</span></button>
-            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3 rounded-lg text-pink-400 hover:bg-slate-700 transition"><i class="fas fa-comments w-5"></i><span>LINE@ 溝通紀錄</span></button>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-chart-pie w-5 text-brand-500"></i><span>今日班級總覽</span>
+            </button>
+            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-bullhorn w-5 text-brand-500"></i><span>大屏廣播遙控</span>
+            </button>
+            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-id-card w-5 text-brand-500"></i><span>LINE@ 綁定管理</span>
+            </button>
+            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-users-cog w-5 text-brand-500"></i><span>幹部權限管理</span>
+            </button>
+            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-file-excel w-5 text-brand-500"></i><span>LINE@ 成績系統</span>
+            </button>
+            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-calendar-check w-5 text-brand-500"></i><span>每週結算推播</span>
+            </button>
+            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-comments w-5 text-brand-500"></i><span>LINE@ 溝通紀錄</span>
+            </button>
         </nav>
         
-        <div class="p-4 border-t border-slate-700 flex flex-col gap-3">
-            <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-2 rounded-lg text-red-400 hover:bg-red-900/30 border border-red-900/50 transition text-sm font-bold"><i class="fas fa-sign-out-alt"></i><span>安全登出</span></button>
-            <div class="text-xs text-slate-500 text-center">智慧班級管理系統 v1.4<br>Teacher Admin Panel</div>
+        <div class="p-4 border-t border-brand-100 flex flex-col gap-3 bg-brand-50">
+            <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl text-morandi-pink hover:bg-red-50 border border-red-100 transition text-sm font-bold shadow-sm">
+                <i class="fas fa-sign-out-alt"></i><span>安全登出</span>
+            </button>
+            <div class="text-xs text-brand-400 text-center font-medium">智慧班級管理系統 v2.0</div>
         </div>
     </aside>
 
-    <main class="flex-1 h-full overflow-y-auto bg-[#0f172a] p-8">
+    <!-- 手機版側邊欄背景遮罩 -->
+    <div id="mobile-menu-overlay" onclick="toggleMobileMenu()" class="hidden fixed inset-0 bg-brand-900/40 z-40 md:hidden backdrop-blur-sm transition-opacity"></div>
+
+    <main class="flex-1 h-full overflow-y-auto bg-brand-50 p-4 pt-20 md:pt-8 md:p-8">
         
         <!-- ==================== 1. 今日班級總覽 ==================== -->
         <section id="tab-dashboard" class="tab-content active space-y-6">
-            <div class="flex justify-between items-end">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-2">班級狀況總覽</h2>
-                    <p class="text-slate-400">掌握今日 701 班出缺勤、常規與幹部回報狀況</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-1 sm:mb-2 tracking-wide">班級狀況總覽</h2>
+                    <p class="text-brand-500 text-sm sm:text-base font-medium">掌握今日 701 班出缺勤、常規與幹部回報狀況</p>
                 </div>
-                <div id="db-status" class="text-slate-400 text-sm bg-slate-800 px-4 py-2 rounded-lg border border-slate-700">
-                    <i class="fas fa-sync-alt mr-2 animate-spin-slow"></i> 連線中...
-                </div>
-            </div>
-
-            <!-- 三大指標看板 -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="glass-panel p-6 rounded-xl border-l-4 border-l-blue-500">
-                    <div class="text-slate-400 text-sm mb-1">今日出席狀況</div>
-                    <div class="text-3xl font-bold text-white mb-2"><span id="dash-present">--</span><span class="text-lg text-slate-500 font-normal"> /24 人</span></div>
-                    <div class="text-sm space-y-1" id="dash-absent-list">讀取中...</div>
-                </div>
-                <div class="glass-panel p-6 rounded-xl border-l-4 border-l-red-500">
-                    <div class="text-slate-400 text-sm mb-1">作業缺交警示</div>
-                    <div class="text-3xl font-bold text-white mb-2"><span id="dash-missing-hw">--</span><span class="text-lg text-slate-500 font-normal"> 人次未繳</span></div>
-                    <div class="text-sm text-slate-300 space-y-1 mt-2" id="dash-missing-list">讀取中...</div>
-                </div>
-                <div class="glass-panel p-6 rounded-xl border-l-4 border-l-emerald-500">
-                    <div class="text-slate-400 text-sm mb-1">常規待改進</div>
-                    <div class="text-3xl font-bold text-white mb-2"><span id="dash-discipline">--</span><span class="text-lg text-slate-500 font-normal"> 人次</span></div>
-                    <div class="text-sm text-slate-300" id="dash-discipline-list">讀取中...</div>
+                <div id="db-status" class="w-full sm:w-auto text-brand-600 font-bold text-sm bg-white px-4 py-2.5 rounded-xl border border-brand-200 shadow-sm flex items-center justify-center sm:justify-start">
+                    <i class="fas fa-sync-alt mr-2 animate-spin-slow text-brand-400"></i> 連線中...
                 </div>
             </div>
 
-            <!-- 班長留言板 -->
-            <div class="glass-panel p-6 rounded-xl">
-                <h3 class="text-lg font-bold text-emerald-400 mb-4"><i class="fas fa-comment-dots mr-2"></i> 班長 / 幹部回報留言</h3>
-                <div class="bg-slate-800 p-4 rounded border border-slate-700 min-h-[80px] text-slate-300" id="dash-monitor-msg">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl border-l-4 border-l-brand-400">
+                    <div class="text-brand-500 text-sm mb-1 font-bold">今日出席狀況</div>
+                    <div class="text-3xl sm:text-4xl font-bold text-brand-800 mb-3"><span id="dash-present">--</span><span class="text-base sm:text-lg text-brand-400 font-medium ml-1">/24 人</span></div>
+                    <div class="text-sm font-bold space-y-1" id="dash-absent-list">讀取中...</div>
+                </div>
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl border-l-4 border-l-morandi-pink">
+                    <div class="text-brand-500 text-sm mb-1 font-bold">作業缺交警示</div>
+                    <!-- 🌟 修正：改成 人次 -->
+                    <div class="text-3xl sm:text-4xl font-bold text-brand-800 mb-3"><span id="dash-missing-hw">--</span><span class="text-base sm:text-lg text-brand-400 font-medium ml-1">人次</span></div>
+                    <div class="text-sm text-brand-700 space-y-1 mt-2 font-medium" id="dash-missing-list">讀取中...</div>
+                </div>
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl border-l-4 border-l-morandi-blue">
+                    <div class="text-brand-500 text-sm mb-1 font-bold">常規待改進</div>
+                    <div class="text-3xl sm:text-4xl font-bold text-brand-800 mb-3"><span id="dash-discipline">--</span><span class="text-base sm:text-lg text-brand-400 font-medium ml-1">人次</span></div>
+                    <div class="text-sm font-medium" id="dash-discipline-list">讀取中...</div>
+                </div>
+            </div>
+
+            <div class="glass-panel p-5 sm:p-6 rounded-2xl">
+                <h3 class="text-lg font-bold text-brand-700 mb-4 flex items-center"><i class="fas fa-comment-dots mr-2 text-brand-500"></i> 班長 / 幹部回報留言</h3>
+                <div class="bg-brand-50 p-4 sm:p-5 rounded-xl border border-brand-200 min-h-[100px] text-brand-800 font-medium leading-relaxed text-sm sm:text-base" id="dash-monitor-msg">
                     等待讀取中...
                 </div>
+                
+                <h3 class="text-lg font-bold text-brand-700 mb-4 mt-8 flex items-center"><i class="fas fa-file-signature mr-2 text-brand-500"></i> 待核准線上請假單</h3>
+                <div id="leave-requests-container" class="space-y-4">
+                    <div class="text-brand-400 italic">正在載入請假單...</div>
+                </div>
             </div>
 
-            <!-- 雙欄位：請假單 & 日誌 -->
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                <!-- 待核准請假單 -->
-                <div class="glass-panel p-6 rounded-xl flex flex-col">
-                    <h3 class="text-lg font-bold text-blue-400 mb-4"><i class="fas fa-file-signature mr-2"></i> 待核准線上請假單</h3>
-                    <div id="leave-requests-container" class="space-y-3 flex-1 h-48 overflow-y-auto pr-2">
-                        <div class="text-slate-500 italic text-sm">正在載入請假單...</div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+                <!-- 🌟 全新統計展示區 (包含管理明細按鈕) -->
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl hidden lg:block">
+                    <h3 class="text-lg font-bold text-brand-700 mb-4 flex items-center justify-between">
+                        <span class="flex items-center"><i class="fas fa-chart-line mr-2 text-brand-500"></i> 已核准請假統計</span>
+                        <button onclick="openManageLeavesModal()" class="text-xs font-bold bg-brand-100 hover:bg-brand-200 text-brand-700 border border-brand-200 px-2.5 py-1.5 rounded-lg transition shadow-sm"><i class="fas fa-tasks mr-1"></i>管理明細</button>
+                    </h3>
+                    <div id="approved-leave-summary" class="space-y-3 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                        <div class="text-brand-400 italic">正在計算歷史資料...</div>
                     </div>
                 </div>
 
-                <!-- 操作日誌 -->
-                <div class="glass-panel p-6 rounded-xl flex flex-col">
-                    <div class="flex justify-between items-center mb-4">
-                        <h3 class="text-lg font-bold text-slate-300"><i class="fas fa-history mr-2"></i> 幹部系統操作日誌</h3>
-                        <button onclick="clearAuditLogs()" class="text-xs bg-slate-800 hover:bg-red-900/50 text-slate-400 hover:text-red-300 px-2 py-1 rounded transition border border-slate-600 hover:border-red-500/50"><i class="fas fa-trash-alt mr-1"></i> 清空</button>
-                    </div>
-                    <div class="space-y-3 text-sm flex-1 h-48 overflow-y-auto pr-2" id="audit-log-container">
-                        <div class="text-slate-500 italic">日誌資料同步中...</div>
+                <div class="glass-panel p-5 sm:p-6 rounded-2xl">
+                    <h3 class="text-lg font-bold text-brand-700 mb-4 flex items-center justify-between">
+                        <span class="flex items-center"><i class="fas fa-history mr-2 text-brand-500"></i> 幹部系統操作日誌</span>
+                        <!-- 🌟 加回清空按鈕 -->
+                        <button onclick="clearAuditLogs()" class="text-xs font-bold bg-red-50 hover:bg-red-100 text-morandi-pink border border-red-100 px-2.5 py-1.5 rounded-lg transition shadow-sm"><i class="fas fa-trash-alt mr-1"></i>清空</button>
+                    </h3>
+                    <div class="space-y-3 text-sm h-40 overflow-y-auto pr-2 custom-scrollbar" id="audit-log-container">
+                        <div class="text-brand-400 italic">日誌資料同步中...</div>
                     </div>
                 </div>
-                
             </div>
         </section>
 
         <!-- ==================== 2. 大屏廣播遙控 ==================== -->
         <section id="tab-broadcast" class="tab-content space-y-6">
             <div>
-                <h2 class="text-3xl font-bold text-white mb-2">大屏廣播遙控器</h2>
-                <p class="text-slate-400">修改此處內容將立刻推播至教室前方的大黑板跑馬燈</p>
+                <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">大屏廣播遙控器</h2>
+                <p class="text-brand-500 font-medium text-sm sm:text-base">修改此處內容將立刻推播至教室前方的大黑板</p>
             </div>
-            <div class="glass-panel p-6 rounded-xl">
-                <label class="block text-slate-300 mb-2 font-bold">當前廣播內容 (跑馬燈)</label>
-                <div class="flex space-x-4">
-                    <input type="text" id="marquee-input" class="flex-1 bg-slate-900 text-white px-4 py-3 rounded border border-slate-600 focus:outline-none focus:border-blue-500 text-lg">
-                    <button onclick="sendMarquee()" class="bg-blue-600 hover:bg-blue-500 text-white px-6 py-3 rounded font-bold shadow-lg transition flex items-center whitespace-nowrap">
+            <div class="glass-panel p-5 sm:p-6 rounded-2xl">
+                <label class="block text-brand-700 mb-3 font-bold">當前廣播內容 (跑馬燈)</label>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
+                    <input type="text" id="marquee-input" class="flex-1 bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:outline-none focus:border-brand-400 text-base sm:text-lg">
+                    <button onclick="sendMarquee()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-sm transition flex items-center justify-center whitespace-nowrap">
                         <i class="fas fa-paper-plane mr-2"></i> 送出廣播
                     </button>
                 </div>
                 
-                <div class="mt-5 pt-4 border-t border-slate-700">
-                    <span class="text-sm text-slate-400 mb-3 block"><i class="fas fa-magic mr-1"></i> 常用預設廣播 (點擊文字直接套用至上方輸入框)：</span>
-                    <div class="flex flex-wrap gap-2">
-                        <button onclick="setMarqueePreset('請各股長現在開始點名，未到請記黑板。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
-                            <i class="fas fa-tasks mr-1"></i> 開始點名
-                        </button>
-                        <button onclick="setMarqueePreset('請立刻回到座位，保持安靜，準備上課。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
-                            <i class="fas fa-bell mr-1"></i> 準備上課
-                        </button>
-                        <button onclick="setMarqueePreset('放學時間，請記得帶走個人物品及垃圾，並將椅子靠上。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
-                            <i class="fas fa-door-open mr-1"></i> 放學提醒
-                        </button>
-                        <button onclick="setMarqueePreset('今日有發放重要通知單，請務必帶回給家長簽名。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
-                            <i class="fas fa-file-alt mr-1"></i> 簽名通知單
-                        </button>
-                        <button onclick="setMarqueePreset('請衛生股長帶領打掃同學確實完成環境整潔。')" class="bg-slate-800 hover:bg-blue-600/30 text-slate-300 hover:text-blue-300 px-3 py-1.5 rounded text-sm transition border border-slate-600 hover:border-blue-500">
-                            <i class="fas fa-broom mr-1"></i> 打掃時間
-                        </button>
+                <div class="mt-6 pt-5 border-t border-brand-100">
+                    <span class="text-sm text-brand-500 font-bold mb-3 block"><i class="fas fa-magic mr-1"></i> 常用預設廣播 (點擊文字直接套用)：</span>
+                    <div class="flex flex-wrap gap-2.5">
+                        <button onclick="setMarqueePreset('請各股長現在開始點名，未到請記黑板。')" class="bg-white hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg text-sm transition border border-brand-200 shadow-sm flex items-center font-medium"><i class="fas fa-tasks mr-2 text-brand-400"></i> 開始點名</button>
+                        <button onclick="setMarqueePreset('請立刻回到座位，保持安靜，準備上課。')" class="bg-white hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg text-sm transition border border-brand-200 shadow-sm flex items-center font-medium"><i class="fas fa-bell mr-2 text-brand-400"></i> 準備上課</button>
+                        <button onclick="setMarqueePreset('放學時間，請記得帶走個人物品及垃圾，並將椅子靠上。')" class="bg-white hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg text-sm transition border border-brand-200 shadow-sm flex items-center font-medium"><i class="fas fa-door-open mr-2 text-brand-400"></i> 放學提醒</button>
+                        <button onclick="setMarqueePreset('今日有發放重要通知單，請務必帶回給家長簽名。')" class="bg-white hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg text-sm transition border border-brand-200 shadow-sm flex items-center font-medium"><i class="fas fa-file-alt mr-2 text-brand-400"></i> 簽名單</button>
+                        <button onclick="setMarqueePreset('請衛生股長帶領打掃同學確實完成環境整潔。')" class="bg-white hover:bg-brand-50 text-brand-700 px-4 py-2.5 rounded-lg text-sm transition border border-brand-200 shadow-sm flex items-center font-medium"><i class="fas fa-broom mr-2 text-brand-400"></i> 打掃時間</button>
                     </div>
                 </div>
-                <div class="mt-4 text-emerald-400 text-sm hidden bg-emerald-900/30 p-2 rounded border border-emerald-800" id="marquee-success">
-                    <i class="fas fa-check-circle mr-1"></i> 已成功同步至教室大黑板！
+
+                <div class="mt-5 text-brand-700 text-sm hidden bg-brand-100 p-3 rounded-xl border border-brand-200 font-bold flex items-center" id="marquee-success">
+                    <i class="fas fa-check-circle mr-2 text-brand-600"></i> 已成功同步至教室大黑板！
                 </div>
             </div>
         </section>
 
         <!-- ==================== 3. LINE@ 帳號綁定管理 ==================== -->
         <section id="tab-binding" class="tab-content space-y-6">
-            <div class="flex justify-between items-end">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-2 text-orange-400"><i class="fas fa-id-card mr-2"></i>LINE@ 帳號綁定管理 (身分證驗證)</h2>
-                    <p class="text-slate-400">設定學生的「身分證後六碼」。家長與學生在 LINE 機器人輸入正確密碼綁定後，才能查詢成績或請假。</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-id-card mr-2 text-brand-500"></i>LINE@ 綁定管理</h2>
+                    <p class="text-brand-500 font-medium text-sm sm:text-base">設定學生身分證後六碼，供家長/學生 LINE 驗證。</p>
                 </div>
-                <button onclick="openBatchImportModal()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded transition border border-slate-600 flex items-center shadow">
-                    <i class="fas fa-clipboard-list mr-2"></i> 批次匯入名單
+                <button onclick="openBatchImportModal()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl transition border border-brand-200 flex items-center justify-center shadow-sm font-bold">
+                    <i class="fas fa-clipboard-list mr-2 text-brand-500"></i> 批次匯入名單
                 </button>
             </div>
-            <div class="bg-orange-900/20 border border-orange-500/30 p-4 rounded-xl flex items-start space-x-3 mb-6 text-orange-200 text-sm">
-                <i class="fas fa-shield-alt text-orange-400 text-2xl mt-0.5"></i>
+            
+            <div class="bg-brand-100 border border-brand-200 p-4 rounded-2xl flex items-start space-x-3 text-brand-800 text-sm font-medium">
+                <i class="fas fa-shield-alt text-brand-500 text-2xl mt-0.5"></i>
                 <div>
-                    <strong class="text-orange-400 block mb-1">資安防護機制運作說明：</strong>
-                    家長初次加好友時，系統將提示：「請輸入『座號+身分證後六碼』綁定身分 (例: 05123456)」。驗證成功後，該 LINE 帳號將永久綁定對應座號，防止成績外洩。
+                    <strong class="text-brand-700 block mb-1">資安防護機制運作說明：</strong>
+                    家長初次加好友時，系統將提示輸入「座號+身分證後六碼」綁定身分。驗證成功後，該 LINE 帳號將永久綁定對應座號，防止成績外洩。
                 </div>
             </div>
-            <div class="glass-panel rounded-xl overflow-hidden">
-                <table class="w-full text-center text-sm">
-                    <thead class="bg-slate-800 text-slate-300 border-b border-slate-700">
-                        <tr><th class="p-4 font-semibold w-20">座號</th><th class="p-4 font-semibold text-left">身分證後六碼 (綁定密碼)</th><th class="p-4 font-semibold">家長 LINE 綁定狀態</th><th class="p-4 font-semibold">學生 LINE 綁定狀態</th><th class="p-4 font-semibold w-24">操作</th></tr>
+
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                <table class="w-full text-center text-sm resp-table">
+                    <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
+                        <tr>
+                            <th class="p-4 font-bold w-16 sm:w-20">座號</th>
+                            <th class="p-4 font-bold text-left">身分證後六碼</th>
+                            <th class="p-4 font-bold">家長綁定狀態</th>
+                            <th class="p-4 font-bold">學生綁定狀態</th>
+                            <th class="p-4 font-bold w-24">操作</th>
+                        </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700 text-slate-300" id="binding-table-body">
+                    <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="binding-table-body">
                     </tbody>
                 </table>
             </div>
@@ -218,21 +292,51 @@
         <!-- ==================== 4. 幹部權限管理 ==================== -->
         <section id="tab-cadre" class="tab-content space-y-6">
             <div>
-                <h2 class="text-3xl font-bold text-white mb-2">幹部密碼管理</h2>
-                <p class="text-slate-400">設定教室大黑板各項幹部登入的專屬密碼 (可設定身分證後六碼，預設為 1234)</p>
+                <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">幹部密碼管理</h2>
+                <p class="text-brand-500 font-medium text-sm sm:text-base">設定教室大黑板各項幹部登入的專屬密碼 (預設為 1234)</p>
             </div>
-            <div class="glass-panel rounded-xl overflow-hidden">
-                <table class="w-full text-left">
-                    <thead class="bg-slate-800 text-slate-300">
-                        <tr><th class="p-4 font-semibold">職位</th><th class="p-4 font-semibold">擁有權限</th><th class="p-4 font-semibold">目前密碼</th><th class="p-4 font-semibold">操作</th></tr>
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                <table class="w-full text-left resp-table text-sm sm:text-base">
+                    <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
+                        <tr><th class="p-4 font-bold">職位</th><th class="p-4 font-bold hidden sm:table-cell">擁有權限</th><th class="p-4 font-bold">目前密碼</th><th class="p-4 font-bold text-center">操作</th></tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700 text-slate-300">
-                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-emerald-400"><i class="fas fa-edit mr-2"></i> 編輯聯絡簿</td><td class="p-4 text-sm">修改所有黑板內容、刪除/新增作業</td><td class="p-4"><input type="text" id="pwd-edit_board" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('edit_board')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-yellow-400"><i class="fas fa-crown mr-2"></i> 班長</td><td class="p-4 text-sm">修改頂部看板、週目標檢核、傳送留言</td><td class="p-4"><input type="text" id="pwd-monitor" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('monitor')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-blue-400"><i class="fas fa-clipboard-list mr-2"></i> 副班長</td><td class="p-4 text-sm">全班出缺勤 (到校/請假/遲到) 登記</td><td class="p-4"><input type="text" id="pwd-vice" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('vice')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-red-400"><i class="fas fa-user-shield mr-2"></i> 風紀股長</td><td class="p-4 text-sm">課堂秩序三階評定登記</td><td class="p-4"><input type="text" id="pwd-discipline" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('discipline')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-green-400"><i class="fas fa-broom mr-2"></i> 衛生股長</td><td class="p-4 text-sm">打掃狀況三階評定登記</td><td class="p-4"><input type="text" id="pwd-health" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('health')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-slate-800/50 transition"><td class="p-4 font-bold text-purple-400"><i class="fas fa-book-reader mr-2"></i> 各科小老師</td><td class="p-4 text-sm">檢核並批次登記作業繳交狀況</td><td class="p-4"><input type="text" id="pwd-academic" value="讀取中..." class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 text-center tracking-widest"></td><td class="p-4"><button onclick="updatePassword('academic')" class="text-blue-400 hover:text-blue-300"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                    <tbody class="divide-y divide-brand-100 text-brand-800 font-medium">
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-edit mr-2 w-5 text-center text-brand-400"></i> 編輯聯絡簿</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">修改所有黑板內容、刪除/新增作業</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-edit_board" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('edit_board')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-crown mr-2 w-5 text-center text-brand-400"></i> 班長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">修改頂部看板、週目標檢核、傳送留言</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-monitor" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('monitor')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-clipboard-list mr-2 w-5 text-center text-brand-400"></i> 副班長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">全班出缺勤 (到校/請假/遲到) 登記</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-vice" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('vice')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-user-shield mr-2 w-5 text-center text-brand-400"></i> 風紀股長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">課堂秩序三階評定登記</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-discipline" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('discipline')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-broom mr-2 w-5 text-center text-brand-400"></i> 衛生股長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">打掃狀況三階評定登記</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-health" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('health')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-book-reader mr-2 w-5 text-center text-brand-400"></i> 小老師</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">檢核並批次登記作業繳交狀況</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-academic" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('academic')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -240,42 +344,43 @@
 
         <!-- ==================== 5. LINE@ 成績系統 ==================== -->
         <section id="tab-scores" class="tab-content space-y-6">
-            <div class="flex justify-between items-end">
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-2 text-emerald-400"><i class="fab fa-line mr-2"></i>LINE@ 家長查成績系統 (資料庫)</h2>
-                    <p class="text-slate-400">手動輸入或匯入學校 Excel 檔成績。存檔後將同步至雲端，供家長透過 LINE 機器人自動查詢。</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fab fa-line mr-2 text-brand-500"></i>成績系統 (資料庫)</h2>
+                    <p class="text-brand-500 text-sm sm:text-base font-medium">手動輸入或匯入 Excel 成績，存檔後供家長 LINE 查詢。</p>
                 </div>
-                <div class="flex space-x-3">
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full xl:w-auto">
                     <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleExcelUpload(event)">
-                    <button onclick="document.getElementById('excel-file-input').click()" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-bold transition flex items-center border border-slate-500 shadow">
-                        <i class="fas fa-file-excel mr-2 text-emerald-400"></i> Excel 匯入
+                    <button onclick="document.getElementById('excel-file-input').click()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm">
+                        <i class="fas fa-file-excel mr-2 text-brand-400"></i> Excel 匯入
                     </button>
-                    <button onclick="saveScoresToCloud()" class="bg-emerald-600 hover:bg-emerald-500 text-white px-6 py-2 rounded font-bold shadow-lg transition flex items-center">
+                    <button onclick="saveScoresToCloud()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center">
                         <i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布
                     </button>
                 </div>
             </div>
             
-            <div class="bg-emerald-900/20 border border-emerald-500/30 p-3 rounded-lg flex items-center space-x-3 text-emerald-200 text-sm mb-2">
-                <i class="fas fa-info-circle text-emerald-400 text-lg"></i>
-                <span><strong>Excel 匯入說明：</strong> 系統會自動抓取前 8 個欄位，建議格式依序為：<strong>座號, 國文, 英文, 數學, 自然, 社會, 平均, PR值</strong>。第一行若為標題會自動略過。</span>
+            <div class="bg-brand-100 border border-brand-200 p-4 rounded-xl flex items-start space-x-3 text-brand-800 text-sm mb-2 font-medium">
+                <i class="fas fa-info-circle text-brand-500 text-xl mt-0.5"></i>
+                <span class="leading-relaxed"><strong>Excel 匯入說明：</strong> 系統會自動抓取前 8 個欄位，建議格式依序為：<strong>座號, 國文, 英文, 數學, 自然, 社會, 平均, PR值</strong>。第一行若為標題會自動略過。</span>
             </div>
 
-            <div class="glass-panel rounded-xl overflow-x-auto">
-                <table class="w-full text-center text-sm whitespace-nowrap">
-                    <thead class="bg-slate-800 text-slate-300">
+            <!-- 成績表格水平捲動 -->
+            <div class="glass-panel rounded-2xl overflow-x-auto shadow-sm custom-scrollbar">
+                <table class="w-full text-center text-sm whitespace-nowrap min-w-[800px]">
+                    <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
                         <tr>
-                            <th class="p-3 font-semibold w-16">座號</th>
-                            <th class="p-3 font-semibold text-red-300">國文</th>
-                            <th class="p-3 font-semibold text-blue-300">英文</th>
-                            <th class="p-3 font-semibold text-yellow-300">數學</th>
-                            <th class="p-3 font-semibold text-green-300">自然</th>
-                            <th class="p-3 font-semibold text-purple-300">社會</th>
-                            <th class="p-3 font-semibold text-pink-300">平均</th>
-                            <th class="p-3 font-semibold text-orange-300">校排PR值</th>
+                            <th class="p-4 font-bold w-16 sticky left-0 bg-brand-100 z-10 border-r border-brand-200">座號</th>
+                            <th class="p-4 font-bold">國文</th>
+                            <th class="p-4 font-bold">英文</th>
+                            <th class="p-4 font-bold">數學</th>
+                            <th class="p-4 font-bold">自然</th>
+                            <th class="p-4 font-bold">社會</th>
+                            <th class="p-4 font-bold">平均</th>
+                            <th class="p-4 font-bold">校排PR值</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700 text-slate-300" id="score-table-body">
+                    <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="score-table-body">
                     </tbody>
                 </table>
             </div>
@@ -283,260 +388,192 @@
 
         <!-- ==================== 6. 每週結算與推播 ==================== -->
         <section id="tab-weekly" class="tab-content space-y-6">
-            <div class="flex justify-between items-end">
+            <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
                 <div>
-                    <h2 class="text-3xl font-bold text-white mb-2 text-purple-400"><i class="fas fa-calendar-check mr-2"></i>每週表現結算與推播</h2>
-                    <p class="text-slate-400">自動統計本週各項常規數據，並一鍵推播「榮譽榜」與「個人週報」給 LINE@ 家長群。</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-calendar-check mr-2 text-brand-500"></i>每週表現結算推播</h2>
+                    <p class="text-brand-500 font-medium text-sm sm:text-base">自動統計本週各項常規數據，一鍵推播給 LINE@ 家長群。</p>
                 </div>
-                <div class="flex space-x-3">
-                    <button onclick="alert('已自動抓取本週 (週一至週五) 每日紀錄並完成統計！')" class="bg-slate-700 hover:bg-slate-600 text-white px-4 py-2 rounded font-bold transition flex items-center border border-slate-500"><i class="fas fa-sync-alt mr-2"></i> 重新結算本週數據</button>
-                    <button onclick="alert('已發送本週榮譽榜及個人報表至家長 LINE@！')" class="bg-purple-600 hover:bg-purple-500 text-white px-4 py-2 rounded font-bold shadow-lg transition flex items-center"><i class="fab fa-line mr-2"></i> 發送 LINE@ 週報</button>
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full lg:w-auto">
+                    <button onclick="alert('已自動抓取本週 (週一至週五) 每日紀錄並完成統計！')" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-5 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm"><i class="fas fa-sync-alt mr-2 text-brand-400"></i> 重新結算</button>
+                    <button onclick="alert('已發送本週榮譽榜及個人報表至家長 LINE@！')" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center"><i class="fab fa-line mr-2 text-lg"></i> 發送 LINE@ 週報</button>
                 </div>
             </div>
-            <div class="glass-panel rounded-xl overflow-hidden">
-                <table class="w-full text-center text-sm">
-                    <thead class="bg-slate-800 text-slate-300">
-                        <tr><th class="p-4 font-semibold w-16">座號</th><th class="p-4 font-semibold text-red-300">遲到/未到</th><th class="p-4 font-semibold text-yellow-300">作業缺交總數</th><th class="p-4 font-semibold text-blue-300">打掃待改進</th><th class="p-4 font-semibold text-emerald-300">目標達成天數</th><th class="p-4 font-semibold text-white">本週綜合評級</th></tr>
+            
+            <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
+                <table class="w-full text-center text-sm resp-table">
+                    <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
+                        <tr><th class="p-4 font-bold w-16">座號</th><th class="p-4 font-bold">遲到/未到</th><th class="p-4 font-bold">作業缺交總數</th><th class="p-4 font-bold">打掃待改進</th><th class="p-4 font-bold">目標達成天數</th><th class="p-4 font-bold text-brand-800">本週綜合評級</th></tr>
                     </thead>
-                    <tbody class="divide-y divide-slate-700 text-slate-300" id="weekly-table-body">
-                        <tr><td colspan="6" class="p-6 text-slate-500">正在統計全班 24 人資料，請稍候...</td></tr>
+                    <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="weekly-table-body">
+                        <tr><td colspan="6" class="p-8 text-brand-400">正在統計全班 24 人資料，請稍候...</td></tr>
                     </tbody>
                 </table>
             </div>
-            <div class="glass-panel p-6 rounded-xl border-l-4 border-l-purple-500">
-                <h3 class="text-lg font-bold text-white mb-2"><i class="fas fa-crown text-yellow-400 mr-2"></i>本週榮譽榜 (推播預覽)</h3>
-                <p class="text-slate-400 text-sm mb-4">以下名單將於點擊「發送 LINE@ 週報」時，自動生成精美圖文公告於家長群：</p>
-                <div class="flex flex-wrap gap-2" id="honor-list-container">
-                    <span class="text-slate-500 text-sm">計算中...</span>
+
+            <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-brand-500">
+                <h3 class="text-lg font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-crown text-brand-400 mr-2"></i>本週榮譽榜 (推播預覽)</h3>
+                <p class="text-brand-500 text-sm mb-4 font-medium">以下名單將於點擊「發送 LINE@ 週報」時，自動生成精美圖文公告：</p>
+                <div class="flex flex-wrap gap-2.5" id="honor-list-container">
+                    <span class="text-brand-400 text-sm">計算中...</span>
                 </div>
             </div>
         </section>
 
         <!-- ==================== 7. LINE@ 溝通紀錄 ==================== -->
-        <section id="tab-chat" class="tab-content space-y-6">
-            <div class="flex flex-col h-[75vh]">
-                <div class="mb-4">
-                    <h2 class="text-3xl font-bold text-white mb-2 text-pink-400"><i class="fas fa-comments mr-2"></i>LINE@ 親師 / 師生對話紀錄 (永久備份)</h2>
-                    <p class="text-slate-400">雙帳號管理中心：不僅突破官方 6 個月紀錄限制，更能直接於此夾帶檔案並回覆訊息。</p>
+        <section id="tab-chat" class="tab-content h-[calc(100vh-100px)]">
+            <div class="flex flex-col h-full space-y-4">
+                <div class="mb-2 shrink-0">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-comments mr-2 text-brand-500"></i>對話紀錄 (永久備份)</h2>
+                    <p class="text-brand-500 font-medium text-sm hidden sm:block">突破官方 6 個月紀錄限制，雙帳號無縫切換管理。</p>
                 </div>
                 
-                <div class="flex-1 glass-panel rounded-xl overflow-hidden flex border border-slate-700 shadow-xl">
-                    <div class="w-1/3 bg-slate-900 border-r border-slate-700 flex flex-col">
-                        <div class="flex border-b border-slate-700">
-                            <button class="flex-1 py-3 bg-pink-900/30 text-pink-400 font-bold border-b-2 border-pink-500 transition"><i class="fas fa-user-friends mr-2"></i>家長群</button>
-                            <button class="flex-1 py-3 text-slate-400 hover:bg-slate-800 transition"><i class="fas fa-user-graduate mr-2"></i>學生群</button>
+                <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm min-h-0">
+                    <div class="w-full sm:w-1/3 bg-white border-b sm:border-b-0 sm:border-r border-brand-200 flex flex-col h-1/3 sm:h-full">
+                        <div class="flex border-b border-brand-200 shrink-0">
+                            <button class="flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base"><i class="fas fa-user-friends mr-1 sm:mr-2 text-brand-400"></i>家長群</button>
+                            <button class="flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold"><i class="fas fa-user-graduate mr-1 sm:mr-2"></i>學生群</button>
                         </div>
-                        <div class="flex-1 overflow-y-auto">
-                            <div class="p-3 border-b border-slate-800 hover:bg-slate-800 cursor-pointer transition flex items-center space-x-3 bg-slate-800/50">
-                                <div class="w-10 h-10 rounded-full bg-blue-500/20 text-blue-300 flex items-center justify-center font-bold">01</div>
-                                <div class="flex-1">
-                                    <div class="text-white font-bold text-sm">01號 家長</div>
-                                    <div class="text-xs text-slate-400 truncate">老師，請問這週的作業...</div>
+                        <div class="flex-1 overflow-y-auto custom-scrollbar">
+                            <div class="p-3 border-b border-brand-100 hover:bg-brand-50 cursor-pointer transition flex items-center space-x-3 bg-brand-50/50">
+                                <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 border border-brand-200 flex items-center justify-center font-bold shrink-0">01</div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-brand-800 font-bold text-sm truncate">01號 家長</div>
+                                    <div class="text-xs text-brand-500 font-medium truncate">老師，請問這週的作業...</div>
                                 </div>
                             </div>
                         </div>
                     </div>
                     
-                    <div class="flex-1 bg-slate-800 flex flex-col">
-                        <div class="p-4 border-b border-slate-700 bg-slate-900/50 flex justify-between items-center">
-                            <div class="font-bold text-white"><i class="fas fa-user-circle text-pink-400 mr-2 text-xl"></i> 01號 同學家長</div>
+                    <div class="flex-1 bg-brand-50 flex flex-col h-2/3 sm:h-full">
+                        <div class="p-3 sm:p-4 border-b border-brand-200 bg-white flex justify-between items-center shrink-0">
+                            <div class="font-bold text-brand-800 flex items-center"><i class="fas fa-user-circle text-brand-400 mr-2 text-xl"></i> 01號 同學家長</div>
                         </div>
-                        <div class="flex-1 p-6 overflow-y-auto space-y-4">
+                        <div class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar bg-brand-50/50">
                             <div class="flex justify-start">
-                                <div class="bg-slate-700 text-white px-4 py-2 rounded-lg rounded-tl-none max-w-[70%] text-sm shadow">
+                                <div class="bg-white border border-brand-200 text-brand-800 font-medium px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
                                     老師您好，01號昨天因為感冒所以國文作業沒有寫完，想請問今天可以補交嗎？
                                 </div>
                             </div>
                             <div class="flex justify-end">
-                                <div class="bg-pink-600 text-white px-4 py-2 rounded-lg rounded-tr-none max-w-[70%] text-sm shadow">
+                                <div class="bg-brand-500 text-white font-medium px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
                                     沒問題的！我會在系統上先註記，請他明天帶來給小老師檢查就可以了。
                                 </div>
                             </div>
                         </div>
-                        <div class="p-4 bg-slate-900 border-t border-slate-700 flex space-x-3 items-center">
-                            <input type="text" placeholder="輸入訊息回覆給家長..." class="flex-1 bg-slate-800 text-white px-4 py-2 rounded-full border border-slate-600 focus:outline-none focus:border-pink-500 text-sm">
-                            <button class="bg-pink-600 hover:bg-pink-500 text-white w-10 h-10 rounded-full flex items-center justify-center transition"><i class="fas fa-paper-plane"></i></button>
+                        <div class="p-3 sm:p-4 bg-white border-t border-brand-200 flex space-x-2 sm:space-x-3 items-center shrink-0">
+                            <input type="text" placeholder="輸入訊息回覆給家長..." class="flex-1 bg-brand-50 text-brand-800 font-medium px-4 py-2.5 sm:py-3 rounded-full border border-brand-200 focus:outline-none focus:border-brand-400 text-sm sm:text-base">
+                            <button class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition shadow-md shrink-0"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
                 </div>
             </div>
         </section>
+
     </main>
 
     <!-- 批次匯入 Modal -->
-    <div id="modal-batch-import" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-800 rounded-xl border border-slate-600 shadow-2xl w-full max-w-md flex flex-col">
-            <div class="px-4 py-3 border-b border-slate-700 flex justify-between items-center bg-slate-800/80 rounded-t-xl">
-                <h3 class="text-white font-bold"><i class="fas fa-file-import text-orange-400 mr-2"></i>批次匯入身分證後六碼</h3>
-                <button onclick="closeModal('modal-batch-import')" class="text-slate-400 hover:text-white"><i class="fas fa-times"></i></button>
+    <div id="modal-batch-import" class="hidden fixed inset-0 bg-brand-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-md flex flex-col">
+            <div class="px-5 py-4 border-b border-brand-100 flex justify-between items-center bg-brand-50 rounded-t-2xl shrink-0">
+                <h3 class="text-brand-800 font-bold flex items-center text-lg"><i class="fas fa-file-import text-brand-500 mr-2"></i>批次匯入密碼</h3>
+                <button onclick="closeModal('modal-batch-import')" class="text-brand-400 hover:text-brand-600 text-xl"><i class="fas fa-times"></i></button>
             </div>
-            <div class="p-5">
-                <p class="text-sm text-slate-300 mb-3 leading-relaxed">請從 Excel 複製「身分證後六碼」整欄資料<br><span class="text-orange-400 text-xs">（共 24 筆，必須依座號 1~24 順序排列）</span>，並直接貼上於下方：</p>
-                <textarea id="batch-import-data" rows="10" class="w-full bg-slate-900 text-white p-3 rounded border border-slate-600 focus:border-orange-500 outline-none font-mono text-sm placeholder-slate-600" placeholder="範例格式：&#10;123456 (1號)&#10;654321 (2號)&#10;...貼上 24 行數字..."></textarea>
+            <div class="p-5 sm:p-6 bg-white">
+                <p class="text-sm text-brand-600 font-medium mb-4 leading-relaxed">
+                    請從 Excel 複製「身分證後六碼」整欄資料<br>
+                    <span class="text-brand-800 font-bold">（共 24 筆，依座號 1~24 排序）</span>，並貼上於下方：
+                </p>
+                <textarea id="batch-import-data" rows="8" class="w-full bg-brand-50 text-brand-800 p-4 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-mono text-sm placeholder-brand-300 custom-scrollbar" placeholder="範例格式：&#10;123456 (1號)&#10;654321 (2號)&#10;...貼上 24 行數字..."></textarea>
             </div>
-            <div class="px-5 py-4 border-t border-slate-700 bg-slate-900/50 flex justify-end space-x-3 rounded-b-xl">
-                <button onclick="closeModal('modal-batch-import')" class="px-4 py-2 text-slate-300 hover:text-white transition">取消</button>
-                <button onclick="executeBatchImport()" class="px-4 py-2 bg-orange-600 hover:bg-orange-500 text-white rounded font-bold transition shadow">確認並更新</button>
+            <div class="px-5 py-4 border-t border-brand-100 bg-brand-50 flex flex-col sm:flex-row justify-end gap-3 sm:space-x-3 rounded-b-2xl shrink-0">
+                <button onclick="closeModal('modal-batch-import')" class="w-full sm:w-auto px-5 py-2.5 text-brand-600 hover:bg-white bg-transparent border border-brand-200 rounded-xl transition font-bold shadow-sm">取消</button>
+                <button onclick="executeBatchImport()" class="w-full sm:w-auto px-6 py-2.5 bg-brand-600 hover:bg-brand-500 text-white rounded-xl font-bold transition shadow-md">確認更新</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理已核准請假 Modal -->
+    <div id="modal-manage-leaves" class="hidden fixed inset-0 bg-brand-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
+            <div class="px-5 py-4 border-b border-brand-100 flex justify-between items-center bg-brand-50 rounded-t-2xl shrink-0">
+                <h3 class="text-brand-800 font-bold flex items-center text-lg"><i class="fas fa-tasks text-brand-500 mr-2"></i>管理已核准請假紀錄</h3>
+                <button onclick="closeModal('modal-manage-leaves')" class="text-brand-400 hover:text-brand-600 text-xl"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-5 flex-grow overflow-y-auto custom-scrollbar" id="manage-leaves-list">
+                <div class="text-brand-400 italic text-center py-4">載入中...</div>
             </div>
         </div>
     </div>
 
     <script>
-        const firebaseConfig = {
-            apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA",
-            authDomain: "smart-class-system-a1645.firebaseapp.com",
-            projectId: "smart-class-system-a1645",
-            storageBucket: "smart-class-system-a1645.firebasestorage.app",
-            messagingSenderId: "236576763126",
-            appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7"
-        };
-        firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const db = firebase.firestore();
-
-        // ==================== 身分驗證系統 (Firebase Auth) ====================
-        
-        auth.onAuthStateChanged((user) => {
-            const overlay = document.getElementById('login-overlay');
-            if (user) {
-                overlay.style.opacity = '0';
-                setTimeout(() => overlay.classList.add('hidden'), 500); 
-                initDataListeners();
-            } else {
-                overlay.classList.remove('hidden');
-                setTimeout(() => overlay.style.opacity = '1', 10);
-            }
-        });
-
-        function handleLogin() {
-            const email = document.getElementById('login-email').value;
-            const pwd = document.getElementById('login-pwd').value;
-            const errEl = document.getElementById('login-error');
-            
-            if(!email || !pwd) { errEl.innerText = "請輸入 Email 與密碼"; errEl.classList.remove('hidden'); return; }
-
-            auth.signInWithEmailAndPassword(email, pwd)
-                .then(() => errEl.classList.add('hidden'))
-                .catch(() => { errEl.innerText = "登入失敗：帳號或密碼錯誤"; errEl.classList.remove('hidden'); });
+        function toggleMobileMenu() {
+            const sidebar = document.getElementById('sidebar');
+            const overlay = document.getElementById('mobile-menu-overlay');
+            sidebar.classList.toggle('-translate-x-full');
+            overlay.classList.toggle('hidden');
         }
-
-        function handleLogout() {
-            auth.signOut().then(() => {
-                alert("已安全登出！");
-                window.location.reload(); 
-            }).catch((error) => alert("登出發生錯誤：" + error.message));
-        }
-
-        // ==================== 頁面與資料庫邏輯 ====================
-
-        const todayStr = new Date().toISOString().split('T')[0];
-        let globalHWMap = {};
-        let globalStudentsData = null;
-
-        window.addEventListener('DOMContentLoaded', () => {
-            const tbody = document.getElementById('score-table-body');
-            let html = '';
-            for(let i=1; i<=24; i++) {
-                html += `
-                <tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-2 font-bold text-white bg-slate-800/50">${String(i).padStart(2,'0')}</td>
-                    <td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
-                    <td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
-                    <td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
-                    <td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
-                    <td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-slate-900 border border-slate-600 rounded text-center px-1 py-1 focus:border-emerald-500 text-white"></td>
-                    <td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-slate-900 border border-pink-700/50 rounded text-center px-1 py-1 focus:border-pink-500 text-pink-200"></td>
-                    <td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-slate-900 border border-orange-700/50 rounded text-center px-1 py-1 focus:border-orange-500 text-orange-200"></td>
-                </tr>`;
-            }
-            tbody.innerHTML = html;
-        });
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
             document.querySelectorAll('.menu-item').forEach(el => {
-                el.classList.remove('active', 'bg-blue-600', 'text-white');
-                if(el.id === 'nav-binding') el.classList.add('text-orange-400');
-                else if(el.id === 'nav-scores') el.classList.add('text-emerald-400');
-                else if(el.id === 'nav-weekly') el.classList.add('text-purple-400');
-                else if(el.id === 'nav-chat') el.classList.add('text-pink-400');
-                else el.classList.add('text-slate-300');
+                el.classList.remove('active');
             });
             document.getElementById(`tab-${tabId}`).classList.add('active');
             const navBtn = document.getElementById(`nav-${tabId}`);
-            if(navBtn) navBtn.classList.add('active', 'bg-blue-600', 'text-white');
+            if(navBtn) navBtn.classList.add('active');
+            
+            if(window.innerWidth < 768) {
+                const sidebar = document.getElementById('sidebar');
+                const overlay = document.getElementById('mobile-menu-overlay');
+                if(sidebar) sidebar.classList.add('-translate-x-full');
+                if(overlay) overlay.classList.add('hidden');
+            }
         }
+
+        const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645", storageBucket: "smart-class-system-a1645.firebasestorage.app", messagingSenderId: "236576763126", appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7" };
+        firebase.initializeApp(firebaseConfig); const auth = firebase.auth(); const db = firebase.firestore();
+
+        auth.onAuthStateChanged((user) => {
+            const overlay = document.getElementById('login-overlay');
+            if (user) { overlay.style.opacity = '0'; setTimeout(() => overlay.classList.add('hidden'), 500); initDataListeners(); } 
+            else { overlay.classList.remove('hidden'); setTimeout(() => overlay.style.opacity = '1', 10); }
+        });
+
+        function handleLogin() {
+            const email = document.getElementById('login-email').value; const pwd = document.getElementById('login-pwd').value; const errEl = document.getElementById('login-error');
+            if(!email || !pwd) { errEl.innerText = "請輸入 Email 與密碼"; errEl.classList.remove('hidden'); return; }
+            auth.signInWithEmailAndPassword(email, pwd).then(() => errEl.classList.add('hidden')).catch(() => { errEl.innerText = "登入失敗：帳號或密碼錯誤"; errEl.classList.remove('hidden'); });
+        }
+        function handleLogout() { auth.signOut().then(() => { alert("已安全登出！"); window.location.reload(); }).catch(e => alert("登出發生錯誤：" + e.message)); }
+
+        const todayStr = new Date().toISOString().split('T')[0];
+        let globalHWMap = {}; let globalStudentsData = null; let bindingsData = null; let lineParentsData = null; let lineStudentsData = null; let globalApprovedLeaves = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const tbody = document.getElementById('score-table-body'); let html = '';
+            for(let i=1; i<=24; i++) {
+                html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 bg-brand-50 sticky left-0 z-10 border-r border-brand-200">${String(i).padStart(2,'0')}</td><td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td><td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td><td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td></tr>`;
+            }
+            tbody.innerHTML = html;
+        });
 
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
-        function openBatchImportModal() { 
-            document.getElementById('batch-import-data').value = '';
-            document.getElementById('modal-batch-import').classList.remove('hidden'); 
-        }
-
-        function markConnected() {
-            const st = document.getElementById('db-status');
-            st.className = "text-emerald-400 text-sm bg-slate-800 px-4 py-2 rounded-lg border border-emerald-900/50";
-            st.innerHTML = '<i class="fas fa-check-circle mr-2"></i> 雲端資料庫已連線';
-        }
-
-        let bindingsData = null;
-        let lineParentsData = null;
-        let lineStudentsData = null; 
+        function openBatchImportModal() { document.getElementById('batch-import-data').value = ''; document.getElementById('modal-batch-import').classList.remove('hidden'); }
+        function markConnected() { const st = document.getElementById('db-status'); st.className = "w-full sm:w-auto text-brand-600 font-bold text-sm bg-brand-50 px-4 py-2.5 rounded-xl border border-brand-200 shadow-sm flex justify-center sm:justify-start items-center"; st.innerHTML = '<i class="fas fa-check-circle mr-2 text-brand-500"></i> 已連線'; }
 
         function renderBindingTable() {
-            const tbody = document.getElementById('binding-table-body');
-            let html = '';
+            const tbody = document.getElementById('binding-table-body'); let html = '';
             for(let i=1; i<=24; i++) {
-                let sId = String(i).padStart(2,'0');
-                let id6 = (bindingsData && bindingsData[i] && bindingsData[i].id6) ? bindingsData[i].id6 : '未設定';
-                
-                let isParentBound = (lineParentsData && lineParentsData['seat_' + i]) ? true : false;
-                let isStudentBound = (lineStudentsData && lineStudentsData['seat_' + i]) ? true : false;
-                
-                let pBound = isParentBound ? 
-                    `<div class="flex items-center justify-center space-x-2">
-                        <i class="fas fa-check-circle text-emerald-400 text-lg"></i> 
-                        <button onclick="unbindParent(${i})" class="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/50 px-2 py-1 rounded transition" title="踢除並解除綁定">解除</button>
-                    </div>` : `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
-                    
-                let sBound = isStudentBound ? 
-                    `<div class="flex items-center justify-center space-x-2">
-                        <i class="fas fa-check-circle text-emerald-400 text-lg"></i> 
-                        <button onclick="unbindStudent(${i})" class="text-xs bg-red-900/40 hover:bg-red-600 text-red-400 hover:text-white border border-red-500/50 px-2 py-1 rounded transition" title="踢除並解除綁定">解除</button>
-                    </div>` : `<i class="fas fa-times-circle text-red-500 opacity-50"></i>`;
-                
-                html += `
-                <tr class="hover:bg-slate-800/30 transition">
-                    <td class="p-3 font-bold text-white bg-slate-800/50 text-center">${sId}</td>
-                    <td class="p-3">
-                        <div class="flex items-center space-x-2">
-                            <input type="text" id="bind-id-${i}" value="${id6 === '未設定' ? '' : id6}" placeholder="未設定" class="bg-slate-900 border border-slate-600 px-3 py-1 rounded w-32 tracking-widest text-white focus:border-orange-500 outline-none">
-                        </div>
-                    </td>
-                    <td class="p-3 text-center">${pBound}</td>
-                    <td class="p-3 text-center">${sBound}</td>
-                    <td class="p-3 text-center">
-                        <button onclick="updateBinding(${i})" class="text-orange-400 hover:text-orange-300 text-xs border border-orange-500/50 px-2 py-1 rounded transition"><i class="fas fa-save mr-1"></i>儲存</button>
-                    </td>
-                </tr>`;
+                let sId = String(i).padStart(2,'0'); let id6 = (bindingsData && bindingsData[i] && bindingsData[i].id6) ? bindingsData[i].id6 : '未設定';
+                let isParentBound = (lineParentsData && lineParentsData['seat_' + i]) ? true : false; let isStudentBound = (lineStudentsData && lineStudentsData['seat_' + i]) ? true : false;
+                let pBound = isParentBound ? `<div class="flex items-center justify-end sm:justify-center space-x-2"><i class="fas fa-check-circle text-brand-500 text-lg"></i> <button onclick="unbindParent(${i})" class="text-xs bg-red-50 hover:bg-red-100 text-morandi-pink font-bold border border-red-200 px-2 py-1 rounded transition">解除</button></div>` : `<i class="fas fa-times-circle text-brand-300 opacity-50"></i>`;
+                let sBound = isStudentBound ? `<div class="flex items-center justify-end sm:justify-center space-x-2"><i class="fas fa-check-circle text-brand-500 text-lg"></i> <button onclick="unbindStudent(${i})" class="text-xs bg-red-50 hover:bg-red-100 text-morandi-pink font-bold border border-red-200 px-2 py-1 rounded transition">解除</button></div>` : `<i class="fas fa-times-circle text-brand-300 opacity-50"></i>`;
+                html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${sId}</td><td class="p-3" data-label="身分證後六碼"><input type="text" id="bind-id-${i}" value="${id6 === '未設定' ? '' : id6}" placeholder="未設定" class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 tracking-widest text-brand-800 font-bold focus:border-brand-400 outline-none text-right sm:text-left"></td><td class="p-3 sm:text-center" data-label="家長綁定狀態">${pBound}</td><td class="p-3 sm:text-center" data-label="學生綁定狀態">${sBound}</td><td class="p-3 sm:text-center" data-label="操作"><button onclick="updateBinding(${i})" class="bg-white text-brand-600 hover:bg-brand-50 font-bold border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm w-full sm:w-auto"><i class="fas fa-save mr-1"></i>儲存</button></td></tr>`;
             }
             tbody.innerHTML = html;
         }
 
-        // --- 清空日誌功能 ---
-        function clearAuditLogs() {
-            if(!confirm("確定要清空所有的幹部操作日誌嗎？\n(此動作無法復原)")) return;
-            db.collection("audit_logs").get().then((snapshot) => {
-                if(snapshot.empty) { alert("目前沒有日誌可以清空。"); return; }
-                const batch = db.batch();
-                snapshot.docs.forEach((doc) => batch.delete(doc.ref));
-                return batch.commit();
-            }).then(() => alert("✅ 日誌已全部清空！"))
-              .catch(err => alert("清空失敗: " + err.message));
-        }
-
         function initDataListeners() {
-            
             db.collection("class_settings").doc("bindings").onSnapshot((doc) => { bindingsData = doc.exists ? doc.data().studentBindings : null; renderBindingTable(); });
             db.collection("class_settings").doc("line_parents").onSnapshot((doc) => { lineParentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
             db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
@@ -547,289 +584,214 @@
                     const data = doc.data();
                     if(data.topBoardInfo) {
                         document.getElementById('marquee-input').value = data.topBoardInfo.marqueeText || '';
-                        if(data.topBoardInfo.monitorMsg) document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-slate-500 mt-2 block">- 班長即時回報</span>`;
+                        if(data.topBoardInfo.monitorMsg) document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-brand-400 mt-2 block">- 班長即時回報</span>`;
                     }
-                    if(data.passwords) {
-                        ['edit_board', 'monitor', 'vice', 'discipline', 'health', 'academic'].forEach(role => {
-                            if(document.getElementById(`pwd-${role}`)) document.getElementById(`pwd-${role}`).value = data.passwords[role] || '1234';
-                        });
-                    }
-                    if(data.boardData && data.boardData.homework) {
-                        globalHWMap = {};
-                        data.boardData.homework.forEach(h => globalHWMap[h.id] = h.text);
-                    }
+                    if(data.passwords) ['edit_board', 'monitor', 'vice', 'discipline', 'health', 'academic'].forEach(role => { if(document.getElementById(`pwd-${role}`)) document.getElementById(`pwd-${role}`).value = data.passwords[role] || '1234'; });
+                    if(data.boardData && data.boardData.homework) { globalHWMap = {}; data.boardData.homework.forEach(h => globalHWMap[h.id] = h.text); }
                     renderDashboardHW(); 
                 }
             });
 
             db.collection("daily_records").doc(todayStr).onSnapshot((doc) => {
                 if (doc.exists) {
-                    globalStudentsData = doc.data().studentsData;
-                    const sData = globalStudentsData;
-                    let present = 0; let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] };
-                    let disciplineCount = 0; let disciplineList = [];
-
+                    globalStudentsData = doc.data().studentsData; const sData = globalStudentsData;
+                    let present = 0; let absentGroups = { '病假': [], '事假': [], '公假': [], '遲到': [], '未到': [] }; let disciplineCount = 0; let disciplineList = [];
                     for(let i=1; i<=24; i++) {
-                        let st = sData[i].attendance;
-                        if(st === '到校' || st === '遲到') present++;
-                        if (st !== '到校' && absentGroups[st]) absentGroups[st].push(String(i).padStart(2,'0'));
-
-                        let issues = [];
-                        if(sData[i].discipline === '待改進') issues.push('秩序');
-                        if(sData[i].clean === '待改進') issues.push('打掃');
+                        let st = sData[i].attendance; if(st === '到校' || st === '遲到') present++; if (st !== '到校' && absentGroups[st]) absentGroups[st].push(String(i).padStart(2,'0'));
+                        let issues = []; if(sData[i].discipline === '待改進') issues.push('秩序'); if(sData[i].clean === '待改進') issues.push('打掃');
                         if(issues.length > 0) { disciplineCount++; disciplineList.push(`${String(i).padStart(2,'0')}(${issues.join(',')})`); }
                     }
-
                     document.getElementById('dash-present').innerText = present;
-                    
-                    // 🌟 修正假單文字顏色排版 (座號改為灰色 text-slate-300)
                     let absentHtmlArr = [];
-                    for (let type in absentGroups) {
-                        if (absentGroups[type].length > 0) {
-                            let colorClass = type === '病假' ? 'text-yellow-400' : (type === '事假' ? 'text-blue-400' : (type === '公假' ? 'text-purple-400' : 'text-red-400'));
-                            absentHtmlArr.push(`<div><span class="${colorClass} font-bold">${type}:</span> <span class="text-slate-300">${absentGroups[type].join(', ')}</span></div>`);
-                        }
+                    for (let type in absentGroups) if (absentGroups[type].length > 0) {
+                        let colorClass = type === '病假' ? 'text-brand-500' : (type === '事假' ? 'text-morandi-blue' : (type === '公假' ? 'text-brand-400' : 'text-morandi-pink'));
+                        absentHtmlArr.push(`<div><span class="${colorClass} font-bold">${type}:</span> ${absentGroups[type].join(', ')}</div>`);
                     }
-                    document.getElementById('dash-absent-list').className = "text-sm space-y-1"; 
-                    document.getElementById('dash-absent-list').innerHTML = absentHtmlArr.length > 0 ? absentHtmlArr.join('') : '<span class="text-emerald-400"><i class="fas fa-check-circle mr-1"></i> 全員到齊</span>';
-                    
+                    document.getElementById('dash-absent-list').innerHTML = absentHtmlArr.length > 0 ? absentHtmlArr.join('') : '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle mr-1 text-brand-500"></i> 全員到齊</div>';
                     document.getElementById('dash-discipline').innerText = disciplineCount;
-                    document.getElementById('dash-discipline-list').innerText = disciplineList.length > 0 ? `待改進座號: ${disciplineList.join(', ')}` : '常規表現良好';
-                    
-                    renderDashboardHW(); 
-                    renderWeeklyReport(); 
+                    document.getElementById('dash-discipline-list').innerHTML = disciplineList.length > 0 ? `<div class="text-morandi-pink font-bold">待改進: ${disciplineList.join(', ')}</div>` : '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle mr-1 text-brand-500"></i> 表現良好</div>';
+                    renderDashboardHW(); renderWeeklyReport(); 
                 }
             });
 
-            db.collection("audit_logs").orderBy("timestamp", "desc").limit(15).onSnapshot((snapshot) => {
+            db.collection("audit_logs").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
                 const container = document.getElementById('audit-log-container');
-                if(snapshot.empty) {
-                    container.innerHTML = `<div class="text-slate-500 italic">今日目前尚無幹部操作紀錄。</div>`;
-                    return;
-                }
-                let html = '';
-                const colorMap = { '班長': 'text-yellow-400', '副班長': 'text-blue-400', '風紀': 'text-red-400', '衛生': 'text-green-400', '小老師': 'text-purple-400', '編輯聯絡簿': 'text-emerald-400' };
-                
+                if(snapshot.empty) { container.innerHTML = `<div class="text-brand-400 italic">目前尚無操作紀錄。</div>`; return; }
+                let html = ''; 
+                const colorMap = { 
+                    '班長': 'text-yellow-600', 
+                    '副班長': 'text-blue-600', 
+                    '風紀': 'text-red-500', 
+                    '衛生': 'text-emerald-600', 
+                    '小老師': 'text-purple-600', 
+                    '編輯聯絡簿': 'text-teal-600',
+                    '學生': 'text-brand-500' 
+                };
                 snapshot.forEach((doc) => {
-                    const log = doc.data();
-                    const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'}) : '--:--';
-                    const roleColor = colorMap[log.role] || 'text-slate-400';
-                    html += `
-                    <div class="flex items-start space-x-2 border-b border-slate-700 pb-2">
-                        <span class="text-slate-500 whitespace-nowrap">${timeStr}</span>
-                        <span class="${roleColor} whitespace-nowrap">[${log.role}]</span>
-                        <span class="text-slate-300">${log.action}</span>
-                    </div>`;
+                    const log = doc.data(); 
+                    const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'}) : '--:--'; 
+                    const roleColor = colorMap[log.role] || 'text-brand-400';
+                    html += `<div class="flex items-start space-x-2 border-b border-brand-100 pb-2"><span class="text-brand-400 whitespace-nowrap text-xs sm:text-sm mt-0.5">${timeStr}</span><span class="${roleColor} whitespace-nowrap font-bold">[${log.role}]</span><span class="text-brand-800 flex-1 leading-snug font-medium">${log.action}</span></div>`;
                 });
                 container.innerHTML = html;
             });
 
-            // 🌟 監聽家長線上請假單 (只顯示尚未核准的 pending，縮小版型以符合方塊大小)
-            db.collection("leave_requests").where("status", "==", "pending").onSnapshot((snapshot) => {
-                const container = document.getElementById('leave-requests-container');
-                if(snapshot.empty) {
-                    container.innerHTML = '<div class="text-slate-500 text-sm text-center py-6 border border-dashed border-slate-700 rounded bg-slate-800/30"><i class="fas fa-inbox mb-2 text-2xl block text-slate-600"></i>目前無待核准的請假單</div>';
-                    return;
-                }
-                let html = '';
-                let reqs = [];
-                snapshot.forEach(doc => reqs.push({id: doc.id, ...doc.data()}));
-                reqs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)); 
+            db.collection("leave_requests").onSnapshot((snapshot) => {
+                const pendingContainer = document.getElementById('leave-requests-container');
+                const approvedContainer = document.getElementById('approved-leave-summary');
                 
-                reqs.forEach(data => {
-                    let typeColor = 'bg-slate-700 text-slate-300'; 
-                    if(data.type==='病假') typeColor = 'bg-red-900/50 text-red-300 border-red-500/30';
-                    else if(data.type==='事假') typeColor = 'bg-yellow-900/50 text-yellow-300 border-yellow-500/30';
-                    else if(data.type==='公假') typeColor = 'bg-blue-900/50 text-blue-300 border-blue-500/30';
+                globalApprovedLeaves = []; 
+                let pendingReqs = [];
+                let approvedStats = {};
 
-                    html += `
-                        <div class="bg-slate-900/50 p-3 rounded border border-slate-700 flex justify-between items-center hover:border-slate-500 transition mb-2">
-                            <div class="flex-1 pr-2 overflow-hidden">
-                                <div class="flex items-center gap-2 mb-1">
-                                    <span class="font-bold text-white text-base">${data.seatNo} 號</span>
-                                    <span class="text-[10px] font-bold ${typeColor} px-1.5 py-0.5 rounded border whitespace-nowrap">${data.type}</span>
-                                </div>
-                                <div class="text-xs text-slate-300 truncate" title="${data.reason}">${data.reason}</div>
-                                <div class="text-[10px] text-slate-500 mt-1">${data.date} (${data.duration})</div>
-                            </div>
-                            <button onclick="approveLeave('${data.id}', '${data.seatNo}', '${data.type}')" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3 py-1.5 rounded text-xs transition font-bold shadow whitespace-nowrap">
-                                核准
-                            </button>
-                        </div>
-                    `;
+                snapshot.forEach(doc => {
+                    const data = {id: doc.id, ...doc.data()};
+                    if(data.status === 'pending') {
+                        pendingReqs.push(data);
+                    } else if (data.status === 'approved') {
+                        globalApprovedLeaves.push(data);
+                        let seat = data.seatNo;
+                        if(!approvedStats[seat]) approvedStats[seat] = 0;
+                        let dur = data.duration;
+                        if(dur === '全天') approvedStats[seat] += 8;
+                        else if(dur === '上午' || dur === '下午') approvedStats[seat] += 4;
+                    }
                 });
-                container.innerHTML = html;
+
+                if(pendingReqs.length === 0) { 
+                    pendingContainer.innerHTML = '<div class="text-brand-400 text-sm text-center py-6 border-2 border-dashed border-brand-200 rounded-xl bg-brand-50/50"><i class="fas fa-inbox mb-3 text-3xl block text-brand-300"></i>目前無待辦事項</div>'; 
+                } else {
+                    pendingReqs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp));
+                    let p_html = '';
+                    pendingReqs.forEach(data => {
+                        const dateStr = new Date(data.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'});
+                        let typeColor = 'bg-brand-700 text-brand-100 border-brand-600'; 
+                        if(data.type==='病假') typeColor = 'bg-red-50 text-morandi-pink border-red-200'; else if(data.type==='事假') typeColor = 'bg-blue-50 text-morandi-blue border-blue-200'; else if(data.type==='公假') typeColor = 'bg-yellow-50 text-yellow-600 border-yellow-200';
+                        p_html += `<div class="bg-white p-4 sm:p-5 rounded-xl border border-brand-200 flex flex-col sm:flex-row justify-between items-start sm:items-center shadow-sm gap-4 hover:border-brand-300 transition"><div class="flex-1 w-full"><div class="mb-3 flex items-center flex-wrap gap-2"><span class="font-bold text-brand-800 text-xl">${data.seatNo} 號</span><span class="text-xs font-bold ${typeColor} px-2 py-1 rounded-md border tracking-wide">${data.type}</span><span class="text-sm text-brand-600 font-medium bg-brand-50 px-2 py-1 rounded-md border border-brand-200"><i class="far fa-calendar-alt mr-1"></i>${data.date} (${data.duration})</span></div><div class="text-sm text-brand-800 bg-brand-50 p-3 rounded-lg border border-brand-100 leading-relaxed break-words">${data.reason}</div><div class="text-xs text-brand-400 mt-3 font-medium"><i class="far fa-clock mr-1"></i>申請時間: ${dateStr}</div></div><button onclick="approveLeave('${data.id}', '${data.seatNo}', '${data.type}')" class="w-full sm:w-24 bg-brand-600 hover:bg-brand-500 text-white px-4 py-3 sm:py-4 rounded-xl text-sm transition font-bold shadow-sm flex sm:flex-col items-center justify-center gap-2 sm:gap-1"><i class="fas fa-check text-lg"></i><span>核准</span></button></div>`;
+                    });
+                    pendingContainer.innerHTML = p_html;
+                }
+
+                let a_html = '';
+                let seats = Object.keys(approvedStats).sort((a,b) => parseInt(a) - parseInt(b));
+                if(seats.length === 0) {
+                    a_html = '<div class="text-brand-400 italic font-medium py-2">目前尚無已核准的請假紀錄。</div>';
+                } else {
+                    seats.forEach(seat => {
+                        let totalPeriods = approvedStats[seat];
+                        if(totalPeriods === 0) return;
+                        let days = Math.floor(totalPeriods / 8);
+                        let periods = totalPeriods % 8;
+                        let timeStr = '';
+                        if(days > 0) timeStr += `${days} 天`;
+                        if(periods > 0) timeStr += `${days > 0 ? '又 ' : ''}${periods} 節課`;
+                        
+                        a_html += `
+                        <div class="bg-brand-50 p-3 rounded-xl border border-brand-200 flex justify-between items-center shadow-sm">
+                            <span class="font-bold text-brand-800">${seat} 號</span>
+                            <span class="text-sm font-bold text-brand-600 bg-white px-3 py-1 rounded-lg border border-brand-200">共請假 ${timeStr}</span>
+                        </div>`;
+                    });
+                    if(a_html === '') a_html = '<div class="text-brand-400 italic font-medium py-2">目前尚無已核准的請假紀錄。</div>';
+                }
+                if(approvedContainer) approvedContainer.innerHTML = a_html;
+
+                if(!document.getElementById('modal-manage-leaves').classList.contains('hidden')) {
+                    renderManageLeavesList();
+                }
             });
+        } 
+
+        function unbindParent(seat) { let sId = String(seat).padStart(2,'0'); if(!confirm(`確定解除 ${sId} 號家長的 LINE 綁定嗎？`)) return; db.collection("class_settings").doc("line_parents").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() }).then(() => alert(`✅ 成功解除！`)).catch(e => { if(e.code === 'not-found') db.collection("class_settings").doc("line_parents").set({}).then(() => alert(`✅ 成功解除！`)); else alert("失敗: " + e.message); }); }
+        function unbindStudent(seat) { let sId = String(seat).padStart(2,'0'); if(!confirm(`確定解除 ${sId} 號學生的 LINE 綁定嗎？`)) return; db.collection("class_settings").doc("line_students").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() }).then(() => alert(`✅ 成功解除！`)).catch(e => { if(e.code === 'not-found') db.collection("class_settings").doc("line_students").set({}).then(() => alert(`✅ 成功解除！`)); else alert("失敗: " + e.message); }); }
+        function executeBatchImport() { const lines = document.getElementById('batch-import-data').value.trim().split('\n').filter(l => l.trim() !== ''); if(lines.length === 0) return alert('請貼上資料！'); let updates = {}; let count = 0; for(let i=0; i<Math.min(lines.length, 24); i++) { let seat = i + 1; let id6 = lines[i].replace(/\D/g, '').trim(); if(id6) { updates[seat] = { id6: id6 }; count++; } } if(count === 0) return alert('無效資料格式。'); db.collection("class_settings").doc("bindings").set({ studentBindings: updates }, { merge: true }).then(() => { alert(`成功匯入 ${count} 筆！`); closeModal('modal-batch-import'); }).catch(e => alert("失敗: " + e)); }
+        function updateBinding(seat) { const val = document.getElementById(`bind-id-${seat}`).value.trim(); if(!val) return alert('請輸入密碼！'); db.collection("class_settings").doc("bindings").set({ studentBindings: { [seat]: { id6: val } } }, { merge: true }).then(() => alert(`${String(seat).padStart(2,'0')} 號設定成功！`)).catch(e => alert("錯誤: " + e)); }
+        function approveLeave(docId, seatNo, type) { if(!confirm(`確定核准 ${seatNo} 號的 ${type} 申請？`)) return; db.collection('leave_requests').doc(docId).update({ status: 'approved' }).catch(e => alert('核准失敗: ' + e.message)); }
+        
+        function openManageLeavesModal() {
+            document.getElementById('modal-manage-leaves').classList.remove('hidden');
+            renderManageLeavesList();
         }
 
-        // --- 表單/按鈕操作函數 (與資料庫互動) ---
-
-        function unbindParent(seat) {
-            let sId = String(seat).padStart(2,'0');
-            if(!confirm(`確定要解除 ${sId} 號家長的 LINE 綁定嗎？\n\n解除後，該家長必須重新輸入密碼才能再次查詢成績。`)) return;
-            
-            db.collection("class_settings").doc("line_parents").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() })
-              .then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`))
-              .catch(e => {
-                if(e.code === 'not-found') db.collection("class_settings").doc("line_parents").set({}).then(() => alert(`✅ ${sId} 號家長的綁定已成功解除！`));
-                else alert("解除失敗: " + e.message);
-            });
-        }
-
-        function unbindStudent(seat) {
-            let sId = String(seat).padStart(2,'0');
-            if(!confirm(`確定要解除 ${sId} 號學生的 LINE 綁定嗎？`)) return;
-            
-            db.collection("class_settings").doc("line_students").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() })
-              .then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`))
-              .catch(e => {
-                if(e.code === 'not-found') db.collection("class_settings").doc("line_students").set({}).then(() => alert(`✅ ${sId} 號學生的綁定已成功解除！`));
-                else alert("解除失敗: " + e.message);
-            });
-        }
-
-        function executeBatchImport() {
-            const lines = document.getElementById('batch-import-data').value.trim().split('\n').filter(l => l.trim() !== '');
-            if(lines.length === 0) return alert('請貼上資料後再點擊匯入！');
-            
-            let updates = {}; let count = 0;
-            for(let i=0; i<Math.min(lines.length, 24); i++) {
-                let seat = i + 1; let id6 = lines[i].replace(/\D/g, '').trim(); 
-                if(id6) { updates[seat] = { id6: id6 }; count++; }
+        function renderManageLeavesList() {
+            const container = document.getElementById('manage-leaves-list');
+            if(globalApprovedLeaves.length === 0) {
+                container.innerHTML = '<div class="text-brand-500 text-center py-8 font-bold">目前無已核准的紀錄。</div>';
+                return;
             }
-            if(count === 0) return alert('未能解析出有效的數字資料，請檢查格式。');
-
-            db.collection("class_settings").doc("bindings").set({ studentBindings: updates }, { merge: true }).then(() => {
-                alert(`成功匯入 ${count} 筆密碼資料！`); closeModal('modal-batch-import');
-            }).catch(e => alert("匯入失敗: " + e));
+            
+            globalApprovedLeaves.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
+            
+            let html = '<div class="space-y-3">';
+            globalApprovedLeaves.forEach(data => {
+                html += `
+                <div class="bg-brand-50 p-4 rounded-xl border border-brand-200 flex justify-between items-center shadow-sm">
+                    <div>
+                        <div class="font-bold text-brand-800 mb-1">${data.seatNo} 號 <span class="text-xs font-bold text-brand-500 border border-brand-300 bg-white px-2 py-0.5 rounded-md ml-2">${data.type}</span></div>
+                        <div class="text-sm text-brand-600"><i class="far fa-calendar-alt mr-1"></i> ${data.date} (${data.duration})</div>
+                        <div class="text-xs text-brand-400 mt-1 font-medium">申請理由: ${data.reason}</div>
+                    </div>
+                    <button onclick="deleteLeaveRecord('${data.id}')" class="bg-red-50 hover:bg-red-100 text-morandi-pink border border-red-200 px-3 py-2 rounded-lg transition font-bold text-sm shadow-sm whitespace-nowrap ml-4 shrink-0">
+                        <i class="fas fa-trash-alt mr-1"></i>刪除
+                    </button>
+                </div>`;
+            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
-        function updateBinding(seat) {
-            const val = document.getElementById(`bind-id-${seat}`).value.trim();
-            if(!val) return alert('請輸入身分證後六碼！');
-            db.collection("class_settings").doc("bindings").set({ studentBindings: { [seat]: { id6: val } } }, { merge: true }).then(() => {
-                alert(`${String(seat).padStart(2,'0')} 號 密碼設定成功！`);
-            }).catch(e => alert("錯誤: " + e));
+        function deleteLeaveRecord(docId) {
+            if(!confirm("確定要刪除這筆已核准的請假紀錄嗎？刪除後統計時數將會重新計算。")) return;
+            db.collection("leave_requests").doc(docId).delete().catch(e => alert("刪除失敗：" + e.message));
         }
 
-        function approveLeave(docId, seatNo, type) {
-            if(!confirm(`確定已閱畢並核准 ${seatNo} 號的 ${type} 申請嗎？\n\n(核准後將從待辦清單中移除)`)) return;
-            db.collection('leave_requests').doc(docId).update({ status: 'approved' }).catch(e => alert('核准失敗: ' + e.message));
+        function clearAuditLogs() {
+            if(!confirm("確定要清空所有的幹部操作日誌嗎？此動作無法復原。")) return;
+            db.collection("audit_logs").get().then(snapshot => {
+                snapshot.docs.forEach(doc => {
+                    doc.ref.delete();
+                });
+            }).catch(e => alert("清空失敗：" + e.message));
         }
 
         function setMarqueePreset(text) { document.getElementById('marquee-input').value = text; }
-
-        function sendMarquee() {
-            const val = document.getElementById('marquee-input').value;
-            if(!val) return alert('請輸入廣播內容！');
-            db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => {
-                const msg = document.getElementById('marquee-success');
-                msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000);
-            }).catch(err => alert('寫入失敗: ' + err.message));
-        }
-
-        function handleExcelUpload(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = function(evt) {
-                try {
-                    const data = new Uint8Array(evt.target.result);
-                    const workbook = XLSX.read(data, {type: 'array'});
-                    const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-                    const json = XLSX.utils.sheet_to_json(worksheet, {header: 1}); 
-                    
-                    let successCount = 0;
-                    for(let r = 1; r < json.length; r++) {
-                        const row = json[r]; if(!row || row.length === 0) continue;
-                        let seatNum = parseInt(row[0]); if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue;
-                        
-                        if(row[1] !== undefined) { const el = document.getElementById(`score-chi-${seatNum}`); if(el) el.value = row[1]; }
-                        if(row[2] !== undefined) { const el = document.getElementById(`score-eng-${seatNum}`); if(el) el.value = row[2]; }
-                        if(row[3] !== undefined) { const el = document.getElementById(`score-math-${seatNum}`); if(el) el.value = row[3]; }
-                        if(row[4] !== undefined) { const el = document.getElementById(`score-sci-${seatNum}`); if(el) el.value = row[4]; }
-                        if(row[5] !== undefined) { const el = document.getElementById(`score-soc-${seatNum}`); if(el) el.value = row[5]; }
-                        if(row[6] !== undefined) { const el = document.getElementById(`score-avg-${seatNum}`); if(el) el.value = row[6]; }
-                        if(row[7] !== undefined) { const el = document.getElementById(`score-pr-${seatNum}`); if(el) el.value = row[7]; }
-                        successCount++;
-                    }
-                    if(successCount > 0) alert(`✅ 成功解析並匯入 ${successCount} 筆學生成績！\n請確認表格數據無誤後，點擊「儲存發布」按鈕上傳至雲端。`);
-                    else alert('⚠️ 匯入失敗。請檢查 Excel 格式是否正確 (需包含座號及成績)。');
-                } catch(error) { alert('讀取 Excel 檔案發生錯誤: ' + error); } 
-                finally { document.getElementById('excel-file-input').value = ''; }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function saveScoresToCloud() {
-            let scoreData = {};
-            for(let i=1; i<=24; i++) {
-                scoreData[i] = {
-                    chi: document.getElementById(`score-chi-${i}`)?.value || "", eng: document.getElementById(`score-eng-${i}`)?.value || "",
-                    math: document.getElementById(`score-math-${i}`)?.value || "", sci: document.getElementById(`score-sci-${i}`)?.value || "",
-                    soc: document.getElementById(`score-soc-${i}`)?.value || "", avg: document.getElementById(`score-avg-${i}`)?.value || "",
-                    pr: document.getElementById(`score-pr-${i}`)?.value || "",
-                };
-            }
-            db.collection("class_settings").doc("scores").set({ latestExam: scoreData, updatedAt: new Date().toISOString() }, { merge: true })
-            .then(() => alert('🎉 成績已成功上傳至雲端資料庫！\n已綁定的家長現在可透過 LINE 機器人查詢。'))
-            .catch(e => alert('上傳失敗: ' + e));
-        }
-
-        function updatePassword(role) {
-            const input = document.getElementById(`pwd-${role}`);
-            const newVal = input.value.trim();
-            if(!newVal) return alert('密碼不能為空！');
-            db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true })
-            .then(() => alert('密碼已成功更新，大黑板密碼鎖已連動生效！'))
-            .catch(err => alert('更新失敗: ' + err.message));
-        }
+        function sendMarquee() { const val = document.getElementById('marquee-input').value; if(!val) return alert('請輸入廣播內容！'); db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => { const msg = document.getElementById('marquee-success'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000); }).catch(err => alert('失敗: ' + err.message)); }
+        function handleExcelUpload(e) { const file = e.target.files[0]; if (!file) return; const reader = new FileReader(); reader.onload = function(evt) { try { const data = new Uint8Array(evt.target.result); const workbook = XLSX.read(data, {type: 'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); let successCount = 0; for(let r = 1; r < json.length; r++) { const row = json[r]; if(!row || row.length === 0) continue; let seatNum = parseInt(row[0]); if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue; ['chi','eng','math','sci','soc','avg','pr'].forEach((sub, idx) => { if(row[idx+1] !== undefined) { const el = document.getElementById(`score-${sub}-${seatNum}`); if(el) el.value = row[idx+1]; } }); successCount++; } if(successCount > 0) alert(`✅ 成功匯入 ${successCount} 筆！`); else alert('⚠️ 匯入失敗，請檢查格式。'); } catch(error) { alert('錯誤: ' + error); } finally { document.getElementById('excel-file-input').value = ''; } }; reader.readAsArrayBuffer(file); }
+        function saveScoresToCloud() { let scoreData = {}; for(let i=1; i<=24; i++) { scoreData[i] = {}; ['chi','eng','math','sci','soc','avg','pr'].forEach(sub => scoreData[i][sub] = document.getElementById(`score-${sub}-${i}`)?.value || ""); } db.collection("class_settings").doc("scores").set({ latestExam: scoreData, updatedAt: new Date().toISOString() }, { merge: true }).then(() => alert('🎉 成績上傳成功！')).catch(e => alert('上傳失敗: ' + e)); }
+        function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
 
         function renderDashboardHW() {
             if(!globalStudentsData) return;
             let missingTotalItemsCount = 0; let hwMissingMap = {}; let studentMissingCounts = {}; 
-            for(let i=1; i<=24; i++) {
-                let missingArr = globalStudentsData[i].missingHW || [];
-                if(missingArr.length > 0) {
-                    studentMissingCounts[i] = missingArr.length; missingTotalItemsCount += missingArr.length;
-                    missingArr.forEach(hwId => { if(!hwMissingMap[hwId]) hwMissingMap[hwId] = []; hwMissingMap[hwId].push(String(i).padStart(2, '0')); });
+            for(let i=1; i<=24; i++) { let missingArr = globalStudentsData[i].missingHW || []; if(missingArr.length > 0) { studentMissingCounts[i] = missingArr.length; missingTotalItemsCount += missingArr.length; missingArr.forEach(hwId => { if(!hwMissingMap[hwId]) hwMissingMap[hwId] = []; hwMissingMap[hwId].push(String(i).padStart(2, '0')); }); } }
+            
+            let topOffenders = []; let maxMissing = 0;
+            for(let seat in studentMissingCounts) { 
+                if(studentMissingCounts[seat] > maxMissing) { 
+                    maxMissing = studentMissingCounts[seat]; 
+                    topOffenders = [String(seat).padStart(2,'0')]; 
+                } else if (studentMissingCounts[seat] === maxMissing) {
+                    topOffenders.push(String(seat).padStart(2,'0')); 
                 }
             }
-            let topOffender = null; let maxMissing = 0;
-            for(let seat in studentMissingCounts) { if(studentMissingCounts[seat] > maxMissing) { maxMissing = studentMissingCounts[seat]; topOffender = seat; } }
-            document.getElementById('dash-missing-hw').innerText = missingTotalItemsCount;
-            let detailHtml = '';
-            if(missingTotalItemsCount === 0) detailHtml = '<div class="text-emerald-400 font-bold mt-2"><i class="fas fa-check-circle"></i> 全班作業已繳齊</div>';
-            else {
-                for(let hwId in hwMissingMap) { let hwName = globalHWMap[hwId] || '臨時/已刪除作業'; detailHtml += `<div><span class="text-white font-bold">${hwName}：</span><span class="text-slate-300 ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`; }
-                if(topOffender) detailHtml += `<div class="mt-3 pt-2 border-t border-red-500/30 text-yellow-300 font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> 缺交最多：${String(topOffender).padStart(2,'0')} 號 (${maxMissing} 項)</div>`;
+            
+            document.getElementById('dash-missing-hw').innerText = missingTotalItemsCount; let detailHtml = '';
+            if(missingTotalItemsCount === 0) {
+                detailHtml = '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle text-brand-500"></i> 全班作業已繳齊</div>'; 
+            } else { 
+                for(let hwId in hwMissingMap) { let hwName = globalHWMap[hwId] || '臨時作業'; detailHtml += `<div><span class="text-brand-800 font-bold">${hwName}：</span><span class="text-morandi-pink font-bold ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`; } 
+                if(maxMissing >= 2) {
+                    detailHtml += `<div class="mt-3 pt-3 border-t border-brand-200 text-morandi-pink font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> 缺交最多：${topOffenders.join(', ')} 號 (${maxMissing} 項)</div>`;
+                }
             }
             document.getElementById('dash-missing-list').innerHTML = detailHtml;
         }
 
         function renderWeeklyReport() {
-            if(!globalStudentsData) return;
-            const tbody = document.getElementById('weekly-table-body');
-            let html = ''; let honorList = [];
-            for(let i=1; i<=24; i++) {
-                let st = globalStudentsData[i];
-                let lateCount = (st.attendance === '遲到' || st.attendance === '未到') ? 1 : 0; 
-                let missingCount = st.missingHW ? st.missingHW.length : 0;
-                let cleanBad = st.clean === '待改進' ? 1 : 0;
-                let goalDays = (st.goal === '已經做到' || st.goal === '表現優良') ? 5 : 4; 
-                let rating = ''; let ratingColor = '';
-
-                if(lateCount > 0 || missingCount > 0 || cleanBad > 0 || goalDays < 5) {
-                    rating = missingCount >= 2 ? '需留意作業' : '一般'; ratingColor = missingCount >= 2 ? 'text-yellow-400' : 'text-slate-400';
-                } else {
-                    rating = '<i class="fas fa-medal mr-1"></i> 表現優良'; ratingColor = 'text-emerald-400 font-bold'; honorList.push(String(i).padStart(2,'0'));
-                }
-                html += `<tr class="hover:bg-slate-800/30 transition"><td class="p-3 font-bold text-white bg-slate-800/50">${String(i).padStart(2,'0')}</td><td class="p-3 ${lateCount > 0 ? 'text-red-400 font-bold' : ''}">${lateCount}</td><td class="p-3 ${missingCount > 0 ? 'text-red-400 font-bold' : ''}">${missingCount}</td><td class="p-3 ${cleanBad > 0 ? 'text-blue-400 font-bold' : ''}">${cleanBad}</td><td class="p-3 ${goalDays === 5 ? 'text-emerald-400 font-bold' : ''}">${goalDays}/5</td><td class="p-3 ${ratingColor}">${rating}</td></tr>`;
-            }
-            tbody.innerHTML = html;
-            const honorContainer = document.getElementById('honor-list-container');
-            if(honorList.length > 0) honorContainer.innerHTML = honorList.map(seat => `<span class="bg-yellow-500/20 text-yellow-300 border border-yellow-500/50 px-3 py-1 rounded-full text-sm font-bold">${seat} 號</span>`).join('');
-            else honorContainer.innerHTML = '<span class="text-slate-400 text-sm">本週尚無符合資格的同學</span>';
+            if(!globalStudentsData) return; const tbody = document.getElementById('weekly-table-body'); let html = ''; let honorList = [];
+            for(let i=1; i<=24; i++) { let st = globalStudentsData[i]; let lateCount = (st.attendance === '遲到' || st.attendance === '未到') ? 1 : 0; let missingCount = st.missingHW ? st.missingHW.length : 0; let cleanBad = st.clean === '待改進' ? 1 : 0; let goalDays = (st.goal === '已經做到' || st.goal === '表現優良') ? 5 : 4; let rating = ''; let ratingColor = ''; if(lateCount > 0 || missingCount > 0 || cleanBad > 0 || goalDays < 5) { rating = missingCount >= 2 ? '需留意作業' : '一般'; ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500'; } else { rating = '<i class="fas fa-medal mr-1"></i> 表現優良'; ratingColor = 'text-brand-600 font-bold'; honorList.push(String(i).padStart(2,'0')); } html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td><td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td><td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td><td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="打掃待改進">${cleanBad}</td><td class="p-3 sm:text-center ${goalDays === 5 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/5</td><td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td></tr>`; }
+            tbody.innerHTML = html; const honorContainer = document.getElementById('honor-list-container');
+            if(honorList.length > 0) honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join(''); else honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
         }
     </script>
 </body>
