@@ -6,23 +6,37 @@
     <title>導師管理中心</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    
+    <!-- 加入 Chart.js 繪圖套件 -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
+        // 設定 Tailwind 自訂主題色 (米棕色系與莫蘭迪粉)
         tailwind.config = {
             theme: {
                 extend: {
                     colors: {
                         brand: {
-                            50: '#faf8f5', 100: '#f4efe6', 200: '#e8ddce', 300: '#d8c5b0', 
-                            400: '#c2a88d', 500: '#b08e6f', 600: '#9b7658', 700: '#805d46', 
-                            800: '#6b4d3d', 900: '#563e32',
+                            50: '#faf8f5',  // 燕麥白背景
+                            100: '#f4efe6', // 淺米色區塊
+                            200: '#e8ddce', // 奶茶色邊框
+                            300: '#d8c5b0',
+                            400: '#c2a88d', // 主按鈕色
+                            500: '#b08e6f',
+                            600: '#9b7658', // 深棕色圖示
+                            700: '#805d46',
+                            800: '#6b4d3d', // 主要文字
+                            900: '#563e32',
                         },
-                        morandi: { pink: '#d98b8b', blue: '#8b9bb4' }
+                        morandi: {
+                            pink: '#d98b8b', // 莫蘭迪粉 (警示)
+                            blue: '#8b9bb4', // 莫蘭迪灰藍 (完成)
+                        }
                     }
                 }
             }
@@ -33,15 +47,19 @@
         body { font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #faf8f5; color: #6b4d3d; }
         .sidebar { background-color: #ffffff; border-right: 1px solid #e8ddce; }
         .glass-panel { background: #ffffff; border: 1px solid #e8ddce; box-shadow: 0 4px 20px -2px rgba(107, 77, 61, 0.05); }
+        
         .tab-content { display: none !important; }
         .tab-content.active { display: block !important; }
+        
         .menu-item.active { background-color: #f4efe6; color: #6b4d3d; font-weight: bold; border-right: 4px solid #b08e6f; }
         ::-webkit-scrollbar { width: 6px; height: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #d8c5b0; border-radius: 4px; }
         ::-webkit-scrollbar-thumb:hover { background: #c2a88d; }
-        input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type="number"]::-webkit-inner-spin-button, 
+        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
 
+        /* 手機版表格轉卡片專用 CSS */
         @media (max-width: 767px) {
             .resp-table thead { display: none; }
             .resp-table tbody tr { display: block; margin-bottom: 1rem; background: #ffffff; border-radius: 0.75rem; border: 1px solid #e8ddce; padding: 0.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
@@ -83,7 +101,9 @@
             <div class="w-8 h-8 bg-brand-100 rounded-lg flex items-center justify-center text-brand-700 font-bold text-sm border border-brand-200">701</div>
             <span class="font-bold tracking-wider text-brand-800">導師後台</span>
         </div>
-        <button onclick="toggleMobileMenu()" class="text-brand-600 hover:text-brand-800 text-2xl focus:outline-none"><i class="fas fa-bars"></i></button>
+        <button onclick="toggleMobileMenu()" class="text-brand-600 hover:text-brand-800 text-2xl focus:outline-none">
+            <i class="fas fa-bars"></i>
+        </button>
     </div>
 
     <aside id="sidebar" class="sidebar fixed inset-y-0 left-0 transform -translate-x-full md:relative md:translate-x-0 w-64 h-full flex flex-col transition-transform duration-300 z-50 shadow-sm">
@@ -96,18 +116,36 @@
         </div>
         
         <nav class="flex-1 p-4 space-y-2 overflow-y-auto">
-            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-chart-pie w-5 text-brand-500"></i><span>今日班級總覽</span></button>
-            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-bullhorn w-5 text-brand-500"></i><span>大屏廣播遙控</span></button>
-            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-id-card w-5 text-brand-500"></i><span>LINE@ 綁定管理</span></button>
-            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-users-cog w-5 text-brand-500"></i><span>幹部權限管理</span></button>
-            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-file-excel w-5 text-brand-500"></i><span>LINE@ 成績系統</span></button>
-            <button onclick="switchTab('score-analysis')" id="nav-score-analysis" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-chart-bar w-5 text-brand-500"></i><span>成績分析報表</span></button>
-            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-calendar-check w-5 text-brand-500"></i><span>每週結算推播</span></button>
-            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium"><i class="fas fa-comments w-5 text-brand-500"></i><span>LINE@ 溝通紀錄</span></button>
+            <button onclick="switchTab('dashboard')" id="nav-dashboard" class="menu-item active w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-chart-pie w-5 text-brand-500"></i><span>今日班級總覽</span>
+            </button>
+            <button onclick="switchTab('broadcast')" id="nav-broadcast" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-bullhorn w-5 text-brand-500"></i><span>大屏廣播遙控</span>
+            </button>
+            <button onclick="switchTab('binding')" id="nav-binding" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-id-card w-5 text-brand-500"></i><span>LINE@ 綁定管理</span>
+            </button>
+            <button onclick="switchTab('cadre')" id="nav-cadre" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-users-cog w-5 text-brand-500"></i><span>幹部權限管理</span>
+            </button>
+            <button onclick="switchTab('scores')" id="nav-scores" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-file-excel w-5 text-brand-500"></i><span>LINE@ 成績系統</span>
+            </button>
+            <button onclick="switchTab('score-analysis')" id="nav-score-analysis" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-chart-bar w-5 text-brand-500"></i><span>成績分析報表</span>
+            </button>
+            <button onclick="switchTab('weekly')" id="nav-weekly" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-calendar-check w-5 text-brand-500"></i><span>每週結算推播</span>
+            </button>
+            <button onclick="switchTab('chat')" id="nav-chat" class="menu-item w-full flex items-center space-x-3 px-4 py-3.5 rounded-xl text-brand-600 hover:bg-brand-50 transition font-medium">
+                <i class="fas fa-comments w-5 text-brand-500"></i><span>LINE@ 溝通紀錄</span>
+            </button>
         </nav>
         
         <div class="p-4 border-t border-brand-100 flex flex-col gap-3 bg-brand-50">
-            <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl text-morandi-pink hover:bg-red-50 border border-red-100 transition text-sm font-bold shadow-sm"><i class="fas fa-sign-out-alt"></i><span>安全登出</span></button>
+            <button onclick="handleLogout()" class="w-full flex items-center justify-center space-x-2 px-4 py-3 rounded-xl text-morandi-pink hover:bg-red-50 border border-red-100 transition text-sm font-bold shadow-sm">
+                <i class="fas fa-sign-out-alt"></i><span>安全登出</span>
+            </button>
             <div class="text-xs text-brand-400 text-center font-medium">智慧班級管理系統 v2.0</div>
         </div>
     </aside>
@@ -116,14 +154,15 @@
 
     <main class="flex-1 h-full overflow-y-auto bg-brand-50 p-4 pt-20 md:pt-8 md:p-8">
         
-        <!-- Dashboard Tab -->
         <section id="tab-dashboard" class="tab-content active space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
                     <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-1 sm:mb-2 tracking-wide">班級狀況總覽</h2>
                     <p class="text-brand-500 text-sm sm:text-base font-medium">掌握今日 701 班出缺勤、常規與幹部回報狀況</p>
                 </div>
-                <div id="db-status" class="w-full sm:w-auto text-brand-600 font-bold text-sm bg-white px-4 py-2.5 rounded-xl border border-brand-200 shadow-sm flex items-center justify-center sm:justify-start"><i class="fas fa-sync-alt mr-2 animate-spin-slow text-brand-400"></i> 連線中...</div>
+                <div id="db-status" class="w-full sm:w-auto text-brand-600 font-bold text-sm bg-white px-4 py-2.5 rounded-xl border border-brand-200 shadow-sm flex items-center justify-center sm:justify-start">
+                    <i class="fas fa-sync-alt mr-2 animate-spin-slow text-brand-400"></i> 連線中...
+                </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -146,10 +185,14 @@
 
             <div class="glass-panel p-5 sm:p-6 rounded-2xl">
                 <h3 class="text-lg font-bold text-brand-700 mb-4 flex items-center"><i class="fas fa-comment-dots mr-2 text-brand-500"></i> 班長 / 幹部回報留言</h3>
-                <div class="bg-brand-50 p-4 sm:p-5 rounded-xl border border-brand-200 min-h-[100px] text-brand-800 font-medium leading-relaxed text-sm sm:text-base" id="dash-monitor-msg">等待讀取中...</div>
+                <div class="bg-brand-50 p-4 sm:p-5 rounded-xl border border-brand-200 min-h-[100px] text-brand-800 font-medium leading-relaxed text-sm sm:text-base" id="dash-monitor-msg">
+                    等待讀取中...
+                </div>
                 
                 <h3 class="text-lg font-bold text-brand-700 mb-4 mt-8 flex items-center"><i class="fas fa-file-signature mr-2 text-brand-500"></i> 待核准線上請假單</h3>
-                <div id="leave-requests-container" class="space-y-4"><div class="text-brand-400 italic">正在載入請假單...</div></div>
+                <div id="leave-requests-container" class="space-y-4">
+                    <div class="text-brand-400 italic">正在載入請假單...</div>
+                </div>
             </div>
 
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
@@ -158,7 +201,9 @@
                         <span class="flex items-center"><i class="fas fa-chart-line mr-2 text-brand-500"></i> 已核准請假統計</span>
                         <button onclick="openManageLeavesModal()" class="text-xs font-bold bg-brand-100 hover:bg-brand-200 text-brand-700 border border-brand-200 px-2.5 py-1.5 rounded-lg transition shadow-sm"><i class="fas fa-tasks mr-1"></i>管理明細</button>
                     </h3>
-                    <div id="approved-leave-summary" class="space-y-3 max-h-40 overflow-y-auto custom-scrollbar pr-2"><div class="text-brand-400 italic">正在計算歷史資料...</div></div>
+                    <div id="approved-leave-summary" class="space-y-3 max-h-40 overflow-y-auto custom-scrollbar pr-2">
+                        <div class="text-brand-400 italic">正在計算歷史資料...</div>
+                    </div>
                 </div>
 
                 <div class="glass-panel p-5 sm:p-6 rounded-2xl">
@@ -166,18 +211,25 @@
                         <span class="flex items-center"><i class="fas fa-history mr-2 text-brand-500"></i> 幹部系統操作日誌</span>
                         <button onclick="clearAuditLogs()" class="text-xs font-bold bg-red-50 hover:bg-red-100 text-morandi-pink border border-red-100 px-2.5 py-1.5 rounded-lg transition shadow-sm"><i class="fas fa-trash-alt mr-1"></i>清空</button>
                     </h3>
-                    <div class="space-y-3 text-sm h-40 overflow-y-auto pr-2 custom-scrollbar" id="audit-log-container"><div class="text-brand-400 italic">日誌資料同步中...</div></div>
+                    <div class="space-y-3 text-sm h-40 overflow-y-auto pr-2 custom-scrollbar" id="audit-log-container">
+                        <div class="text-brand-400 italic">日誌資料同步中...</div>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section id="tab-broadcast" class="tab-content space-y-6">
-            <div><h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">大屏廣播遙控器</h2><p class="text-brand-500 font-medium text-sm sm:text-base">修改此處內容將立刻推播至教室前方的大黑板</p></div>
+            <div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">大屏廣播遙控器</h2>
+                <p class="text-brand-500 font-medium text-sm sm:text-base">修改此處內容將立刻推播至教室前方的大黑板</p>
+            </div>
             <div class="glass-panel p-5 sm:p-6 rounded-2xl">
                 <label class="block text-brand-700 mb-3 font-bold">當前廣播內容 (跑馬燈)</label>
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4">
                     <input type="text" id="marquee-input" class="flex-1 bg-brand-50 text-brand-800 px-4 py-3.5 rounded-xl border border-brand-200 focus:outline-none focus:border-brand-400 text-base sm:text-lg">
-                    <button onclick="sendMarquee()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-sm transition flex items-center justify-center whitespace-nowrap"><i class="fas fa-paper-plane mr-2"></i> 送出廣播</button>
+                    <button onclick="sendMarquee()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3.5 rounded-xl font-bold shadow-sm transition flex items-center justify-center whitespace-nowrap">
+                        <i class="fas fa-paper-plane mr-2"></i> 送出廣播
+                    </button>
                 </div>
                 
                 <div class="mt-6 pt-5 border-t border-brand-100">
@@ -191,7 +243,9 @@
                     </div>
                 </div>
 
-                <div class="mt-5 text-brand-700 text-sm hidden bg-brand-100 p-3 rounded-xl border border-brand-200 font-bold flex items-center" id="marquee-success"><i class="fas fa-check-circle mr-2 text-brand-600"></i> 已成功同步至教室大黑板！</div>
+                <div class="mt-5 text-brand-700 text-sm hidden bg-brand-100 p-3 rounded-xl border border-brand-200 font-bold flex items-center" id="marquee-success">
+                    <i class="fas fa-check-circle mr-2 text-brand-600"></i> 已成功同步至教室大黑板！
+                </div>
             </div>
         </section>
 
@@ -201,14 +255,16 @@
                     <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-id-card mr-2 text-brand-500"></i>LINE@ 綁定管理</h2>
                     <p class="text-brand-500 font-medium text-sm sm:text-base">設定學生身分證後六碼，供家長/學生 LINE 驗證。</p>
                 </div>
-                <button onclick="openBatchImportModal()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl transition border border-brand-200 flex items-center justify-center shadow-sm font-bold"><i class="fas fa-clipboard-list mr-2 text-brand-500"></i> 批次匯入名單</button>
+                <button onclick="openBatchImportModal()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl transition border border-brand-200 flex items-center justify-center shadow-sm font-bold">
+                    <i class="fas fa-clipboard-list mr-2 text-brand-500"></i> 批次匯入名單
+                </button>
             </div>
             
             <div class="bg-brand-100 border border-brand-200 p-4 rounded-2xl flex items-start space-x-3 text-brand-800 text-sm font-medium">
                 <i class="fas fa-shield-alt text-brand-500 text-2xl mt-0.5"></i>
                 <div>
-                    <strong class="text-brand-700 block mb-1">資安防護機制運作說明 (家長上限 2 位)：</strong>
-                    系統支援單一座號最多綁定 2 位家長。當家長初次加好友時，輸入「座號+身分證後六碼」即可完成綁定並接收成績與重要通知。
+                    <strong class="text-brand-700 block mb-1">資安防護機制運作說明：</strong>
+                    家長初次加好友時，系統將提示輸入「座號+身分證後六碼」綁定身分。驗證成功後，該 LINE 帳號將永久綁定對應座號，防止成績外洩。
                 </div>
             </div>
 
@@ -230,19 +286,52 @@
         </section>
 
         <section id="tab-cadre" class="tab-content space-y-6">
-            <div><h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">幹部密碼管理</h2><p class="text-brand-500 font-medium text-sm sm:text-base">設定教室大黑板各項幹部登入的專屬密碼 (預設為 1234)</p></div>
+            <div>
+                <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2">幹部密碼管理</h2>
+                <p class="text-brand-500 font-medium text-sm sm:text-base">設定教室大黑板各項幹部登入的專屬密碼 (預設為 1234)</p>
+            </div>
             <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
                 <table class="w-full text-left resp-table text-sm sm:text-base">
                     <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
                         <tr><th class="p-4 font-bold">職位</th><th class="p-4 font-bold hidden sm:table-cell">擁有權限</th><th class="p-4 font-bold">目前密碼</th><th class="p-4 font-bold text-center">操作</th></tr>
                     </thead>
                     <tbody class="divide-y divide-brand-100 text-brand-800 font-medium">
-                        <tr class="hover:bg-brand-50 transition"><td class="p-4 font-bold" data-label="職位"><i class="fas fa-edit mr-2 w-5 text-center text-brand-400"></i> 編輯聯絡簿</td><td class="p-4 text-sm text-brand-500 hidden sm:table-cell">修改所有黑板內容、刪除/新增作業</td><td class="p-4" data-label="密碼"><input type="text" id="pwd-edit_board" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td><td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('edit_board')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-brand-50 transition"><td class="p-4 font-bold" data-label="職位"><i class="fas fa-crown mr-2 w-5 text-center text-brand-400"></i> 班長</td><td class="p-4 text-sm text-brand-500 hidden sm:table-cell">修改頂部看板、週目標檢核、傳送留言</td><td class="p-4" data-label="密碼"><input type="text" id="pwd-monitor" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td><td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('monitor')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-brand-50 transition"><td class="p-4 font-bold" data-label="職位"><i class="fas fa-clipboard-list mr-2 w-5 text-center text-brand-400"></i> 副班長</td><td class="p-4 text-sm text-brand-500 hidden sm:table-cell">全班出缺勤 (到校/請假/遲到) 登記</td><td class="p-4" data-label="密碼"><input type="text" id="pwd-vice" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td><td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('vice')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-brand-50 transition"><td class="p-4 font-bold" data-label="職位"><i class="fas fa-user-shield mr-2 w-5 text-center text-brand-400"></i> 風紀股長</td><td class="p-4 text-sm text-brand-500 hidden sm:table-cell">課堂秩序三階評定登記</td><td class="p-4" data-label="密碼"><input type="text" id="pwd-discipline" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td><td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('discipline')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-brand-50 transition"><td class="p-4 font-bold" data-label="職位"><i class="fas fa-broom mr-2 w-5 text-center text-brand-400"></i> 衛生股長</td><td class="p-4 text-sm text-brand-500 hidden sm:table-cell">打掃狀況三階評定登記</td><td class="p-4" data-label="密碼"><input type="text" id="pwd-health" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td><td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('health')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
-                        <tr class="hover:bg-brand-50 transition"><td class="p-4 font-bold" data-label="職位"><i class="fas fa-book-reader mr-2 w-5 text-center text-brand-400"></i> 小老師</td><td class="p-4 text-sm text-brand-500 hidden sm:table-cell">檢核並批次登記作業繳交狀況</td><td class="p-4" data-label="密碼"><input type="text" id="pwd-academic" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td><td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('academic')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td></tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-edit mr-2 w-5 text-center text-brand-400"></i> 編輯聯絡簿</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">修改所有黑板內容、刪除/新增作業</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-edit_board" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('edit_board')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-crown mr-2 w-5 text-center text-brand-400"></i> 班長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">修改頂部看板、週目標檢核、傳送留言</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-monitor" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('monitor')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-clipboard-list mr-2 w-5 text-center text-brand-400"></i> 副班長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">全班出缺勤 (到校/請假/遲到) 登記</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-vice" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('vice')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-user-shield mr-2 w-5 text-center text-brand-400"></i> 風紀股長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">課堂秩序三階評定登記</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-discipline" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('discipline')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-broom mr-2 w-5 text-center text-brand-400"></i> 衛生股長</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">打掃狀況三階評定登記</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-health" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('health')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
+                        <tr class="hover:bg-brand-50 transition">
+                            <td class="p-4 font-bold" data-label="職位"><i class="fas fa-book-reader mr-2 w-5 text-center text-brand-400"></i> 小老師</td>
+                            <td class="p-4 text-sm text-brand-500 hidden sm:table-cell">檢核並批次登記作業繳交狀況</td>
+                            <td class="p-4" data-label="密碼"><input type="text" id="pwd-academic" value="讀取中..." class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 text-center tracking-widest outline-none focus:border-brand-400 font-mono"></td>
+                            <td class="p-4 text-center" data-label="操作"><button onclick="updatePassword('academic')" class="bg-white text-brand-600 hover:bg-brand-50 border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm text-sm font-bold w-full sm:w-auto"><i class="fas fa-save mr-1"></i> 更新</button></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -250,44 +339,96 @@
 
         <section id="tab-scores" class="tab-content space-y-6">
             <div class="flex flex-col xl:flex-row justify-between items-start xl:items-end gap-4">
-                <div><h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fab fa-line mr-2 text-brand-500"></i>成績系統 (資料庫)</h2><p class="text-brand-500 text-sm sm:text-base font-medium">手動輸入或匯入 Excel 成績，存檔後供家長 LINE 查詢。</p></div>
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fab fa-line mr-2 text-brand-500"></i>成績系統 (資料庫)</h2>
+                    <p class="text-brand-500 text-sm sm:text-base font-medium">手動輸入或匯入 Excel 成績，存檔後供家長 LINE 查詢。</p>
+                </div>
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full xl:w-auto">
                     <input type="file" id="excel-file-input" accept=".xlsx, .xls, .csv" class="hidden" onchange="handleSmartExcelUpload(event)">
-                    <button onclick="document.getElementById('excel-file-input').click()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm"><i class="fas fa-file-excel mr-2 text-brand-400"></i> Excel 智慧匯入</button>
-                    <button id="btn-save-scores" onclick="saveScoresToCloud()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center"><i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布</button>
+                    <button onclick="document.getElementById('excel-file-input').click()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-6 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm">
+                        <i class="fas fa-file-excel mr-2 text-brand-400"></i> Excel 智慧匯入
+                    </button>
+                    <button id="btn-save-scores" onclick="saveScoresToCloud()" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-8 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center">
+                        <i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布
+                    </button>
                 </div>
             </div>
 
+            <!-- 歷史測驗管理面板 -->
             <div class="glass-panel p-4 rounded-xl border-l-4 border-l-brand-600 flex flex-wrap items-center gap-3">
                 <span class="font-bold text-brand-700 mr-2"><i class="fas fa-history mr-1"></i> 歷史紀錄管理：</span>
-                <select id="history-exam-select" class="bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 flex-1 min-w-[200px]"><option value="">➕ --- 建立全新測驗 --- (預設)</option></select>
+                <select id="history-exam-select" class="bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 flex-1 min-w-[200px]">
+                    <option value="">➕ --- 建立全新測驗 --- (預設)</option>
+                </select>
                 <button onclick="loadExamData()" class="bg-brand-100 hover:bg-brand-200 text-brand-700 px-4 py-2.5 rounded-lg text-sm font-bold transition shadow-sm border border-brand-200"><i class="fas fa-edit mr-1"></i> 載入</button>
                 <button onclick="deleteExamData()" id="btn-delete-exam" class="hidden bg-red-50 hover:bg-red-100 text-morandi-pink px-4 py-2.5 rounded-lg text-sm font-bold transition shadow-sm border border-red-200"><i class="fas fa-trash-alt mr-1"></i> 刪除此測驗</button>
             </div>
 
+            <!-- 全新測驗設定面板 -->
             <div class="glass-panel p-4 rounded-xl border-l-4 border-l-brand-400 flex flex-wrap items-center gap-3">
                 <span class="font-bold text-brand-700 mr-2"><i class="fas fa-cog mr-1"></i> 本次測驗設定：</span>
-                <select id="new-exam-grade" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2"><option value="七年級">七年級</option><option value="八年級">八年級</option><option value="九年級">九年級</option></select>
-                <select id="new-exam-semester" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2"><option value="上學期">上學期</option><option value="下學期">下學期</option></select>
+                <select id="new-exam-grade" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2">
+                    <option value="七年級">七年級</option>
+                    <option value="八年級">八年級</option>
+                    <option value="九年級">九年級</option>
+                </select>
+                <select id="new-exam-semester" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2">
+                    <option value="上學期">上學期</option>
+                    <option value="下學期">下學期</option>
+                </select>
                 <select id="new-exam-type" class="bg-brand-50 border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2" onchange="document.getElementById('new-exam-custom').classList.toggle('hidden', this.value !== '其他')">
-                    <option value="第一次段考">第一次段考</option><option value="第二次段考">第二次段考</option><option value="第三次段考">第三次段考</option><option value="第一次模擬考">第一次模擬考</option><option value="第二次模擬考">第二次模擬考</option><option value="平時測驗">平時測驗</option><option value="其他">其他 (自訂名稱)</option>
+                    <option value="第一次段考">第一次段考</option>
+                    <option value="第二次段考">第二次段考</option>
+                    <option value="第三次段考">第三次段考</option>
+                    <option value="第一次模擬考">第一次模擬考</option>
+                    <option value="第二次模擬考">第二次模擬考</option>
+                    <option value="平時測驗">平時測驗</option>
+                    <option value="其他">其他 (自訂名稱)</option>
                 </select>
                 <input type="text" id="new-exam-custom" placeholder="輸入自訂名稱..." class="hidden bg-white border border-brand-200 text-brand-800 text-sm font-bold rounded-lg focus:border-brand-400 outline-none p-2 w-40">
             </div>
+            
+            <div class="bg-brand-100 border border-brand-200 p-4 rounded-xl flex items-start space-x-3 text-brand-800 text-sm mb-2 font-medium">
+                <i class="fas fa-info-circle text-brand-500 text-xl mt-0.5"></i>
+                <div class="leading-relaxed">
+                    <strong>智慧匯入說明：</strong> 系統會自動辨識 Excel 表頭名稱（不限順序）。<br>
+                    <span class="text-brand-600 font-bold">支援抓取的欄位包含：</span> 座號、國文、英文、數學、自然(理化)、社會、歷史、地理、公民、平均、PR值。<br>
+                    <span class="text-morandi-pink font-bold">✨ 分科儲存設計：</span> 匯入時各科獨立儲存，家長查詢時能看到最完整的明細！
+                </div>
+            </div>
 
+            <!-- 成績表格水平捲動 -->
             <div class="glass-panel rounded-2xl overflow-x-auto shadow-sm custom-scrollbar">
                 <table class="w-full text-center text-sm whitespace-nowrap min-w-[900px]">
                     <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
-                        <tr><th class="p-4 font-bold w-16 sticky left-0 bg-brand-100 z-10 border-r border-brand-200">座號</th><th class="p-4 font-bold">國文</th><th class="p-4 font-bold">英文</th><th class="p-4 font-bold">數學</th><th class="p-4 font-bold">自然</th><th class="p-4 font-bold">社會</th><th class="p-4 font-bold text-brand-600 bg-brand-50">歷史</th><th class="p-4 font-bold text-brand-600 bg-brand-50">地理</th><th class="p-4 font-bold text-brand-600 bg-brand-50">公民</th><th class="p-4 font-bold">平均</th><th class="p-4 font-bold">校排PR值</th></tr>
+                        <tr>
+                            <th class="p-4 font-bold w-16 sticky left-0 bg-brand-100 z-10 border-r border-brand-200">座號</th>
+                            <th class="p-4 font-bold">國文</th>
+                            <th class="p-4 font-bold">英文</th>
+                            <th class="p-4 font-bold">數學</th>
+                            <th class="p-4 font-bold">自然</th>
+                            <th class="p-4 font-bold">社會</th>
+                            <!-- 新增歷史、地理、公民獨立欄位 -->
+                            <th class="p-4 font-bold text-brand-600 bg-brand-50">歷史</th>
+                            <th class="p-4 font-bold text-brand-600 bg-brand-50">地理</th>
+                            <th class="p-4 font-bold text-brand-600 bg-brand-50">公民</th>
+                            <th class="p-4 font-bold">平均</th>
+                            <th class="p-4 font-bold">校排PR值</th>
+                        </tr>
                     </thead>
-                    <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="score-table-body"></tbody>
+                    <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="score-table-body">
+                    </tbody>
                 </table>
             </div>
         </section>
 
         <section id="tab-score-analysis" class="tab-content space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
-                <div><h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-chart-pie mr-2 text-brand-500"></i>成績分析報表</h2><p class="text-brand-500 text-sm sm:text-base font-medium">班級總覽、各科表現與個別學生追蹤。</p></div>
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-chart-pie mr-2 text-brand-500"></i>成績分析報表</h2>
+                    <p class="text-brand-500 text-sm sm:text-base font-medium">班級總覽、各科表現與個別學生追蹤。</p>
+                </div>
+                <!-- 報表子頁籤切換 -->
                 <div class="flex space-x-2 bg-brand-100 p-1.5 rounded-xl w-full sm:w-auto overflow-x-auto custom-scrollbar">
                     <button onclick="switchAnalysisTab('overview')" id="analysis-tab-overview" class="analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition bg-white text-brand-800 shadow-sm flex-shrink-0"><i class="fas fa-layer-group mr-1.5 text-brand-500"></i>單次總覽</button>
                     <button onclick="switchAnalysisTab('subject')" id="analysis-tab-subject" class="analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition text-brand-600 hover:bg-white/50 flex-shrink-0"><i class="fas fa-book-open mr-1.5 text-brand-500"></i>各科表現</button>
@@ -295,87 +436,197 @@
                 </div>
             </div>
 
+            <!-- 全局考試選擇器 -->
             <div class="glass-panel p-4 rounded-xl flex flex-col sm:flex-row items-center gap-4">
                 <label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-filter mr-2 text-brand-500"></i>分析資料來源：</label>
-                <select id="analysis-exam-selector" onchange="handleAnalysisExamChange(this.value)" class="flex-1 w-full bg-brand-50 text-brand-800 px-4 py-2.5 rounded-lg border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm"><option value="">讀取中...</option></select>
+                <select id="analysis-exam-selector" onchange="handleAnalysisExamChange(this.value)" class="flex-1 w-full bg-brand-50 text-brand-800 px-4 py-2.5 rounded-lg border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm">
+                    <option value="">讀取中...</option>
+                </select>
             </div>
 
+            <!-- 分析視圖容器 -->
             <div class="relative min-h-[500px]">
+                
+                <!-- A. 單次總覽 -->
                 <div id="view-overview" class="analysis-content space-y-6">
+                    <!-- 指標卡片 -->
                     <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center"><span class="text-xs text-brand-500 font-bold mb-1">班級總平均</span><span class="text-2xl font-black text-brand-800" id="overview-avg">--</span></div>
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center"><span class="text-xs text-brand-500 font-bold mb-1">班級最高平均</span><span class="text-2xl font-black text-brand-800" id="overview-max">--</span></div>
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center"><span class="text-xs text-brand-500 font-bold mb-1">總平均及格率</span><span class="text-2xl font-black text-brand-800" id="overview-pass-rate">--</span></div>
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink"><span class="text-xs text-brand-500 font-bold mb-1">需關懷人數</span><span class="text-2xl font-black text-morandi-pink" id="overview-fail-count">--</span></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="glass-panel p-5 rounded-2xl"><h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-bullseye mr-2 text-brand-500"></i>班級五育平均</h3><div class="w-full aspect-square max-h-[250px] mx-auto relative"><canvas id="classRadarChart"></canvas></div></div>
-                        <div class="glass-panel p-5 rounded-2xl"><h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-chart-bar mr-2 text-brand-500"></i>平均分數區間分佈</h3><div class="w-full h-[250px] relative"><canvas id="avgDistributionChart"></canvas></div></div>
-                    </div>
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="glass-panel p-5 rounded-2xl"><h3 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-trophy mr-2 text-yellow-500"></i>總平均優異表現 (Top 5)</h3><ul id="overview-top-list" class="space-y-1"></ul></div>
-                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-morandi-pink"><h3 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-hand-holding-heart mr-2 text-morandi-pink"></i>需關懷名單 (平均不及格)</h3><ul id="overview-bottom-list" class="space-y-1"></ul></div>
-                    </div>
-                </div>
-
-                <div id="view-subject" class="analysis-content hidden space-y-6">
-                    <div class="flex gap-2 mb-2 overflow-x-auto custom-scrollbar pb-2" id="subject-buttons"></div>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center"><span class="text-xs text-brand-500 font-bold mb-1">該科班平均</span><span class="text-2xl font-black text-brand-800" id="subj-avg">--</span></div>
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center"><span class="text-xs text-brand-500 font-bold mb-1">該科最高分</span><span class="text-2xl font-black text-brand-800" id="subj-max">--</span></div>
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center"><span class="text-xs text-brand-500 font-bold mb-1">該科及格率</span><span class="text-2xl font-black text-brand-800" id="subj-pass-rate">--</span></div>
-                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink"><span class="text-xs text-brand-500 font-bold mb-1">不及格人數</span><span class="text-2xl font-black text-morandi-pink" id="subj-fail-count">--</span></div>
-                    </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <div class="glass-panel p-5 rounded-2xl lg:col-span-1 flex flex-col"><h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">級距比例</h3><div class="w-full aspect-square max-h-[200px] mx-auto relative flex-1"><canvas id="subjectPieChart"></canvas></div></div>
-                        <div class="glass-panel p-5 rounded-2xl lg:col-span-2 border-l-4 border-l-brand-400">
-                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2 flex justify-between items-center"><span><i class="fas fa-exchange-alt mr-2 text-brand-500"></i>與前次測驗比較</span></h3>
-                            <div class="grid grid-cols-2 gap-6 h-full"><div><h4 class="text-sm font-bold text-emerald-600 mb-2"><i class="fas fa-arrow-up mr-1"></i>進步最多前三名</h4><div id="subj-improved-list" class="space-y-1"></div></div><div><h4 class="text-sm font-bold text-morandi-pink mb-2"><i class="fas fa-arrow-down mr-1"></i>退步最多需關心</h4><div id="subj-regressed-list" class="space-y-1"></div></div></div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">班級總平均</span>
+                            <span class="text-2xl font-black text-brand-800" id="overview-avg">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">班級最高平均</span>
+                            <span class="text-2xl font-black text-brand-800" id="overview-max">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">總平均及格率</span>
+                            <span class="text-2xl font-black text-brand-800" id="overview-pass-rate">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink">
+                            <span class="text-xs text-brand-500 font-bold mb-1">需關懷人數</span>
+                            <span class="text-2xl font-black text-morandi-pink" id="overview-fail-count">--</span>
                         </div>
                     </div>
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <div class="glass-panel p-5 rounded-2xl"><h3 id="subject-dist-title" class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">單科分數分佈</h3><div class="w-full h-[250px] relative"><canvas id="subjectBarChart"></canvas></div></div>
-                        <div class="glass-panel p-5 rounded-2xl"><h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">該科歷次班級平均走勢</h3><div class="w-full h-[250px] relative"><canvas id="subjectTrendChart"></canvas></div></div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-bullseye mr-2 text-brand-500"></i>班級五育平均</h3>
+                            <div class="w-full aspect-square max-h-[250px] mx-auto relative"><canvas id="classRadarChart"></canvas></div>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2"><i class="fas fa-chart-bar mr-2 text-brand-500"></i>平均分數區間分佈</h3>
+                            <div class="w-full h-[250px] relative"><canvas id="avgDistributionChart"></canvas></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-trophy mr-2 text-yellow-500"></i>總平均優異表現 (Top 5)</h3>
+                            <ul id="overview-top-list" class="space-y-1"></ul>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-morandi-pink">
+                            <h3 class="text-md font-bold text-brand-800 mb-3 border-b border-brand-100 pb-2"><i class="fas fa-hand-holding-heart mr-2 text-morandi-pink"></i>需關懷名單 (平均不及格)</h3>
+                            <ul id="overview-bottom-list" class="space-y-1"></ul>
+                        </div>
                     </div>
                 </div>
 
-                <div id="view-student" class="analysis-content hidden space-y-6">
-                    <div class="glass-panel p-4 rounded-xl flex items-center gap-4 bg-brand-100/50"><label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-user mr-2 text-brand-500"></i>切換學生座號：</label><select id="analysis-student-selector" onchange="handleAnalysisStudentChange()" class="w-40 bg-white text-brand-800 px-4 py-2 rounded-lg border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm shadow-sm"></select></div>
-                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                        <div class="md:col-span-1 glass-panel p-5 rounded-2xl flex flex-col"><h3 class="text-md font-bold text-brand-800 mb-2 border-b border-brand-100 pb-2">個人表現雷達圖</h3><div class="w-full aspect-square max-h-[250px] mx-auto relative mb-4"><canvas id="studentRadarChart"></canvas></div><div class="mt-auto grid grid-cols-2 gap-2" id="student-mini-scores"></div></div>
-                        <div class="md:col-span-2 glass-panel p-5 rounded-2xl"><h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">個人歷次總平均走勢</h3><div class="w-full h-[300px] sm:h-[400px] relative"><canvas id="studentTrendChart"></canvas></div></div>
+                <!-- B. 各科表現 -->
+                <div id="view-subject" class="analysis-content hidden space-y-6">
+                    <div class="flex gap-2 mb-2 overflow-x-auto custom-scrollbar pb-2" id="subject-buttons">
+                        <!-- 由 JS 產生 -->
+                    </div>
+
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">該科班平均</span>
+                            <span class="text-2xl font-black text-brand-800" id="subj-avg">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">該科最高分</span>
+                            <span class="text-2xl font-black text-brand-800" id="subj-max">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center">
+                            <span class="text-xs text-brand-500 font-bold mb-1">該科及格率</span>
+                            <span class="text-2xl font-black text-brand-800" id="subj-pass-rate">--</span>
+                        </div>
+                        <div class="glass-panel p-4 rounded-2xl flex flex-col justify-center items-center border-b-4 border-morandi-pink">
+                            <span class="text-xs text-brand-500 font-bold mb-1">不及格人數</span>
+                            <span class="text-2xl font-black text-morandi-pink" id="subj-fail-count">--</span>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl lg:col-span-1 flex flex-col">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">級距比例</h3>
+                            <div class="w-full aspect-square max-h-[200px] mx-auto relative flex-1"><canvas id="subjectPieChart"></canvas></div>
+                        </div>
+                        
+                        <div class="glass-panel p-5 rounded-2xl lg:col-span-2 border-l-4 border-l-brand-400">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2 flex justify-between items-center">
+                                <span><i class="fas fa-exchange-alt mr-2 text-brand-500"></i>與前次測驗比較</span>
+                            </h3>
+                            <div class="grid grid-cols-2 gap-6 h-full">
+                                <div>
+                                    <h4 class="text-sm font-bold text-emerald-600 mb-2"><i class="fas fa-arrow-up mr-1"></i>進步最多前三名</h4>
+                                    <div id="subj-improved-list" class="space-y-1"></div>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-morandi-pink mb-2"><i class="fas fa-arrow-down mr-1"></i>退步最多需關心</h4>
+                                    <div id="subj-regressed-list" class="space-y-1"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 id="subject-dist-title" class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">單科分數分佈</h3>
+                            <div class="w-full h-[250px] relative"><canvas id="subjectBarChart"></canvas></div>
+                        </div>
+                        <div class="glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">該科歷次班級平均走勢</h3>
+                            <div class="w-full h-[250px] relative"><canvas id="subjectTrendChart"></canvas></div>
+                        </div>
                     </div>
                 </div>
+
+                <!-- C. 個別學生 -->
+                <div id="view-student" class="analysis-content hidden space-y-6">
+                    <div class="glass-panel p-4 rounded-xl flex items-center gap-4 bg-brand-100/50">
+                        <label class="font-bold text-brand-800 whitespace-nowrap"><i class="fas fa-user mr-2 text-brand-500"></i>切換學生座號：</label>
+                        <select id="analysis-student-selector" onchange="handleAnalysisStudentChange()" class="w-40 bg-white text-brand-800 px-4 py-2 rounded-lg border border-brand-200 focus:border-brand-400 outline-none font-bold text-sm shadow-sm">
+                            <!-- 由 JS 產生 1~24 號 -->
+                        </select>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        <div class="md:col-span-1 glass-panel p-5 rounded-2xl flex flex-col">
+                            <h3 class="text-md font-bold text-brand-800 mb-2 border-b border-brand-100 pb-2">個人表現雷達圖</h3>
+                            <div class="w-full aspect-square max-h-[250px] mx-auto relative mb-4">
+                                <canvas id="studentRadarChart"></canvas>
+                            </div>
+                            <div class="mt-auto grid grid-cols-2 gap-2" id="student-mini-scores">
+                                <!-- JS 產生 -->
+                            </div>
+                        </div>
+
+                        <div class="md:col-span-2 glass-panel p-5 rounded-2xl">
+                            <h3 class="text-md font-bold text-brand-800 mb-4 border-b border-brand-100 pb-2">個人歷次總平均走勢</h3>
+                            <div class="w-full h-[300px] sm:h-[400px] relative">
+                                <canvas id="studentTrendChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </section>
 
+        <!-- ==================== 6. 每週結算與推播 ==================== -->
         <section id="tab-weekly" class="tab-content space-y-6">
             <div class="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-4">
-                <div><h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-calendar-check mr-2 text-brand-500"></i>每週表現結算推播</h2><p class="text-brand-500 font-medium text-sm sm:text-base">自動統計本週各項常規數據，一鍵推播給 LINE@ 家長群。</p></div>
+                <div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-calendar-check mr-2 text-brand-500"></i>每週表現結算推播</h2>
+                    <p class="text-brand-500 font-medium text-sm sm:text-base">自動統計本週各項常規數據，一鍵推播給 LINE@ 家長群與學生群。</p>
+                </div>
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 w-full lg:w-auto">
-                    <button onclick="alert('已自動抓取本週 (週一至週五) 每日紀錄並完成統計！')" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-5 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm"><i class="fas fa-sync-alt mr-2 text-brand-400"></i> 重新結算</button>
-                    <button onclick="alert('已發送本週榮譽榜及個人報表至家長 LINE@！')" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center"><i class="fab fa-line mr-2 text-lg"></i> 發送 LINE@ 週報</button>
+                    <!-- 🌟 重新掛上真正撈取 5 天資料的 calculateWeeklyReport -->
+                    <button onclick="calculateWeeklyReport()" class="w-full sm:w-auto bg-white hover:bg-brand-50 text-brand-700 px-5 py-3 rounded-xl font-bold transition flex items-center justify-center border border-brand-200 shadow-sm"><i class="fas fa-sync-alt mr-2 text-brand-400"></i> 重新結算</button>
+                    <button id="btn-send-weekly-parent" onclick="triggerWeeklyReport('parent')" class="w-full sm:w-auto bg-brand-600 hover:bg-brand-500 text-white px-6 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center"><i class="fab fa-line mr-2 text-lg"></i> 發送給家長</button>
+                    <button id="btn-send-weekly-student" onclick="triggerWeeklyReport('student')" class="w-full sm:w-auto bg-brand-500 hover:bg-brand-400 text-white px-6 py-3 rounded-xl font-bold shadow-md transition flex items-center justify-center"><i class="fab fa-line mr-2 text-lg"></i> 發送給學生</button>
                 </div>
             </div>
+            
             <div class="glass-panel rounded-2xl overflow-hidden shadow-sm">
                 <table class="w-full text-center text-sm resp-table">
                     <thead class="bg-brand-100 text-brand-700 border-b border-brand-200">
                         <tr><th class="p-4 font-bold w-16">座號</th><th class="p-4 font-bold">遲到/未到</th><th class="p-4 font-bold">作業缺交總數</th><th class="p-4 font-bold">打掃待改進</th><th class="p-4 font-bold">目標達成天數</th><th class="p-4 font-bold text-brand-800">本週綜合評級</th></tr>
                     </thead>
                     <tbody class="divide-y divide-brand-100 text-brand-800 font-medium" id="weekly-table-body">
-                        <tr><td colspan="6" class="p-8 text-brand-400">正在統計全班 24 人資料，請稍候...</td></tr>
+                        <tr><td colspan="6" class="p-8 text-brand-400 font-bold text-center">請點擊上方「重新結算」來載入本週資料</td></tr>
                     </tbody>
                 </table>
             </div>
+
             <div class="glass-panel p-6 rounded-2xl border-l-4 border-l-brand-500">
                 <h3 class="text-lg font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-crown text-brand-400 mr-2"></i>本週榮譽榜 (推播預覽)</h3>
-                <div class="flex flex-wrap gap-2.5" id="honor-list-container"><span class="text-brand-400 text-sm">計算中...</span></div>
+                <p class="text-brand-500 text-sm mb-4 font-medium">以下名單將於點擊「發送」時，自動生成精美圖文公告：</p>
+                <div class="flex flex-wrap gap-2.5" id="honor-list-container">
+                    <span class="text-brand-400 text-sm font-bold">等待計算中...</span>
+                </div>
             </div>
         </section>
 
+        <!-- 對話紀錄 -->
         <section id="tab-chat" class="tab-content h-[calc(100vh-100px)]">
             <div class="flex flex-col h-full space-y-4">
-                <div class="mb-2 shrink-0"><h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-comments mr-2 text-brand-500"></i>對話紀錄 (永久備份)</h2></div>
+                <div class="mb-2 shrink-0">
+                    <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-comments mr-2 text-brand-500"></i>對話紀錄 (永久備份)</h2>
+                    <p class="text-brand-500 font-medium text-sm hidden sm:block">突破官方 6 個月紀錄限制，雙帳號無縫切換管理。</p>
+                </div>
+                
                 <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm min-h-0">
                     <div class="w-full sm:w-1/3 bg-white border-b sm:border-b-0 sm:border-r border-brand-200 flex flex-col h-1/3 sm:h-full">
                         <div class="flex border-b border-brand-200 shrink-0">
@@ -385,21 +636,33 @@
                         <div class="flex-1 overflow-y-auto custom-scrollbar">
                             <div class="p-3 border-b border-brand-100 hover:bg-brand-50 cursor-pointer transition flex items-center space-x-3 bg-brand-50/50">
                                 <div class="w-10 h-10 rounded-xl bg-brand-100 text-brand-700 border border-brand-200 flex items-center justify-center font-bold shrink-0">01</div>
-                                <div class="flex-1 min-w-0"><div class="text-brand-800 font-bold text-sm truncate">01號 家長</div><div class="text-xs text-brand-500 font-medium truncate">老師，請問這週的作業...</div></div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="text-brand-800 font-bold text-sm truncate">01號 家長</div>
+                                    <div class="text-xs text-brand-500 font-medium truncate">老師，請問這週的作業...</div>
+                                </div>
                             </div>
                         </div>
                     </div>
+                    
                     <div class="flex-1 bg-brand-50 flex flex-col h-2/3 sm:h-full">
                         <div class="p-3 sm:p-4 border-b border-brand-200 bg-white flex justify-between items-center shrink-0">
                             <div class="font-bold text-brand-800 flex items-center"><i class="fas fa-user-circle text-brand-400 mr-2 text-xl"></i> 01號 同學家長</div>
                         </div>
                         <div class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar bg-brand-50/50">
-                            <div class="flex justify-start"><div class="bg-white border border-brand-200 text-brand-800 font-medium px-4 py-3 rounded-2xl max-w-[85%] text-sm">老師您好，01號昨天感冒沒寫完作業...</div></div>
-                            <div class="flex justify-end"><div class="bg-brand-500 text-white font-medium px-4 py-3 rounded-2xl max-w-[85%] text-sm">沒問題的！我會在系統上先註記。</div></div>
+                            <div class="flex justify-start">
+                                <div class="bg-white border border-brand-200 text-brand-800 font-medium px-4 py-3 rounded-2xl rounded-tl-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
+                                    老師您好，01號昨天因為感冒所以國文作業沒有寫完，想請問今天可以補交嗎？
+                                </div>
+                            </div>
+                            <div class="flex justify-end">
+                                <div class="bg-brand-500 text-white font-medium px-4 py-3 rounded-2xl rounded-tr-sm max-w-[85%] sm:max-w-[70%] text-sm sm:text-base shadow-sm">
+                                    沒問題的！我會在系統上先註記，請他明天帶來給小老師檢查就可以了。
+                                </div>
+                            </div>
                         </div>
                         <div class="p-3 sm:p-4 bg-white border-t border-brand-200 flex space-x-2 sm:space-x-3 items-center shrink-0">
-                            <input type="text" placeholder="輸入訊息回覆給家長..." class="flex-1 bg-brand-50 text-brand-800 font-medium px-4 py-2.5 sm:py-3 rounded-full border border-brand-200 focus:outline-none text-sm">
-                            <button class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 rounded-full flex items-center justify-center transition shadow-md shrink-0"><i class="fas fa-paper-plane"></i></button>
+                            <input type="text" placeholder="輸入訊息回覆給家長..." class="flex-1 bg-brand-50 text-brand-800 font-medium px-4 py-2.5 sm:py-3 rounded-full border border-brand-200 focus:outline-none focus:border-brand-400 text-sm sm:text-base">
+                            <button class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition shadow-md shrink-0"><i class="fas fa-paper-plane"></i></button>
                         </div>
                     </div>
                 </div>
@@ -408,6 +671,7 @@
 
     </main>
 
+    <!-- 批次匯入 Modal -->
     <div id="modal-batch-import" class="hidden fixed inset-0 bg-brand-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-md flex flex-col">
             <div class="px-5 py-4 border-b border-brand-100 flex justify-between items-center bg-brand-50 rounded-t-2xl shrink-0">
@@ -415,7 +679,11 @@
                 <button onclick="closeModal('modal-batch-import')" class="text-brand-400 hover:text-brand-600 text-xl"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-5 sm:p-6 bg-white">
-                <textarea id="batch-import-data" rows="8" class="w-full bg-brand-50 text-brand-800 p-4 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-mono text-sm placeholder-brand-300 custom-scrollbar" placeholder="範例格式：&#10;123456 (1號)&#10;..."></textarea>
+                <p class="text-sm text-brand-600 font-medium mb-4 leading-relaxed">
+                    請從 Excel 複製「身分證後六碼」整欄資料<br>
+                    <span class="text-brand-800 font-bold">（共 24 筆，依座號 1~24 排序）</span>，並貼上於下方：
+                </p>
+                <textarea id="batch-import-data" rows="8" class="w-full bg-brand-50 text-brand-800 p-4 rounded-xl border border-brand-200 focus:border-brand-400 outline-none font-mono text-sm placeholder-brand-300 custom-scrollbar" placeholder="範例格式：&#10;123456 (1號)&#10;654321 (2號)&#10;...貼上 24 行數字..."></textarea>
             </div>
             <div class="px-5 py-4 border-t border-brand-100 bg-brand-50 flex flex-col sm:flex-row justify-end gap-3 sm:space-x-3 rounded-b-2xl shrink-0">
                 <button onclick="closeModal('modal-batch-import')" class="w-full sm:w-auto px-5 py-2.5 text-brand-600 hover:bg-white bg-transparent border border-brand-200 rounded-xl transition font-bold shadow-sm">取消</button>
@@ -424,6 +692,7 @@
         </div>
     </div>
 
+    <!-- 管理已核准請假 Modal -->
     <div id="modal-manage-leaves" class="hidden fixed inset-0 bg-brand-900/40 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div class="bg-white rounded-2xl border border-brand-200 shadow-2xl w-full max-w-2xl flex flex-col max-h-[90vh]">
             <div class="px-5 py-4 border-b border-brand-100 flex justify-between items-center bg-brand-50 rounded-t-2xl shrink-0">
@@ -446,7 +715,9 @@
 
         function switchTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.menu-item').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.menu-item').forEach(el => {
+                el.classList.remove('active');
+            });
             document.getElementById(`tab-${tabId}`).classList.add('active');
             const navBtn = document.getElementById(`nav-${tabId}`);
             if(navBtn) navBtn.classList.add('active');
@@ -458,7 +729,14 @@
                 if(overlay) overlay.classList.add('hidden');
             }
 
-            if(tabId === 'score-analysis' && allExamsData) renderCurrentAnalysisTab();
+            if(tabId === 'score-analysis' && allExamsData) {
+                renderCurrentAnalysisTab();
+            }
+            
+            // 🌟 只要切換到每週結算頁籤，就自動觸發跨五天的結算
+            if(tabId === 'weekly') {
+                calculateWeeklyReport();
+            }
         }
 
         const firebaseConfig = { apiKey: "AIzaSyAxC3eihcLYlSLuO5mb3rRt8TznxLEAidA", authDomain: "smart-class-system-a1645.firebaseapp.com", projectId: "smart-class-system-a1645", storageBucket: "smart-class-system-a1645.firebasestorage.app", messagingSenderId: "236576763126", appId: "1:236576763126:web:c4a50d1b21bb08089ed0d7" };
@@ -480,12 +758,7 @@
         const todayStr = new Date().toISOString().split('T')[0];
         let globalHWMap = {}; let globalStudentsData = null; let bindingsData = null; let lineParentsData = null; let lineStudentsData = null; let globalApprovedLeaves = [];
         
-        let allExamsData = null; 
-        let currentEditingExamId = null; 
-        let analysisExamId = null;
-        let currentAnalysisTab = 'overview';
-        let currentAnalysisSubject = 'chi';
-        let currentAnalysisSeat = '1';
+        let allExamsData = null; let currentEditingExamId = null; let analysisExamId = null; let currentAnalysisTab = 'overview'; let currentAnalysisSubject = 'chi'; let currentAnalysisSeat = '1';
         const subjectMap = { 'chi': '國文', 'eng': '英文', 'math': '數學', 'sci': '自然', 'soc': '社會' };
         const analysisMainSubjects = ['chi', 'eng', 'math', 'sci', 'soc'];
         let charts = { classRadar: null, avgDist: null, subjBar: null, subjTrend: null, subjPie: null, stuRadar: null, stuTrend: null };
@@ -496,21 +769,22 @@
             for(let i=1; i<=24; i++) {
                 html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
                     <td class="p-3 font-bold text-brand-800 bg-brand-50 sticky left-0 z-10 border-r border-brand-200">${String(i).padStart(2,'0')}</td>
-                    <td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 outline-none"></td>
-                    <td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 outline-none"></td>
-                    <td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 outline-none"></td>
-                    <td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 outline-none"></td>
-                    <td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 outline-none"></td>
-                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-hist-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 outline-none"></td>
-                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-geo-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 outline-none"></td>
-                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-civics-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 outline-none"></td>
-                    <td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 outline-none font-bold"></td>
-                    <td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 outline-none font-bold"></td>
+                    <td class="p-2"><input type="number" id="score-chi-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-eng-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-math-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-sci-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-soc-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-hist-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-geo-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2 bg-brand-50/50"><input type="number" id="score-civics-${i}" min="0" max="100" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-medium"></td>
+                    <td class="p-2"><input type="number" id="score-avg-${i}" step="0.1" class="w-20 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td>
+                    <td class="p-2"><input type="number" id="score-pr-${i}" class="w-16 bg-white border border-brand-200 rounded-lg text-center px-1 py-1.5 focus:border-brand-400 text-brand-800 outline-none font-bold"></td>
                 </tr>`;
             }
             tbody.innerHTML = html;
 
-            initAnalysisStudentSelector(); initAnalysisSubjectButtons();
+            initAnalysisStudentSelector();
+            initAnalysisSubjectButtons();
             if(window.Chart) { Chart.defaults.font.family = "'Inter', 'Segoe UI', sans-serif"; Chart.defaults.color = '#805d46'; }
         });
 
@@ -522,25 +796,8 @@
             const tbody = document.getElementById('binding-table-body'); let html = '';
             for(let i=1; i<=24; i++) {
                 let sId = String(i).padStart(2,'0'); let id6 = (bindingsData && bindingsData[i] && bindingsData[i].id6) ? bindingsData[i].id6 : '未設定';
-                
-                // 家長綁定狀態 (支援多位，最多2位)
-                let parentData = lineParentsData ? lineParentsData['seat_' + i] : null;
-                let parentIds = [];
-                if (Array.isArray(parentData)) parentIds = parentData;
-                else if (typeof parentData === 'string') parentIds = [parentData];
-                
-                let pBound = '';
-                if (parentIds.length > 0) {
-                    pBound = `<div class="flex flex-col items-end sm:items-center space-y-1.5">`;
-                    parentIds.forEach((uid, idx) => {
-                        pBound += `<div class="flex items-center space-x-2"><i class="fas fa-check-circle text-brand-500 text-lg"></i><span class="text-xs font-bold text-brand-600">(${idx+1})</span> <button onclick="unbindParent(${i}, '${uid}')" class="text-xs bg-red-50 hover:bg-red-100 text-morandi-pink font-bold border border-red-200 px-2 py-1 rounded transition">解除</button></div>`;
-                    });
-                    pBound += `</div>`;
-                } else {
-                    pBound = `<i class="fas fa-times-circle text-brand-300 opacity-50"></i>`;
-                }
-
-                let isStudentBound = (lineStudentsData && lineStudentsData['seat_' + i]) ? true : false;
+                let isParentBound = (lineParentsData && lineParentsData['seat_' + i]) ? true : false; let isStudentBound = (lineStudentsData && lineStudentsData['seat_' + i]) ? true : false;
+                let pBound = isParentBound ? `<div class="flex items-center justify-end sm:justify-center space-x-2"><i class="fas fa-check-circle text-brand-500 text-lg"></i> <button onclick="unbindParent(${i})" class="text-xs bg-red-50 hover:bg-red-100 text-morandi-pink font-bold border border-red-200 px-2 py-1 rounded transition">解除</button></div>` : `<i class="fas fa-times-circle text-brand-300 opacity-50"></i>`;
                 let sBound = isStudentBound ? `<div class="flex items-center justify-end sm:justify-center space-x-2"><i class="fas fa-check-circle text-brand-500 text-lg"></i> <button onclick="unbindStudent(${i})" class="text-xs bg-red-50 hover:bg-red-100 text-morandi-pink font-bold border border-red-200 px-2 py-1 rounded transition">解除</button></div>` : `<i class="fas fa-times-circle text-brand-300 opacity-50"></i>`;
                 html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${sId}</td><td class="p-3" data-label="身分證後六碼"><input type="text" id="bind-id-${i}" value="${id6 === '未設定' ? '' : id6}" placeholder="未設定" class="bg-white border border-brand-200 px-3 py-1.5 rounded-lg w-full sm:w-32 tracking-widest text-brand-800 font-bold focus:border-brand-400 outline-none text-right sm:text-left"></td><td class="p-3 sm:text-center" data-label="家長綁定狀態">${pBound}</td><td class="p-3 sm:text-center" data-label="學生綁定狀態">${sBound}</td><td class="p-3 sm:text-center" data-label="操作"><button onclick="updateBinding(${i})" class="bg-white text-brand-600 hover:bg-brand-50 font-bold border border-brand-200 px-3 py-1.5 rounded-lg transition shadow-sm w-full sm:w-auto"><i class="fas fa-save mr-1"></i>儲存</button></td></tr>`;
             }
@@ -553,14 +810,22 @@
             db.collection("class_settings").doc("line_students").onSnapshot((doc) => { lineStudentsData = doc.exists ? doc.data() : null; renderBindingTable(); });
 
             db.collection("class_settings").doc("scores").onSnapshot((doc) => {
-                if (doc.exists) { allExamsData = doc.data(); renderExamHistorySelect(); updateAnalysisExamSelector(); if(document.getElementById('tab-score-analysis').classList.contains('active')) renderCurrentAnalysisTab(); }
+                if (doc.exists) {
+                    allExamsData = doc.data();
+                    renderExamHistorySelect();
+                    updateAnalysisExamSelector(); 
+                    if(document.getElementById('tab-score-analysis').classList.contains('active')) { renderCurrentAnalysisTab(); }
+                }
             });
 
             db.collection("board_settings").doc("current").onSnapshot((doc) => {
                 markConnected();
                 if (doc.exists) {
                     const data = doc.data();
-                    if(data.topBoardInfo) { document.getElementById('marquee-input').value = data.topBoardInfo.marqueeText || ''; if(data.topBoardInfo.monitorMsg) document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-brand-400 mt-2 block">- 班長即時回報</span>`; }
+                    if(data.topBoardInfo) {
+                        document.getElementById('marquee-input').value = data.topBoardInfo.marqueeText || '';
+                        if(data.topBoardInfo.monitorMsg) document.getElementById('dash-monitor-msg').innerHTML = data.topBoardInfo.monitorMsg.replace(/\n/g, '<br>') + `<br><span class="text-xs text-brand-400 mt-2 block">- 班長即時回報</span>`;
+                    }
                     if(data.passwords) ['edit_board', 'monitor', 'vice', 'discipline', 'health', 'academic'].forEach(role => { if(document.getElementById(`pwd-${role}`)) document.getElementById(`pwd-${role}`).value = data.passwords[role] || '1234'; });
                     if(data.boardData && data.boardData.homework) { globalHWMap = {}; data.boardData.homework.forEach(h => globalHWMap[h.id] = h.text); }
                     renderDashboardHW(); 
@@ -576,40 +841,55 @@
                         let issues = []; if(sData[i].discipline === '待改進') issues.push('秩序'); if(sData[i].clean === '待改進') issues.push('打掃');
                         if(issues.length > 0) { disciplineCount++; disciplineList.push(`${String(i).padStart(2,'0')}(${issues.join(',')})`); }
                     }
-                    document.getElementById('dash-present').innerText = present; let absentHtmlArr = [];
-                    for (let type in absentGroups) if (absentGroups[type].length > 0) { let colorClass = type === '病假' ? 'text-brand-500' : (type === '事假' ? 'text-morandi-blue' : (type === '公假' ? 'text-brand-400' : 'text-morandi-pink')); absentHtmlArr.push(`<div><span class="${colorClass} font-bold">${type}:</span> ${absentGroups[type].join(', ')}</div>`); }
+                    document.getElementById('dash-present').innerText = present;
+                    let absentHtmlArr = [];
+                    for (let type in absentGroups) if (absentGroups[type].length > 0) {
+                        let colorClass = type === '病假' ? 'text-brand-500' : (type === '事假' ? 'text-morandi-blue' : (type === '公假' ? 'text-brand-400' : 'text-morandi-pink'));
+                        absentHtmlArr.push(`<div><span class="${colorClass} font-bold">${type}:</span> ${absentGroups[type].join(', ')}</div>`);
+                    }
                     document.getElementById('dash-absent-list').innerHTML = absentHtmlArr.length > 0 ? absentHtmlArr.join('') : '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle mr-1 text-brand-500"></i> 全員到齊</div>';
                     document.getElementById('dash-discipline').innerText = disciplineCount;
                     document.getElementById('dash-discipline-list').innerHTML = disciplineList.length > 0 ? `<div class="text-morandi-pink font-bold">待改進: ${disciplineList.join(', ')}</div>` : '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle mr-1 text-brand-500"></i> 表現良好</div>';
-                    renderDashboardHW(); renderWeeklyReport(); 
+                    renderDashboardHW(); 
+                    
+                    if(document.getElementById('tab-weekly').classList.contains('active')) {
+                        calculateWeeklyReport();
+                    }
                 }
             });
 
             db.collection("audit_logs").orderBy("timestamp", "desc").limit(10).onSnapshot((snapshot) => {
                 const container = document.getElementById('audit-log-container');
                 if(snapshot.empty) { container.innerHTML = `<div class="text-brand-400 italic">目前尚無操作紀錄。</div>`; return; }
-                let html = ''; const colorMap = { '班長': 'text-yellow-600', '副班長': 'text-blue-600', '風紀': 'text-red-500', '衛生': 'text-emerald-600', '小老師': 'text-purple-600', '編輯聯絡簿': 'text-teal-600', '學生': 'text-brand-500' };
+                let html = ''; 
+                const colorMap = { '班長': 'text-yellow-600', '副班長': 'text-blue-600', '風紀': 'text-red-500', '衛生': 'text-emerald-600', '小老師': 'text-purple-600', '編輯聯絡簿': 'text-teal-600', '學生': 'text-brand-500' };
                 snapshot.forEach((doc) => {
-                    const log = doc.data(); const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'}) : '--:--'; const roleColor = colorMap[log.role] || 'text-brand-400';
+                    const log = doc.data(); 
+                    const timeStr = log.timestamp ? new Date(log.timestamp).toLocaleTimeString('zh-TW', {hour: '2-digit', minute:'2-digit'}) : '--:--'; 
+                    const roleColor = colorMap[log.role] || 'text-brand-400';
                     html += `<div class="flex items-start space-x-2 border-b border-brand-100 pb-2"><span class="text-brand-400 whitespace-nowrap text-xs sm:text-sm mt-0.5">${timeStr}</span><span class="${roleColor} whitespace-nowrap font-bold">[${log.role}]</span><span class="text-brand-800 flex-1 leading-snug font-medium">${log.action}</span></div>`;
                 });
                 container.innerHTML = html;
             });
 
             db.collection("leave_requests").onSnapshot((snapshot) => {
-                const pendingContainer = document.getElementById('leave-requests-container'); const approvedContainer = document.getElementById('approved-leave-summary');
+                const pendingContainer = document.getElementById('leave-requests-container');
+                const approvedContainer = document.getElementById('approved-leave-summary');
+                
                 globalApprovedLeaves = []; let pendingReqs = []; let approvedStats = {};
 
                 snapshot.forEach(doc => {
                     const data = {id: doc.id, ...doc.data()};
-                    if(data.status === 'pending') { pendingReqs.push(data); } 
+                    if(data.status === 'pending') pendingReqs.push(data);
                     else if (data.status === 'approved') {
-                        globalApprovedLeaves.push(data); let seat = data.seatNo; if(!approvedStats[seat]) approvedStats[seat] = 0; let dur = data.duration;
-                        if(dur === '全天') approvedStats[seat] += 8; else if(dur === '上午' || dur === '下午') approvedStats[seat] += 4;
+                        globalApprovedLeaves.push(data);
+                        let seat = data.seatNo; if(!approvedStats[seat]) approvedStats[seat] = 0;
+                        let dur = data.duration; if(dur === '全天') approvedStats[seat] += 8; else if(dur === '上午' || dur === '下午') approvedStats[seat] += 4;
                     }
                 });
 
-                if(pendingReqs.length === 0) { pendingContainer.innerHTML = '<div class="text-brand-400 text-sm text-center py-6 border-2 border-dashed border-brand-200 rounded-xl bg-brand-50/50"><i class="fas fa-inbox mb-3 text-3xl block text-brand-300"></i>目前無待辦事項</div>'; 
+                if(pendingReqs.length === 0) { 
+                    pendingContainer.innerHTML = '<div class="text-brand-400 text-sm text-center py-6 border-2 border-dashed border-brand-200 rounded-xl bg-brand-50/50"><i class="fas fa-inbox mb-3 text-3xl block text-brand-300"></i>目前無待辦事項</div>'; 
                 } else {
                     pendingReqs.sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)); let p_html = '';
                     pendingReqs.forEach(data => {
@@ -622,8 +902,9 @@
                 }
 
                 let a_html = ''; let seats = Object.keys(approvedStats).sort((a,b) => parseInt(a) - parseInt(b));
-                if(seats.length === 0) { a_html = '<div class="text-brand-400 italic font-medium py-2">目前尚無已核准的請假紀錄。</div>'; } 
-                else {
+                if(seats.length === 0) {
+                    a_html = '<div class="text-brand-400 italic font-medium py-2">目前尚無已核准的請假紀錄。</div>';
+                } else {
                     seats.forEach(seat => {
                         let totalPeriods = approvedStats[seat]; if(totalPeriods === 0) return;
                         let days = Math.floor(totalPeriods / 8); let periods = totalPeriods % 8; let timeStr = '';
@@ -637,36 +918,11 @@
             });
         } 
 
-        function unbindParent(seat, userIdToRemove) { 
-            let sId = String(seat).padStart(2,'0'); 
-            if(!confirm(`確定解除此 ${sId} 號家長的 LINE 綁定嗎？`)) return; 
-            let docRef = db.collection("class_settings").doc("line_parents");
-            
-            if (userIdToRemove) {
-                docRef.get().then(doc => {
-                    if (doc.exists) {
-                        let data = doc.data();
-                        let currentData = data[`seat_${seat}`];
-                        if (Array.isArray(currentData)) {
-                            let newArray = currentData.filter(id => id !== userIdToRemove);
-                            if (newArray.length === 0) docRef.update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() });
-                            else docRef.update({ [`seat_${seat}`]: newArray });
-                        } else {
-                            docRef.update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() });
-                        }
-                    }
-                }).then(() => alert(`✅ 成功解除該名家長！`)).catch(e => alert("失敗: " + e.message));
-            } else {
-                // 向下相容
-                docRef.update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() }).then(() => alert(`✅ 成功解除！`)).catch(e => alert("失敗: " + e.message)); 
-            }
-        }
-        
+        function unbindParent(seat) { let sId = String(seat).padStart(2,'0'); if(!confirm(`確定解除 ${sId} 號家長的 LINE 綁定嗎？`)) return; db.collection("class_settings").doc("line_parents").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() }).then(() => alert(`✅ 成功解除！`)).catch(e => { if(e.code === 'not-found') db.collection("class_settings").doc("line_parents").set({}).then(() => alert(`✅ 成功解除！`)); else alert("失敗: " + e.message); }); }
         function unbindStudent(seat) { let sId = String(seat).padStart(2,'0'); if(!confirm(`確定解除 ${sId} 號學生的 LINE 綁定嗎？`)) return; db.collection("class_settings").doc("line_students").update({ [`seat_${seat}`]: firebase.firestore.FieldValue.delete() }).then(() => alert(`✅ 成功解除！`)).catch(e => { if(e.code === 'not-found') db.collection("class_settings").doc("line_students").set({}).then(() => alert(`✅ 成功解除！`)); else alert("失敗: " + e.message); }); }
         function executeBatchImport() { const lines = document.getElementById('batch-import-data').value.trim().split('\n').filter(l => l.trim() !== ''); if(lines.length === 0) return alert('請貼上資料！'); let updates = {}; let count = 0; for(let i=0; i<Math.min(lines.length, 24); i++) { let seat = i + 1; let id6 = lines[i].replace(/\D/g, '').trim(); if(id6) { updates[seat] = { id6: id6 }; count++; } } if(count === 0) return alert('無效資料格式。'); db.collection("class_settings").doc("bindings").set({ studentBindings: updates }, { merge: true }).then(() => { alert(`成功匯入 ${count} 筆！`); closeModal('modal-batch-import'); }).catch(e => alert("失敗: " + e)); }
         function updateBinding(seat) { const val = document.getElementById(`bind-id-${seat}`).value.trim(); if(!val) return alert('請輸入密碼！'); db.collection("class_settings").doc("bindings").set({ studentBindings: { [seat]: { id6: val } } }, { merge: true }).then(() => alert(`${String(seat).padStart(2,'0')} 號設定成功！`)).catch(e => alert("錯誤: " + e)); }
         function approveLeave(docId, seatNo, type) { if(!confirm(`確定核准 ${seatNo} 號的 ${type} 申請？`)) return; db.collection('leave_requests').doc(docId).update({ status: 'approved' }).catch(e => alert('核准失敗: ' + e.message)); }
-        
         function openManageLeavesModal() { document.getElementById('modal-manage-leaves').classList.remove('hidden'); renderManageLeavesList(); }
 
         function renderManageLeavesList() {
@@ -674,7 +930,9 @@
             if(globalApprovedLeaves.length === 0) { container.innerHTML = '<div class="text-brand-500 text-center py-8 font-bold">目前無已核准的紀錄。</div>'; return; }
             globalApprovedLeaves.sort((a,b) => new Date(b.timestamp) - new Date(a.timestamp));
             let html = '<div class="space-y-3">';
-            globalApprovedLeaves.forEach(data => { html += `<div class="bg-brand-50 p-4 rounded-xl border border-brand-200 flex justify-between items-center shadow-sm"><div><div class="font-bold text-brand-800 mb-1">${data.seatNo} 號 <span class="text-xs font-bold text-brand-500 border border-brand-300 bg-white px-2 py-0.5 rounded-md ml-2">${data.type}</span></div><div class="text-sm text-brand-600"><i class="far fa-calendar-alt mr-1"></i> ${data.date} (${data.duration})</div><div class="text-xs text-brand-400 mt-1 font-medium">申請理由: ${data.reason}</div></div><button onclick="deleteLeaveRecord('${data.id}')" class="bg-red-50 hover:bg-red-100 text-morandi-pink border border-red-200 px-3 py-2 rounded-lg transition font-bold text-sm shadow-sm whitespace-nowrap ml-4 shrink-0"><i class="fas fa-trash-alt mr-1"></i>刪除</button></div>`; });
+            globalApprovedLeaves.forEach(data => {
+                html += `<div class="bg-brand-50 p-4 rounded-xl border border-brand-200 flex justify-between items-center shadow-sm"><div><div class="font-bold text-brand-800 mb-1">${data.seatNo} 號 <span class="text-xs font-bold text-brand-500 border border-brand-300 bg-white px-2 py-0.5 rounded-md ml-2">${data.type}</span></div><div class="text-sm text-brand-600"><i class="far fa-calendar-alt mr-1"></i> ${data.date} (${data.duration})</div><div class="text-xs text-brand-400 mt-1 font-medium">申請理由: ${data.reason}</div></div><button onclick="deleteLeaveRecord('${data.id}')" class="bg-red-50 hover:bg-red-100 text-morandi-pink border border-red-200 px-3 py-2 rounded-lg transition font-bold text-sm shadow-sm whitespace-nowrap ml-4 shrink-0"><i class="fas fa-trash-alt mr-1"></i>刪除</button></div>`;
+            });
             html += '</div>'; container.innerHTML = html;
         }
 
@@ -684,26 +942,178 @@
         function sendMarquee() { const val = document.getElementById('marquee-input').value; if(!val) return alert('請輸入廣播內容！'); db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => { const msg = document.getElementById('marquee-success'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000); }).catch(err => alert('失敗: ' + err.message)); }
         function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
 
+        // ==========================================
+        // 🌟 核心修復：跨 5 天結算演算法 (每週報表)
+        // ==========================================
+        async function calculateWeeklyReport() {
+            const tbody = document.getElementById('weekly-table-body');
+            const honorContainer = document.getElementById('honor-list-container');
+            if(!tbody || !honorContainer) return;
+            
+            // 顯示載入動畫
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-brand-400 font-bold text-center"><i class="fas fa-spinner fa-spin mr-2"></i>正在從資料庫抓取本週 5 天的紀錄，請稍候...</td></tr>';
+            honorContainer.innerHTML = '<span class="text-brand-400 text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i>計算中...</span>';
+
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 是週日, 1 是週一...
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            
+            const weekDates = [];
+            for (let i = 0; i < 5; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const tzOffset = d.getTimezoneOffset() * 60000; 
+                const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, -1);
+                weekDates.push(localISOTime.split('T')[0]);
+            }
+
+            let aggregated = {};
+            for(let i=1; i<=24; i++) {
+                aggregated[i] = { lateCount: 0, missingCount: 0, cleanBad: 0, goalDays: 0, trackedDays: 0 };
+            }
+
+            try {
+                // 平行抓取週一到週五的五份點名表
+                const promises = weekDates.map(dateStr => db.collection('daily_records').doc(dateStr).get());
+                const docs = await Promise.all(promises);
+                
+                docs.forEach(doc => {
+                    if(doc.exists) {
+                        const sData = doc.data().studentsData;
+                        if(sData) {
+                            for(let seat=1; seat<=24; seat++) {
+                                let st = sData[seat];
+                                if(st) {
+                                    aggregated[seat].trackedDays++;
+                                    // 扣分條件 1：遲到或未到
+                                    if(st.attendance === '遲到' || st.attendance === '未到') aggregated[seat].lateCount++;
+                                    // 扣分條件 2：作業有缺交
+                                    if(st.missingHW && st.missingHW.length > 0) aggregated[seat].missingCount += st.missingHW.length;
+                                    // 扣分條件 3：常規或打掃待改進
+                                    if(st.clean === '待改進') aggregated[seat].cleanBad++;
+                                    if(st.discipline === '待改進') aggregated[seat].cleanBad++;
+                                    // 加分條件：目標達成
+                                    if(st.goal === '已經做到' || st.goal === '表現優良') aggregated[seat].goalDays++;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                let html = '';
+                let honorList = [];
+                for(let i=1; i<=24; i++) {
+                    let lateCount = aggregated[i].lateCount;
+                    let missingCount = aggregated[i].missingCount;
+                    let cleanBad = aggregated[i].cleanBad;
+                    let goalDays = aggregated[i].goalDays;
+                    let trackedDays = aggregated[i].trackedDays;
+                    let rating = '';
+                    let ratingColor = '';
+
+                    if(trackedDays === 0) {
+                        rating = '無資料';
+                        ratingColor = 'text-brand-300';
+                    } else if(lateCount > 0 || missingCount > 0 || cleanBad > 0) {
+                        // 只要有任何一項大於 0 就不是優良
+                        rating = missingCount >= 2 ? '需留意作業' : '一般';
+                        ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500';
+                    } else {
+                        // 完美的 0 缺失
+                        rating = '<i class="fas fa-medal mr-1"></i> 表現優良';
+                        ratingColor = 'text-brand-600 font-bold';
+                        honorList.push(String(i).padStart(2,'0'));
+                    }
+
+                    html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
+                        <td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td>
+                        <td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td>
+                        <td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td>
+                        <td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="常規待改進">${cleanBad}</td>
+                        <td class="p-3 sm:text-center ${goalDays >= trackedDays && trackedDays > 0 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/${trackedDays || 5}</td>
+                        <td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td>
+                    </tr>`;
+                }
+
+                tbody.innerHTML = html;
+                
+                // 渲染榮譽榜預覽
+                if(honorList.length > 0) {
+                    honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join('');
+                } else {
+                    honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
+                }
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-morandi-pink font-bold text-center">載入失敗：${err.message}</td></tr>`;
+                honorContainer.innerHTML = '<span class="text-morandi-pink text-sm">讀取發生錯誤</span>';
+            }
+        }
+
+        // ==========================================
+        // 🌟 呼叫 GAS 推播 API 
+        // ==========================================
+        function triggerWeeklyReport(target) {
+            if(!confirm(`確定要結算本週榮譽榜，並發送 LINE 訊息給全班【${target === 'parent' ? '家長' : '學生'}】嗎？`)) return;
+            
+            const btnId = target === 'parent' ? 'btn-send-weekly-parent' : 'btn-send-weekly-student';
+            const btn = document.getElementById(btnId);
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 發送中...';
+            btn.disabled = true;
+
+            // ⚠️ 請在這裡分別貼上您「家長端」與「學生端」的 GAS 網址
+            const parentGasUrl = "https://script.google.com/macros/s/AKfycbyJc_3BVpgIg0fhHYXDmdI-aIfzDKdLVZ19D35w4Kr6mCvaiPDzSPuLc4NcN-L6plR3KA/exec"; 
+            const studentGasUrl = "https://script.google.com/macros/s/AKfycbzNEfq2yD9Z88GFQGn7bv7-J2-FviQZ2You3UtYYRyVzNjl4Il3wscM9bBkNDqVL7Fmnw/exec"; 
+            
+            const gasUrl = target === 'parent' ? parentGasUrl : studentGasUrl;
+            
+            fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: "sendWeeklyReport" })
+            })
+            .then(response => response.text())
+            .then(result => {
+                alert(result);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            })
+            .catch(error => {
+                alert("連線發生錯誤：" + error);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            });
+        }
+
         function handleSmartExcelUpload(e) { 
             const file = e.target.files[0]; if (!file) return; 
             const reader = new FileReader(); 
             reader.onload = function(evt) { 
                 try { 
-                    const data = new Uint8Array(evt.target.result); const workbook = XLSX.read(data, {type: 'array'}); const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); 
+                    const data = new Uint8Array(evt.target.result); 
+                    const workbook = XLSX.read(data, {type: 'array'}); 
+                    const json = XLSX.utils.sheet_to_json(workbook.Sheets[workbook.SheetNames[0]], {header: 1}); 
                     if(json.length < 2) return alert('Excel 內資料不足！');
-                    const headers = json[0]; let colMap = { seat: -1, chi: -1, eng: -1, math: -1, sci: -1, soc: -1, hist: -1, geo: -1, civics: -1, avg: -1, pr: -1 };
-                    headers.forEach((h, idx) => { if(!h) return; let text = String(h).trim(); if(text.includes('座號')) colMap.seat = idx; else if(text.includes('國文')) colMap.chi = idx; else if(text.includes('英文')) colMap.eng = idx; else if(text.includes('數學')) colMap.math = idx; else if(text.includes('自然') || text.includes('理化')) colMap.sci = idx; else if(text.includes('社會')) colMap.soc = idx; else if(text.includes('歷史')) colMap.hist = idx; else if(text.includes('地理')) colMap.geo = idx; else if(text.includes('公民')) colMap.civics = idx; else if(text.includes('平均')) colMap.avg = idx; else if(text.includes('PR') || text.includes('校排')) colMap.pr = idx; });
+                    const headers = json[0];
+                    let colMap = { seat: -1, chi: -1, eng: -1, math: -1, sci: -1, soc: -1, hist: -1, geo: -1, civics: -1, avg: -1, pr: -1 };
+                    headers.forEach((h, idx) => {
+                        if(!h) return; let text = String(h).trim();
+                        if(text.includes('座號')) colMap.seat = idx; else if(text.includes('國文')) colMap.chi = idx; else if(text.includes('英文')) colMap.eng = idx; else if(text.includes('數學')) colMap.math = idx; else if(text.includes('自然') || text.includes('理化')) colMap.sci = idx; else if(text.includes('社會')) colMap.soc = idx; else if(text.includes('歷史')) colMap.hist = idx; else if(text.includes('地理')) colMap.geo = idx; else if(text.includes('公民')) colMap.civics = idx; else if(text.includes('平均')) colMap.avg = idx; else if(text.includes('PR') || text.includes('校排')) colMap.pr = idx;
+                    });
                     if(colMap.seat === -1) colMap = { seat: 0, chi: 1, eng: 2, math: 3, sci: 4, soc: 5, avg: 6, pr: 7, hist: -1, geo: -1, civics: -1 };
                     let successCount = 0; 
                     for(let r = 1; r < json.length; r++) { 
                         const row = json[r]; if(!row || row.length === 0) continue; 
                         let seatNum = parseInt(row[colMap.seat]); if(isNaN(seatNum) || seatNum < 1 || seatNum > 24) continue; 
-                        ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { if(colMap[sub] !== -1 && row[colMap[sub]] !== undefined) { const el = document.getElementById(`score-${sub}-${seatNum}`); if(el) el.value = row[colMap[sub]]; } });
+                        ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => {
+                            if(colMap[sub] !== -1 && row[colMap[sub]] !== undefined) { const el = document.getElementById(`score-${sub}-${seatNum}`); if(el) el.value = row[colMap[sub]]; }
+                        });
                         successCount++; 
                     } 
                     if(successCount > 0) alert(`✅ 成功智慧匯入 ${successCount} 筆成績資料！`); else alert('⚠️ 匯入失敗，請檢查資料格式。'); 
-                } catch(error) { alert('錯誤: ' + error); } 
-                finally { document.getElementById('excel-file-input').value = ''; } 
+                } catch(error) { alert('錯誤: ' + error); } finally { document.getElementById('excel-file-input').value = ''; } 
             }; 
             reader.readAsArrayBuffer(file); 
         }
@@ -711,24 +1121,35 @@
         function renderExamHistorySelect() {
             const select = document.getElementById('history-exam-select'); const currentVal = select.value;
             let html = '<option value="">➕ --- 建立全新測驗 --- (預設)</option>';
-            if (allExamsData && allExamsData.exam_list) { let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp); sortedExams.forEach(exam => { html += `<option value="${exam.id}">[${exam.grade}${exam.semester}] ${exam.name}</option>`; }); }
+            if (allExamsData && allExamsData.exam_list) {
+                let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
+                sortedExams.forEach(exam => { html += `<option value="${exam.id}">[${exam.grade}${exam.semester}] ${exam.name}</option>`; });
+            }
             select.innerHTML = html; if([...select.options].some(o => o.value === currentVal)) select.value = currentVal;
         }
 
         function loadExamData() {
-            const selectVal = document.getElementById('history-exam-select').value; const btnDelete = document.getElementById('btn-delete-exam'); const btnSave = document.getElementById('btn-save-scores');
+            const selectVal = document.getElementById('history-exam-select').value;
+            const btnDelete = document.getElementById('btn-delete-exam');
+            const btnSave = document.getElementById('btn-save-scores');
             if (!selectVal) {
                 currentEditingExamId = null; btnDelete.classList.add('hidden'); btnSave.innerHTML = '<i class="fas fa-cloud-upload-alt mr-2"></i> 儲存發布';
                 for(let i=1; i<=24; i++) { ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { const el = document.getElementById(`score-${sub}-${i}`); if(el) el.value = ''; }); }
                 document.getElementById('new-exam-custom').value = ''; alert("表格已清空，可開始輸入新測驗成績。"); return;
             }
-            currentEditingExamId = selectVal; const examInfo = allExamsData.exam_list.find(e => e.id === selectVal); const examRecords = allExamsData.records[selectVal] ? allExamsData.records[selectVal].students : {};
+            currentEditingExamId = selectVal;
+            const examInfo = allExamsData.exam_list.find(e => e.id === selectVal);
+            const examRecords = allExamsData.records[selectVal] ? allExamsData.records[selectVal].students : {};
             if(examInfo) {
                 document.getElementById('new-exam-grade').value = examInfo.grade; document.getElementById('new-exam-semester').value = examInfo.semester; document.getElementById('new-exam-type').value = examInfo.category;
-                if(examInfo.category === '其他') { document.getElementById('new-exam-custom').classList.remove('hidden'); document.getElementById('new-exam-custom').value = examInfo.name; } else { document.getElementById('new-exam-custom').classList.add('hidden'); }
+                if(examInfo.category === '其他') { document.getElementById('new-exam-custom').classList.remove('hidden'); document.getElementById('new-exam-custom').value = examInfo.name; } else document.getElementById('new-exam-custom').classList.add('hidden');
             }
-            for(let i=1; i<=24; i++) { let stuScore = examRecords[i] || {}; ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { const el = document.getElementById(`score-${sub}-${i}`); if(el) el.value = stuScore[sub] !== undefined ? stuScore[sub] : ''; }); }
-            btnDelete.classList.remove('hidden'); btnSave.innerHTML = '<i class="fas fa-save mr-2"></i> 覆蓋更新'; alert(`已載入「${examInfo.name}」的成績資料！\n您可以查看、修改，或重新匯入 Excel 後點擊「覆蓋更新」。`);
+            for(let i=1; i<=24; i++) {
+                let stuScore = examRecords[i] || {};
+                ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { const el = document.getElementById(`score-${sub}-${i}`); if(el) el.value = stuScore[sub] !== undefined ? stuScore[sub] : ''; });
+            }
+            btnDelete.classList.remove('hidden'); btnSave.innerHTML = '<i class="fas fa-save mr-2"></i> 覆蓋更新';
+            alert(`已載入「${examInfo.name}」的成績資料！\n您可以查看、修改，或重新匯入 Excel 後點擊「覆蓋更新」。`);
         }
 
         function deleteExamData() {
@@ -746,9 +1167,9 @@
         function saveScoresToCloud() { 
             const grade = document.getElementById('new-exam-grade').value; const semester = document.getElementById('new-exam-semester').value; const type = document.getElementById('new-exam-type').value;
             let name = type === '其他' ? document.getElementById('new-exam-custom').value.trim() : type; if(type === '其他' && !name) return alert('請輸入自訂測驗名稱！');
-            const examId = currentEditingExamId || `exam_${Date.now()}`; const examInfo = { id: examId, grade: grade, semester: semester, category: type, name: name, timestamp: Date.now() };
+            const examId = currentEditingExamId || `exam_${Date.now()}`;
+            const examInfo = { id: examId, grade: grade, semester: semester, category: type, name: name, timestamp: Date.now() };
             let scoreData = {}; let sums = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 }; let counts = { chi: 0, eng: 0, math: 0, sci: 0, soc: 0, hist: 0, geo: 0, civics: 0 };
-
             for(let i=1; i<=24; i++) { 
                 let studentScore = {}; let hasData = false;
                 ['chi','eng','math','sci','soc','hist','geo','civics','avg','pr'].forEach(sub => { 
@@ -758,13 +1179,13 @@
                 if(hasData) scoreData[i] = studentScore;
             }
             if (Object.keys(scoreData).length === 0) return alert('表格內沒有任何成績資料！');
-
-            let classAverage = {}; ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => { classAverage[sub] = (counts[sub] > 0) ? Math.round((sums[sub] / counts[sub]) * 10) / 10 : 0; });
+            let classAverage = {};
+            ['chi','eng','math','sci','soc','hist','geo','civics'].forEach(sub => { classAverage[sub] = (counts[sub] > 0) ? Math.round((sums[sub] / counts[sub]) * 10) / 10 : 0; });
             const docRef = db.collection("class_settings").doc("scores");
             db.runTransaction(transaction => {
                 return transaction.get(docRef).then(doc => {
                     let data = doc.exists ? doc.data() : {}; let examList = data.exam_list || [];
-                    if (currentEditingExamId) { const index = examList.findIndex(e => e.id === currentEditingExamId); if(index > -1) { examInfo.timestamp = examList[index].timestamp; examList[index] = examInfo; } else { examList.push(examInfo); } } else { examList.push(examInfo); }
+                    if (currentEditingExamId) { const index = examList.findIndex(e => e.id === currentEditingExamId); if(index > -1) { examInfo.timestamp = examList[index].timestamp; examList[index] = examInfo; } else examList.push(examInfo); } else examList.push(examInfo);
                     let records = data.records || {}; records[examId] = { class_average: classAverage, students: scoreData, updatedAt: new Date().toISOString() };
                     transaction.set(docRef, { exam_list: examList, records: records }, { merge: true });
                 });
@@ -775,77 +1196,202 @@
         }
 
         function renderDashboardHW() {
-            if(!globalStudentsData) return; let missingTotalItemsCount = 0; let hwMissingMap = {}; let studentMissingCounts = {}; 
+            if(!globalStudentsData) return;
+            let missingTotalItemsCount = 0; let hwMissingMap = {}; let studentMissingCounts = {}; 
             for(let i=1; i<=24; i++) { let missingArr = globalStudentsData[i].missingHW || []; if(missingArr.length > 0) { studentMissingCounts[i] = missingArr.length; missingTotalItemsCount += missingArr.length; missingArr.forEach(hwId => { if(!hwMissingMap[hwId]) hwMissingMap[hwId] = []; hwMissingMap[hwId].push(String(i).padStart(2, '0')); }); } }
             let topOffenders = []; let maxMissing = 0;
-            for(let seat in studentMissingCounts) { if(studentMissingCounts[seat] > maxMissing) { maxMissing = studentMissingCounts[seat]; topOffenders = [String(seat).padStart(2,'0')]; } else if (studentMissingCounts[seat] === maxMissing) { topOffenders.push(String(seat).padStart(2,'0')); } }
+            for(let seat in studentMissingCounts) { if(studentMissingCounts[seat] > maxMissing) { maxMissing = studentMissingCounts[seat]; topOffenders = [String(seat).padStart(2,'0')]; } else if (studentMissingCounts[seat] === maxMissing) topOffenders.push(String(seat).padStart(2,'0')); }
             document.getElementById('dash-missing-hw').innerText = missingTotalItemsCount; let detailHtml = '';
-            if(missingTotalItemsCount === 0) { detailHtml = '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle text-brand-500"></i> 全班作業已繳齊</div>'; } else { for(let hwId in hwMissingMap) { let hwName = globalHWMap[hwId] || '臨時作業'; detailHtml += `<div><span class="text-brand-800 font-bold">${hwName}：</span><span class="text-morandi-pink font-bold ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`; } if(maxMissing >= 2) { detailHtml += `<div class="mt-3 pt-3 border-t border-brand-200 text-morandi-pink font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> 缺交最多：${topOffenders.join(', ')} 號 (${maxMissing} 項)</div>`; } }
+            if(missingTotalItemsCount === 0) detailHtml = '<div class="text-brand-600 font-bold"><i class="fas fa-check-circle text-brand-500"></i> 全班作業已繳齊</div>'; 
+            else { 
+                for(let hwId in hwMissingMap) { let hwName = globalHWMap[hwId] || '臨時作業'; detailHtml += `<div><span class="text-brand-800 font-bold">${hwName}：</span><span class="text-morandi-pink font-bold ml-1">${hwMissingMap[hwId].join(', ')}</span></div>`; } 
+                if(maxMissing >= 2) detailHtml += `<div class="mt-3 pt-3 border-t border-brand-200 text-morandi-pink font-bold"><i class="fas fa-exclamation-triangle mr-1"></i> 缺交最多：${topOffenders.join(', ')} 號 (${maxMissing} 項)</div>`;
+            }
             document.getElementById('dash-missing-list').innerHTML = detailHtml;
-        }
-
-        function renderWeeklyReport() {
-            if(!globalStudentsData) return; const tbody = document.getElementById('weekly-table-body'); let html = ''; let honorList = [];
-            for(let i=1; i<=24; i++) { let st = globalStudentsData[i]; let lateCount = (st.attendance === '遲到' || st.attendance === '未到') ? 1 : 0; let missingCount = st.missingHW ? st.missingHW.length : 0; let cleanBad = st.clean === '待改進' ? 1 : 0; let goalDays = (st.goal === '已經做到' || st.goal === '表現優良') ? 5 : 4; let rating = ''; let ratingColor = ''; if(lateCount > 0 || missingCount > 0 || cleanBad > 0 || goalDays < 5) { rating = missingCount >= 2 ? '需留意作業' : '一般'; ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500'; } else { rating = '<i class="fas fa-medal mr-1"></i> 表現優良'; ratingColor = 'text-brand-600 font-bold'; honorList.push(String(i).padStart(2,'0')); } html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100"><td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td><td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td><td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td><td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="打掃待改進">${cleanBad}</td><td class="p-3 sm:text-center ${goalDays === 5 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/5</td><td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td></tr>`; }
-            tbody.innerHTML = html; const honorContainer = document.getElementById('honor-list-container');
-            if(honorList.length > 0) honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join(''); else honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
         }
 
         function switchAnalysisTab(tabId) {
             currentAnalysisTab = tabId;
             document.querySelectorAll('.analysis-btn').forEach(btn => { btn.className = "analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition text-brand-600 hover:bg-white/50 flex-shrink-0"; });
             document.getElementById(`analysis-tab-${tabId}`).className = "analysis-btn px-4 py-2 rounded-lg font-bold text-sm transition bg-white text-brand-800 shadow-sm flex-shrink-0";
-            document.querySelectorAll('.analysis-content').forEach(el => el.classList.add('hidden')); document.getElementById(`view-${tabId}`).classList.remove('hidden'); renderCurrentAnalysisTab();
+            document.querySelectorAll('.analysis-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`view-${tabId}`).classList.remove('hidden');
+            renderCurrentAnalysisTab();
         }
 
-        function initAnalysisStudentSelector() { const sel = document.getElementById('analysis-student-selector'); let html = ''; for(let i=1; i<=24; i++) { html += `<option value="${i}">${String(i).padStart(2,'0')} 號</option>`; } sel.innerHTML = html; }
-        function initAnalysisSubjectButtons() { const container = document.getElementById('subject-buttons'); let html = ''; analysisMainSubjects.forEach(sub => { html += `<button onclick="setAnalysisSubject('${sub}')" id="btn-ana-sub-${sub}" class="ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition ${sub === currentAnalysisSubject ? 'bg-brand-500 text-white border-brand-500 shadow-sm' : 'bg-white text-brand-600 border-brand-200 hover:bg-brand-50'}">${subjectMap[sub]}</button>`; }); container.innerHTML = html; }
-        function setAnalysisSubject(subKey) { currentAnalysisSubject = subKey; document.querySelectorAll('.ana-sub-btn').forEach(btn => { btn.className = "ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-white text-brand-600 border-brand-200 hover:bg-brand-50"; }); const activeBtn = document.getElementById(`btn-ana-sub-${subKey}`); if(activeBtn) activeBtn.className = "ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-brand-500 text-white border-brand-500 shadow-sm"; if(currentAnalysisTab === 'subject') renderAnalysisSubject(); }
-        function updateAnalysisExamSelector() { const sel = document.getElementById('analysis-exam-selector'); if(!allExamsData || !allExamsData.exam_list || allExamsData.exam_list.length === 0) { sel.innerHTML = '<option value="">尚無成績資料</option>'; return; } let html = ''; let exams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp); exams.forEach(ex => { html += `<option value="${ex.id}" ${ex.id === analysisExamId ? 'selected' : ''}>[${ex.grade}${ex.semester}] ${ex.name}</option>`; }); sel.innerHTML = html; if(!analysisExamId && exams.length > 0) { analysisExamId = exams[0].id; sel.value = analysisExamId; } }
+        function initAnalysisStudentSelector() {
+            const sel = document.getElementById('analysis-student-selector'); let html = '';
+            for(let i=1; i<=24; i++) { html += `<option value="${i}">${String(i).padStart(2,'0')} 號</option>`; } sel.innerHTML = html;
+        }
+
+        function initAnalysisSubjectButtons() {
+            const container = document.getElementById('subject-buttons'); let html = '';
+            analysisMainSubjects.forEach(sub => { html += `<button onclick="setAnalysisSubject('${sub}')" id="btn-ana-sub-${sub}" class="ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition ${sub === currentAnalysisSubject ? 'bg-brand-500 text-white border-brand-500 shadow-sm' : 'bg-white text-brand-600 border-brand-200 hover:bg-brand-50'}">${subjectMap[sub]}</button>`; });
+            container.innerHTML = html;
+        }
+
+        function setAnalysisSubject(subKey) {
+            currentAnalysisSubject = subKey;
+            document.querySelectorAll('.ana-sub-btn').forEach(btn => { btn.className = "ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-white text-brand-600 border-brand-200 hover:bg-brand-50"; });
+            const activeBtn = document.getElementById(`btn-ana-sub-${subKey}`);
+            if(activeBtn) activeBtn.className = "ana-sub-btn px-4 py-1.5 rounded-full border text-sm font-bold whitespace-nowrap transition bg-brand-500 text-white border-brand-500 shadow-sm";
+            if(currentAnalysisTab === 'subject') renderAnalysisSubject();
+        }
+
+        function updateAnalysisExamSelector() {
+            const sel = document.getElementById('analysis-exam-selector');
+            if(!allExamsData || !allExamsData.exam_list || allExamsData.exam_list.length === 0) { sel.innerHTML = '<option value="">尚無成績資料</option>'; return; }
+            let html = ''; let exams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
+            exams.forEach(ex => { html += `<option value="${ex.id}" ${ex.id === analysisExamId ? 'selected' : ''}>[${ex.grade}${ex.semester}] ${ex.name}</option>`; });
+            sel.innerHTML = html;
+            if(!analysisExamId && exams.length > 0) { analysisExamId = exams[0].id; sel.value = analysisExamId; }
+        }
+
         function handleAnalysisExamChange(val) { analysisExamId = val; renderCurrentAnalysisTab(); }
         function handleAnalysisStudentChange() { currentAnalysisSeat = document.getElementById('analysis-student-selector').value; if(currentAnalysisTab === 'student') renderAnalysisStudent(); }
-        function renderCurrentAnalysisTab() { if(!analysisExamId || !allExamsData || !allExamsData.records[analysisExamId]) return; if(currentAnalysisTab === 'overview') renderAnalysisOverview(); else if(currentAnalysisTab === 'subject') renderAnalysisSubject(); else if(currentAnalysisTab === 'student') renderAnalysisStudent(); }
-        
-        function getMergedSocietyScore(scoresObj) { if (!scoresObj) return null; if (scoresObj.soc !== undefined && scoresObj.soc !== "") return Number(scoresObj.soc); let sum = 0, count = 0; if (scoresObj.hist !== undefined && scoresObj.hist !== "") { sum += Number(scoresObj.hist); count++; } if (scoresObj.geo !== undefined && scoresObj.geo !== "") { sum += Number(scoresObj.geo); count++; } if (scoresObj.civics !== undefined && scoresObj.civics !== "") { sum += Number(scoresObj.civics); count++; } if (count > 0) return Math.round((sum / count) * 10) / 10; return null; }
+
+        function renderCurrentAnalysisTab() {
+            if(!analysisExamId || !allExamsData || !allExamsData.records[analysisExamId]) return;
+            if(currentAnalysisTab === 'overview') renderAnalysisOverview();
+            else if(currentAnalysisTab === 'subject') renderAnalysisSubject();
+            else if(currentAnalysisTab === 'student') renderAnalysisStudent();
+        }
 
         function renderAnalysisOverview() {
             const examData = allExamsData.records[analysisExamId]; const avg = examData.class_average || {}; const students = examData.students || {};
-            let validStudents = []; Object.keys(students).forEach(seat => { let a = Number(students[seat].avg); if(!isNaN(a)) validStudents.push({seat: seat, avg: a}); }); validStudents.sort((a,b) => b.avg - a.avg);
-            let totalAvg = validStudents.reduce((sum, s) => sum + s.avg, 0) / validStudents.length || 0; let maxAvg = validStudents.length > 0 ? validStudents[0].avg : '--'; let passCount = validStudents.filter(s => s.avg >= 60).length; let passRate = validStudents.length > 0 ? Math.round((passCount / validStudents.length) * 100) : 0; let failCount = validStudents.length - passCount;
+            let validStudents = [];
+            Object.keys(students).forEach(seat => { let a = Number(students[seat].avg); if(!isNaN(a)) validStudents.push({seat: seat, avg: a}); });
+            validStudents.sort((a,b) => b.avg - a.avg);
+            let totalAvg = validStudents.reduce((sum, s) => sum + s.avg, 0) / validStudents.length || 0;
+            let maxAvg = validStudents.length > 0 ? validStudents[0].avg : '--';
+            let passCount = validStudents.filter(s => s.avg >= 60).length;
+            let passRate = validStudents.length > 0 ? Math.round((passCount / validStudents.length) * 100) : 0;
+            let failCount = validStudents.length - passCount;
             document.getElementById('overview-avg').innerText = totalAvg.toFixed(1); document.getElementById('overview-max').innerText = maxAvg; document.getElementById('overview-pass-rate').innerText = passRate + '%'; document.getElementById('overview-fail-count').innerText = failCount + '人';
-            let topHtml = ''; validStudents.slice(0, 5).forEach((s, idx) => { topHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><span class="w-6 inline-block text-brand-400 font-bold">${idx+1}.</span> ${String(s.seat).padStart(2,'0')}號</span><span class="font-bold text-brand-900">${s.avg}</span></li>`; }); document.getElementById('overview-top-list').innerHTML = topHtml || '<li class="text-brand-400 py-2 text-sm">無資料</li>';
-            let bottomHtml = ''; validStudents.filter(s => s.avg < 60).forEach(s => { bottomHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><i class="fas fa-exclamation-circle text-morandi-pink mr-2"></i>${String(s.seat).padStart(2,'0')}號</span><span class="font-bold text-morandi-pink">${s.avg}</span></li>`; }); document.getElementById('overview-bottom-list').innerHTML = bottomHtml || '<li class="text-brand-400 py-2 text-sm">無不及格學生，表現優異！</li>';
+
+            let topHtml = '';
+            validStudents.slice(0, 5).forEach((s, idx) => { topHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><span class="w-6 inline-block text-brand-400 font-bold">${idx+1}.</span> ${String(s.seat).padStart(2,'0')}號</span><span class="font-bold text-brand-900">${s.avg}</span></li>`; });
+            document.getElementById('overview-top-list').innerHTML = topHtml || '<li class="text-brand-400 py-2 text-sm">無資料</li>';
+
+            let bottomHtml = '';
+            validStudents.filter(s => s.avg < 60).forEach(s => { bottomHtml += `<li class="flex justify-between items-center py-2 border-b border-brand-50 last:border-0"><span class="text-brand-700 font-medium"><i class="fas fa-exclamation-circle text-morandi-pink mr-2"></i>${String(s.seat).padStart(2,'0')}號</span><span class="font-bold text-morandi-pink">${s.avg}</span></li>`; });
+            document.getElementById('overview-bottom-list').innerHTML = bottomHtml || '<li class="text-brand-400 py-2 text-sm">無不及格學生，表現優異！</li>';
+
             const radarData = [avg.chi || 0, avg.eng || 0, avg.math || 0, avg.sci || 0, getMergedSocietyScore(avg) || 0];
-            if(charts.classRadar) charts.classRadar.destroy(); charts.classRadar = new Chart(document.getElementById('classRadarChart').getContext('2d'), { type: 'radar', data: { labels: ['國文', '英文', '數學', '自然', '社會'], datasets: [{ label: '班級平均', data: radarData, backgroundColor: 'rgba(176, 142, 111, 0.2)', borderColor: '#b08e6f', pointBackgroundColor: '#b08e6f', borderWidth: 2 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display:false } } }, plugins: { legend: { display: false } } } });
-            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 }; validStudents.forEach(st => { const a = st.avg; if(a>=90) dist['90+']++; else if(a>=80) dist['80-89']++; else if(a>=70) dist['70-79']++; else if(a>=60) dist['60-69']++; else dist['不及格']++; });
-            if(charts.avgDist) charts.avgDist.destroy(); charts.avgDist = new Chart(document.getElementById('avgDistributionChart').getContext('2d'), { type: 'bar', data: { labels: Object.keys(dist), datasets: [{ label: '人數', data: Object.values(dist), backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'], borderRadius: 6 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } } });
+            if(charts.classRadar) charts.classRadar.destroy();
+            charts.classRadar = new Chart(document.getElementById('classRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: { labels: ['國文', '英文', '數學', '自然', '社會'], datasets: [{ label: '班級平均', data: radarData, backgroundColor: 'rgba(176, 142, 111, 0.2)', borderColor: '#b08e6f', pointBackgroundColor: '#b08e6f', borderWidth: 2 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display:false } } }, plugins: { legend: { display: false } } }
+            });
+
+            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 };
+            validStudents.forEach(st => { const a = st.avg; if(a>=90) dist['90+']++; else if(a>=80) dist['80-89']++; else if(a>=70) dist['70-79']++; else if(a>=60) dist['60-69']++; else dist['不及格']++; });
+            if(charts.avgDist) charts.avgDist.destroy();
+            charts.avgDist = new Chart(document.getElementById('avgDistributionChart').getContext('2d'), {
+                type: 'bar',
+                data: { labels: Object.keys(dist), datasets: [{ label: '人數', data: Object.values(dist), backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'], borderRadius: 6 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }, plugins: { legend: { display: false } } }
+            });
         }
 
         function renderAnalysisSubject() {
-            const examData = allExamsData.records[analysisExamId]; const students = examData.students || {}; document.getElementById('subject-dist-title').innerText = `${subjectMap[currentAnalysisSubject]} 單科分數分佈 (依座號)`;
-            let subjScores = []; for(let i=1; i<=24; i++) { const st = students[i]; if(st) { let score = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(st) : st[currentAnalysisSubject]; if(score !== undefined && score !== null && score !== "") subjScores.push({ seat: i, score: Number(score) }); } }
-            let sortedScores = [...subjScores].sort((a,b) => b.score - a.score); let s_total = sortedScores.reduce((sum, s) => sum + s.score, 0); document.getElementById('subj-avg').innerText = sortedScores.length > 0 ? (s_total / sortedScores.length).toFixed(1) : '--'; document.getElementById('subj-max').innerText = sortedScores.length > 0 ? sortedScores[0].score : '--'; let s_passCount = sortedScores.filter(s => s.score >= 60).length; document.getElementById('subj-fail-count').innerText = (sortedScores.length - s_passCount) + '人'; document.getElementById('subj-pass-rate').innerText = (sortedScores.length > 0 ? Math.round((s_passCount / sortedScores.length) * 100) : 0) + '%';
-            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 }; sortedScores.forEach(s => { if(s.score>=90) dist['90+']++; else if(s.score>=80) dist['80-89']++; else if(s.score>=70) dist['70-79']++; else if(s.score>=60) dist['60-69']++; else dist['不及格']++; });
-            if(charts.subjPie) charts.subjPie.destroy(); charts.subjPie = new Chart(document.getElementById('subjectPieChart').getContext('2d'), { type: 'doughnut', data: { labels: Object.keys(dist), datasets: [{ data: Object.values(dist), backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'], borderWidth: 0 }] }, options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right' } } } });
-            let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp); let currentIdx = sortedExams.findIndex(ex => ex.id === analysisExamId); let prevExamId = (currentIdx !== -1 && currentIdx + 1 < sortedExams.length) ? sortedExams[currentIdx + 1].id : null; let diffList = [];
-            if (prevExamId && allExamsData.records[prevExamId]) { let prevStudents = allExamsData.records[prevExamId].students || {}; subjScores.forEach(s => { let p_st = prevStudents[s.seat]; if (p_st) { let p_score = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(p_st) : p_st[currentAnalysisSubject]; if(p_score !== undefined && p_score !== null && p_score !== "") diffList.push({ seat: s.seat, diff: s.score - Number(p_score) }); } }); }
-            diffList.sort((a,b) => b.diff - a.diff); let impHtml = '', regHtml = '';
-            if (diffList.length > 0) { diffList.filter(d => d.diff > 0).slice(0, 3).forEach(d => { impHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50"><span class="text-sm font-bold text-brand-700">${String(d.seat).padStart(2,'0')}號</span><span class="text-sm font-bold text-emerald-600">+${d.diff}</span></div>`; }); diffList.filter(d => d.diff < 0).slice(-3).reverse().forEach(d => { regHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50"><span class="text-sm font-bold text-brand-700">${String(d.seat).padStart(2,'0')}號</span><span class="text-sm font-bold text-morandi-pink">${d.diff}</span></div>`; }); }
-            document.getElementById('subj-improved-list').innerHTML = impHtml || '<div class="text-brand-400 text-sm py-2">無比對資料</div>'; document.getElementById('subj-regressed-list').innerHTML = regHtml || '<div class="text-brand-400 text-sm py-2">無比對資料</div>';
-            let labels = [], dataPoints = []; subjScores.sort((a,b) => a.seat - b.seat).forEach(s => { labels.push(s.seat); dataPoints.push(s.score); });
-            if(charts.subjBar) charts.subjBar.destroy(); charts.subjBar = new Chart(document.getElementById('subjectBarChart').getContext('2d'), { type: 'bar', data: { labels: labels, datasets: [{ label: '分數', data: dataPoints, backgroundColor: dataPoints.map(v => v < 60 ? '#d98b8b' : '#b08e6f'), borderRadius: 4 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } } });
-            let trendExams = [...sortedExams].reverse(); let trendLabels = [], trendData = []; trendExams.forEach(ex => { const rec = allExamsData.records[ex.id]; if(rec && rec.class_average) { let s = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(rec.class_average) : rec.class_average[currentAnalysisSubject]; if(s !== undefined && s !== null) { trendLabels.push(ex.name.substring(0,8)); trendData.push(Number(s)); } } });
-            if(charts.subjTrend) charts.subjTrend.destroy(); charts.subjTrend = new Chart(document.getElementById('subjectTrendChart').getContext('2d'), { type: 'line', data: { labels: trendLabels, datasets: [{ label: '平均', data: trendData, borderColor: '#805d46', backgroundColor: 'rgba(128, 93, 70, 0.1)', borderWidth: 3, fill: true, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } } });
+            const examData = allExamsData.records[analysisExamId]; const students = examData.students || {};
+            document.getElementById('subject-dist-title').innerText = `${subjectMap[currentAnalysisSubject]} 單科分數分佈 (依座號)`;
+            let subjScores = [];
+            for(let i=1; i<=24; i++) {
+                const st = students[i];
+                if(st) { let score = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(st) : st[currentAnalysisSubject]; if(score !== undefined && score !== null && score !== "") subjScores.push({ seat: i, score: Number(score) }); }
+            }
+            let sortedScores = [...subjScores].sort((a,b) => b.score - a.score);
+            let s_total = sortedScores.reduce((sum, s) => sum + s.score, 0);
+            document.getElementById('subj-avg').innerText = sortedScores.length > 0 ? (s_total / sortedScores.length).toFixed(1) : '--';
+            document.getElementById('subj-max').innerText = sortedScores.length > 0 ? sortedScores[0].score : '--';
+            let s_passCount = sortedScores.filter(s => s.score >= 60).length;
+            document.getElementById('subj-fail-count').innerText = (sortedScores.length - s_passCount) + '人';
+            document.getElementById('subj-pass-rate').innerText = (sortedScores.length > 0 ? Math.round((s_passCount / sortedScores.length) * 100) : 0) + '%';
+
+            let dist = { '90+':0, '80-89':0, '70-79':0, '60-69':0, '不及格':0 };
+            sortedScores.forEach(s => { if(s.score>=90) dist['90+']++; else if(s.score>=80) dist['80-89']++; else if(s.score>=70) dist['70-79']++; else if(s.score>=60) dist['60-69']++; else dist['不及格']++; });
+            if(charts.subjPie) charts.subjPie.destroy();
+            charts.subjPie = new Chart(document.getElementById('subjectPieChart').getContext('2d'), {
+                type: 'doughnut', data: { labels: Object.keys(dist), datasets: [{ data: Object.values(dist), backgroundColor: ['#c2a88d', '#d8c5b0', '#e8ddce', '#f4efe6', '#d98b8b'], borderWidth: 0 }] },
+                options: { responsive: true, maintainAspectRatio: false, cutout: '60%', plugins: { legend: { position: 'right' } } }
+            });
+
+            let sortedExams = [...allExamsData.exam_list].sort((a,b) => b.timestamp - a.timestamp);
+            let currentIdx = sortedExams.findIndex(ex => ex.id === analysisExamId);
+            let prevExamId = (currentIdx !== -1 && currentIdx + 1 < sortedExams.length) ? sortedExams[currentIdx + 1].id : null;
+            let diffList = [];
+            if (prevExamId && allExamsData.records[prevExamId]) {
+                let prevStudents = allExamsData.records[prevExamId].students || {};
+                subjScores.forEach(s => {
+                    let p_st = prevStudents[s.seat];
+                    if (p_st) { let p_score = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(p_st) : p_st[currentAnalysisSubject]; if(p_score !== undefined && p_score !== null && p_score !== "") diffList.push({ seat: s.seat, diff: s.score - Number(p_score) }); }
+                });
+            }
+            diffList.sort((a,b) => b.diff - a.diff);
+            let impHtml = '', regHtml = '';
+            if (diffList.length > 0) {
+                diffList.filter(d => d.diff > 0).slice(0, 3).forEach(d => { impHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50"><span class="text-sm font-bold text-brand-700">${String(d.seat).padStart(2,'0')}號</span><span class="text-sm font-bold text-emerald-600">+${d.diff}</span></div>`; });
+                diffList.filter(d => d.diff < 0).slice(-3).reverse().forEach(d => { regHtml += `<div class="flex justify-between items-center py-1.5 border-b border-brand-50"><span class="text-sm font-bold text-brand-700">${String(d.seat).padStart(2,'0')}號</span><span class="text-sm font-bold text-morandi-pink">${d.diff}</span></div>`; });
+            }
+            document.getElementById('subj-improved-list').innerHTML = impHtml || '<div class="text-brand-400 text-sm py-2">無比對資料</div>';
+            document.getElementById('subj-regressed-list').innerHTML = regHtml || '<div class="text-brand-400 text-sm py-2">無比對資料</div>';
+
+            let labels = [], dataPoints = [];
+            subjScores.sort((a,b) => a.seat - b.seat).forEach(s => { labels.push(s.seat); dataPoints.push(s.score); });
+            if(charts.subjBar) charts.subjBar.destroy();
+            charts.subjBar = new Chart(document.getElementById('subjectBarChart').getContext('2d'), {
+                type: 'bar', data: { labels: labels, datasets: [{ label: '分數', data: dataPoints, backgroundColor: dataPoints.map(v => v < 60 ? '#d98b8b' : '#b08e6f'), borderRadius: 4 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
+
+            let trendExams = [...sortedExams].reverse(); let trendLabels = [], trendData = [];
+            trendExams.forEach(ex => {
+                const rec = allExamsData.records[ex.id];
+                if(rec && rec.class_average) { let s = (currentAnalysisSubject === 'soc') ? getMergedSocietyScore(rec.class_average) : rec.class_average[currentAnalysisSubject]; if(s !== undefined && s !== null) { trendLabels.push(ex.name.substring(0,8)); trendData.push(Number(s)); } }
+            });
+            if(charts.subjTrend) charts.subjTrend.destroy();
+            charts.subjTrend = new Chart(document.getElementById('subjectTrendChart').getContext('2d'), {
+                type: 'line', data: { labels: trendLabels, datasets: [{ label: '平均', data: trendData, borderColor: '#805d46', backgroundColor: 'rgba(128, 93, 70, 0.1)', borderWidth: 3, fill: true, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
         }
 
         function renderAnalysisStudent() {
             const examData = allExamsData.records[analysisExamId]; const stData = (examData.students || {})[currentAnalysisSeat] || {}; const clsAvg = examData.class_average || {};
-            const myRadar = [stData.chi || 0, stData.eng || 0, stData.math || 0, stData.sci || 0, getMergedSocietyScore(stData) || 0]; const avgRadar = [clsAvg.chi || 0, clsAvg.eng || 0, clsAvg.math || 0, clsAvg.sci || 0, getMergedSocietyScore(clsAvg) || 0];
-            if(charts.stuRadar) charts.stuRadar.destroy(); charts.stuRadar = new Chart(document.getElementById('studentRadarChart').getContext('2d'), { type: 'radar', data: { labels: ['國文', '英文', '數學', '自然', '社會'], datasets: [ { label: '個人', data: myRadar, borderColor: '#b08e6f', backgroundColor: 'rgba(176,142,111,0.3)', borderWidth:2 }, { label: '班平均', data: avgRadar, borderColor: '#e8ddce', borderDash: [5,5], fill:false, borderWidth:2 } ] }, options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false } } }, plugins: { legend: { position: 'bottom' } } } });
-            let html = ''; analysisMainSubjects.forEach(sub => { let score = (sub === 'soc') ? getMergedSocietyScore(stData) : stData[sub]; let val = (score !== undefined && score !== null && score !== "") ? score : '--'; let color = (val !== '--' && Number(val) < 60) ? 'text-morandi-pink' : 'text-brand-800'; html += `<div class="bg-brand-50 p-2 rounded-lg text-center border border-brand-100"><div class="text-[10px] text-brand-500 font-bold">${subjectMap[sub]}</div><div class="text-sm font-black ${color}">${val}</div></div>`; });
-            html += `<div class="bg-brand-100 p-2 rounded-lg text-center border border-brand-200 col-span-2"><div class="text-[10px] text-brand-700 font-bold">總平均</div><div class="text-base font-black text-brand-900">${stData.avg || '--'}</div></div>`; document.getElementById('student-mini-scores').innerHTML = html;
-            let trendExams = [...allExamsData.exam_list].sort((a,b) => a.timestamp - b.timestamp); let tLabels = [], tData = []; trendExams.forEach(ex => { const rec = allExamsData.records[ex.id]; if(rec && rec.students && rec.students[currentAnalysisSeat]) { let a = rec.students[currentAnalysisSeat].avg; if(a !== undefined && a !== "") { tLabels.push(ex.name.substring(0,8)); tData.push(Number(a)); } } });
-            if(charts.stuTrend) charts.stuTrend.destroy(); charts.stuTrend = new Chart(document.getElementById('studentTrendChart').getContext('2d'), { type: 'line', data: { labels: tLabels, datasets: [{ label: '個人平均', data: tData, borderColor: '#805d46', backgroundColor: '#805d46', borderWidth: 3, pointRadius: 5, tension: 0.3 }] }, options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } } });
+            const myRadar = [stData.chi || 0, stData.eng || 0, stData.math || 0, stData.sci || 0, getMergedSocietyScore(stData) || 0];
+            const avgRadar = [clsAvg.chi || 0, clsAvg.eng || 0, clsAvg.math || 0, clsAvg.sci || 0, getMergedSocietyScore(clsAvg) || 0];
+
+            if(charts.stuRadar) charts.stuRadar.destroy();
+            charts.stuRadar = new Chart(document.getElementById('studentRadarChart').getContext('2d'), {
+                type: 'radar',
+                data: { labels: ['國文', '英文', '數學', '自然', '社會'], datasets: [ { label: '個人', data: myRadar, borderColor: '#b08e6f', backgroundColor: 'rgba(176,142,111,0.3)', borderWidth:2 }, { label: '班平均', data: avgRadar, borderColor: '#e8ddce', borderDash: [5,5], fill:false, borderWidth:2 } ] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { r: { min: 0, max: 100, ticks: { display: false } } }, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            let html = '';
+            analysisMainSubjects.forEach(sub => {
+                let score = (sub === 'soc') ? getMergedSocietyScore(stData) : stData[sub];
+                let val = (score !== undefined && score !== null && score !== "") ? score : '--';
+                let color = (val !== '--' && Number(val) < 60) ? 'text-morandi-pink' : 'text-brand-800';
+                html += `<div class="bg-brand-50 p-2 rounded-lg text-center border border-brand-100"><div class="text-[10px] text-brand-500 font-bold">${subjectMap[sub]}</div><div class="text-sm font-black ${color}">${val}</div></div>`;
+            });
+            html += `<div class="bg-brand-100 p-2 rounded-lg text-center border border-brand-200 col-span-2"><div class="text-[10px] text-brand-700 font-bold">總平均</div><div class="text-base font-black text-brand-900">${stData.avg || '--'}</div></div>`;
+            document.getElementById('student-mini-scores').innerHTML = html;
+
+            let trendExams = [...allExamsData.exam_list].sort((a,b) => a.timestamp - b.timestamp); let tLabels = [], tData = [];
+            trendExams.forEach(ex => {
+                const rec = allExamsData.records[ex.id];
+                if(rec && rec.students && rec.students[currentAnalysisSeat]) { let a = rec.students[currentAnalysisSeat].avg; if(a !== undefined && a !== "") { tLabels.push(ex.name.substring(0,8)); tData.push(Number(a)); } }
+            });
+            if(charts.stuTrend) charts.stuTrend.destroy();
+            charts.stuTrend = new Chart(document.getElementById('studentTrendChart').getContext('2d'), {
+                type: 'line',
+                data: { labels: tLabels, datasets: [{ label: '個人平均', data: tData, borderColor: '#805d46', backgroundColor: '#805d46', borderWidth: 3, pointRadius: 5, tension: 0.3 }] },
+                options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 100 } }, plugins: { legend: { display: false } } }
+            });
         }
     </script>
 </body>
