@@ -154,6 +154,7 @@
 
     <main class="flex-1 h-full overflow-y-auto bg-brand-50 p-4 pt-20 md:pt-8 md:p-8">
         
+        <!-- 各大區塊與前面版本完全一致，這裡保持原樣... -->
         <section id="tab-dashboard" class="tab-content active space-y-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
                 <div>
@@ -619,33 +620,61 @@
             </div>
         </section>
 
-        <!-- 對話紀錄 -->
-        <section id="tab-chat" class="tab-content h-[calc(100vh-100px)]">
+        <!-- ==================== 🌟 對話紀錄 (全新手機優化版) ==================== -->
+        <section id="tab-chat" class="tab-content h-[calc(100vh-100px)] md:h-[calc(100vh-40px)]">
             <div class="flex flex-col h-full space-y-4">
                 <div class="mb-2 shrink-0">
                     <h2 class="text-2xl sm:text-3xl font-bold text-brand-800 mb-2 flex items-center"><i class="fas fa-comments mr-2 text-brand-500"></i>對話紀錄 (永久備份)</h2>
                     <p class="text-brand-500 font-medium text-sm hidden sm:block">突破官方 6 個月紀錄限制，雙帳號無縫切換管理。</p>
                 </div>
                 
-                <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col sm:flex-row shadow-sm min-h-0">
-                    <div class="w-full sm:w-1/3 bg-white border-b sm:border-b-0 sm:border-r border-brand-200 flex flex-col h-1/3 sm:h-full">
+                <div class="flex-1 glass-panel rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-sm min-h-0">
+                    
+                    <!-- 電腦版：左側選單 (手機版隱藏，完全釋放空間) -->
+                    <div class="hidden md:flex w-1/3 bg-white border-r border-brand-200 flex-col h-full">
                         <div class="flex border-b border-brand-200 shrink-0">
                             <button id="chat-tab-parent" onclick="switchChatRole('parent')" class="flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base"><i class="fas fa-user-friends mr-1 sm:mr-2 text-brand-400"></i>家長群</button>
                             <button id="chat-tab-student" onclick="switchChatRole('student')" class="flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold"><i class="fas fa-user-graduate mr-1 sm:mr-2"></i>學生群</button>
                         </div>
-                        <!-- 🌟 對話名單 (由 JS 動態產生) -->
-                        <div id="chat-user-list" class="flex-1 overflow-y-auto custom-scrollbar bg-brand-50/30">
+                        <!-- 🌟 對話名單 (由 JS 動態產生，具備明顯選取狀態) -->
+                        <div id="chat-user-list" class="flex-1 overflow-y-auto custom-scrollbar bg-brand-50/30 pt-2 pb-2">
                         </div>
                     </div>
                     
-                    <div class="flex-1 bg-brand-50 flex flex-col h-2/3 sm:h-full relative">
-                        <div class="p-3 sm:p-4 border-b border-brand-200 bg-white flex justify-between items-center shrink-0 shadow-sm z-10">
-                            <div id="chat-title" class="font-bold text-brand-800 flex items-center text-lg"><i class="fas fa-user-circle text-brand-400 mr-2 text-2xl"></i> 01號 同學家長</div>
+                    <!-- 右側：聊天視窗 (手機版全寬，高度最大化) -->
+                    <div class="flex-1 bg-brand-50 flex flex-col h-full relative">
+                        
+                        <!-- 頂部控制列 (包含手機版下拉選單與匯出按鈕) -->
+                        <div class="p-3 sm:p-4 border-b border-brand-200 bg-white flex flex-col sm:flex-row justify-between items-start sm:items-center shrink-0 shadow-sm z-10 gap-3">
+                            
+                            <!-- 電腦版標題 -->
+                            <div id="chat-title" class="hidden md:flex font-bold text-brand-800 items-center text-lg">
+                                <i class="fas fa-user-circle text-brand-400 mr-2 text-2xl"></i> 01號 同學家長
+                            </div>
+
+                            <!-- 🌟 手機版下拉選擇器 (取代佔空間的列表) -->
+                            <div class="md:hidden flex w-full gap-2">
+                                <select id="mobile-chat-role" onchange="switchChatRole(this.value)" class="bg-brand-50 border border-brand-200 text-brand-800 rounded-lg px-2 py-2 text-sm font-bold focus:border-brand-500 outline-none">
+                                    <option value="parent">👨‍👩‍👧 家長群</option>
+                                    <option value="student">🎓 學生群</option>
+                                </select>
+                                <select id="mobile-chat-seat" onchange="selectChatSeat(parseInt(this.value))" class="flex-1 bg-white border border-brand-200 text-brand-800 rounded-lg px-2 py-2 text-sm font-bold focus:border-brand-500 outline-none">
+                                    <!-- JS 動態產生選項 -->
+                                </select>
+                            </div>
+                            
+                            <!-- 匯出紀錄按鈕 -->
+                            <button onclick="exportChatHistory()" class="w-full md:w-auto bg-brand-100 hover:bg-brand-200 text-brand-700 border border-brand-200 px-4 py-2 rounded-lg transition font-bold text-sm shadow-sm flex items-center justify-center whitespace-nowrap">
+                                <i class="fas fa-file-download mr-2"></i>匯出本頁紀錄
+                            </button>
                         </div>
+
                         <!-- 🌟 對話泡泡區域 -->
                         <div id="chat-messages-container" class="flex-1 p-4 sm:p-6 overflow-y-auto space-y-4 custom-scrollbar bg-brand-50/50">
                             <!-- 對話會動態載入到這裡 -->
                         </div>
+
+                        <!-- 輸入框 -->
                         <div class="p-3 sm:p-4 bg-white border-t border-brand-200 flex space-x-2 sm:space-x-3 items-center shrink-0">
                             <input type="text" id="chat-input" placeholder="輸入訊息回覆..." class="flex-1 bg-brand-50 text-brand-800 font-medium px-4 py-2.5 sm:py-3 rounded-full border border-brand-200 focus:outline-none focus:border-brand-400 text-sm sm:text-base" onkeypress="if(event.key === 'Enter') sendDirectMessage()">
                             <button id="chat-send-btn" onclick="sendDirectMessage()" class="bg-brand-600 hover:bg-brand-500 text-white w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center transition shadow-md shrink-0"><i class="fas fa-paper-plane"></i></button>
@@ -719,7 +748,6 @@
                 renderCurrentAnalysisTab();
             }
             
-            // 🌟 只要切換到每週結算頁籤，就自動觸發跨五天的結算
             if(tabId === 'weekly') {
                 calculateWeeklyReport();
             }
@@ -747,7 +775,6 @@
         const analysisMainSubjects = ['chi', 'eng', 'math', 'sci', 'soc'];
         let charts = { classRadar: null, avgDist: null, subjBar: null, subjTrend: null, subjPie: null, stuRadar: null, stuTrend: null };
 
-        // 🌟 GAS 網址設定
         const PARENT_GAS_URL = "https://script.google.com/macros/s/AKfycbyJc_3BVpgIg0fhHYXDmdI-aIfzDKdLVZ19D35w4Kr6mCvaiPDzSPuLc4NcN-L6plR3KA/exec"; 
         const STUDENT_GAS_URL = "https://script.google.com/macros/s/AKfycbzNEfq2yD9Z88GFQGn7bv7-J2-FviQZ2You3UtYYRyVzNjl4Il3wscM9bBkNDqVL7Fmnw/exec";
 
@@ -756,21 +783,13 @@
             if (!data) return 0;
             let sum = 0;
             let count = 0;
-            
             if (data.hist !== undefined && data.hist !== "") { sum += Number(data.hist); count++; }
             if (data.geo !== undefined && data.geo !== "") { sum += Number(data.geo); count++; }
             if (data.civics !== undefined && data.civics !== "") { sum += Number(data.civics); count++; }
-            
-            // 如果有歷史、地理、公民的分數，就計算這三科的平均作為社會科分數
-            if (count > 0) {
-                return Math.round((sum / count) * 10) / 10;
-            }
-            
-            // 如果沒有分科分數，則退回尋找原始的 'soc' 社會科欄位
+            if (count > 0) return Math.round((sum / count) * 10) / 10;
             return data.soc !== undefined && data.soc !== "" ? Number(data.soc) : 0;
         }
 
-        // DOM 載入後初始化表格與選單
         window.addEventListener('DOMContentLoaded', () => {
             const tbody = document.getElementById('score-table-body'); 
             let html = '';
@@ -791,7 +810,6 @@
             }
             tbody.innerHTML = html;
 
-            // 初始化分析報表的動態選單與預設圖表樣式
             initAnalysisStudentSelector();
             initAnalysisSubjectButtons();
             if(window.Chart) {
@@ -799,7 +817,6 @@
                 Chart.defaults.color = '#805d46';
             }
             
-            // 初始化對話紀錄版面
             initChat();
         });
 
@@ -826,11 +843,10 @@
             tbody.innerHTML = html;
         }
 
-        // 🌟 處理 Firestore 權限錯誤的共用函式
+        // 🌟 共用錯誤處理 (攔截權限不足錯誤)
         function handleFirestoreError(err) {
             console.error("Firestore 同步錯誤:", err);
             if (err.code === 'permission-denied') {
-                alert("【資料庫權限不足】\n存取被拒絕。請確認您的「導師帳號」是否已經成功登入，且網路連線正常。");
                 const errStatus = document.getElementById('db-status');
                 if(errStatus) {
                     errStatus.className = "w-full sm:w-auto text-morandi-pink font-bold text-sm bg-red-50 px-4 py-2.5 rounded-xl border border-red-200 shadow-sm flex items-center justify-center sm:justify-start";
@@ -976,6 +992,147 @@
         function setMarqueePreset(text) { document.getElementById('marquee-input').value = text; }
         function sendMarquee() { const val = document.getElementById('marquee-input').value; if(!val) return alert('請輸入廣播內容！'); db.collection('board_settings').doc('current').set({ topBoardInfo: { marqueeText: val } }, { merge: true }).then(() => { const msg = document.getElementById('marquee-success'); msg.classList.remove('hidden'); setTimeout(() => msg.classList.add('hidden'), 3000); }).catch(err => alert('失敗: ' + err.message)); }
         function updatePassword(role) { const newVal = document.getElementById(`pwd-${role}`).value.trim(); if(!newVal) return alert('不能為空！'); db.collection('board_settings').doc('current').set({ passwords: { [role]: newVal } }, { merge: true }).then(() => alert('密碼更新成功！')).catch(err => alert('更新失敗: ' + err.message)); }
+
+        // ==========================================
+        // 🌟 核心修復：跨 5 天結算演算法 (每週報表)
+        // ==========================================
+        async function calculateWeeklyReport() {
+            const tbody = document.getElementById('weekly-table-body');
+            const honorContainer = document.getElementById('honor-list-container');
+            if(!tbody || !honorContainer) return;
+            
+            // 顯示載入動畫
+            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-brand-400 font-bold text-center"><i class="fas fa-spinner fa-spin mr-2"></i>正在從資料庫抓取本週 5 天的紀錄，請稍候...</td></tr>';
+            honorContainer.innerHTML = '<span class="text-brand-400 text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i>計算中...</span>';
+
+            const today = new Date();
+            const dayOfWeek = today.getDay(); // 0 是週日, 1 是週一...
+            const monday = new Date(today);
+            monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
+            
+            const weekDates = [];
+            for (let i = 0; i < 5; i++) {
+                const d = new Date(monday);
+                d.setDate(monday.getDate() + i);
+                const tzOffset = d.getTimezoneOffset() * 60000; 
+                const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, -1);
+                weekDates.push(localISOTime.split('T')[0]);
+            }
+
+            let aggregated = {};
+            for(let i=1; i<=24; i++) {
+                aggregated[i] = { lateCount: 0, missingCount: 0, cleanBad: 0, goalDays: 0, trackedDays: 0 };
+            }
+
+            try {
+                // 平行抓取週一到週五的五份點名表
+                const promises = weekDates.map(dateStr => db.collection('daily_records').doc(dateStr).get());
+                const docs = await Promise.all(promises);
+                
+                docs.forEach(doc => {
+                    if(doc.exists) {
+                        const sData = doc.data().studentsData;
+                        if(sData) {
+                            for(let seat=1; seat<=24; seat++) {
+                                let st = sData[seat];
+                                if(st) {
+                                    aggregated[seat].trackedDays++;
+                                    // 扣分條件 1：遲到或未到
+                                    if(st.attendance === '遲到' || st.attendance === '未到') aggregated[seat].lateCount++;
+                                    // 扣分條件 2：作業有缺交
+                                    if(st.missingHW && st.missingHW.length > 0) aggregated[seat].missingCount += st.missingHW.length;
+                                    // 扣分條件 3：常規或打掃待改進
+                                    if(st.clean === '待改進') aggregated[seat].cleanBad++;
+                                    if(st.discipline === '待改進') aggregated[seat].cleanBad++;
+                                    // 加分條件：目標達成
+                                    if(st.goal === '已經做到' || st.goal === '表現優良') aggregated[seat].goalDays++;
+                                }
+                            }
+                        }
+                    }
+                });
+
+                let html = '';
+                let honorList = [];
+                for(let i=1; i<=24; i++) {
+                    let lateCount = aggregated[i].lateCount;
+                    let missingCount = aggregated[i].missingCount;
+                    let cleanBad = aggregated[i].cleanBad;
+                    let goalDays = aggregated[i].goalDays;
+                    let trackedDays = aggregated[i].trackedDays;
+                    let rating = '';
+                    let ratingColor = '';
+
+                    if(trackedDays === 0) {
+                        rating = '無資料';
+                        ratingColor = 'text-brand-300';
+                    } else if(lateCount > 0 || missingCount > 0 || cleanBad > 0) {
+                        // 只要有任何一項大於 0 就不是優良
+                        rating = missingCount >= 2 ? '需留意作業' : '一般';
+                        ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500';
+                    } else {
+                        // 完美的 0 缺失
+                        rating = '<i class="fas fa-medal mr-1"></i> 表現優良';
+                        ratingColor = 'text-brand-600 font-bold';
+                        honorList.push(String(i).padStart(2,'0'));
+                    }
+
+                    html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
+                        <td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td>
+                        <td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td>
+                        <td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td>
+                        <td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="常規待改進">${cleanBad}</td>
+                        <td class="p-3 sm:text-center ${goalDays >= trackedDays && trackedDays > 0 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/${trackedDays || 5}</td>
+                        <td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td>
+                    </tr>`;
+                }
+
+                tbody.innerHTML = html;
+                
+                // 渲染榮譽榜預覽
+                if(honorList.length > 0) {
+                    honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join('');
+                } else {
+                    honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
+                }
+
+            } catch (err) {
+                console.error(err);
+                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-morandi-pink font-bold text-center">載入失敗：${err.message}</td></tr>`;
+                honorContainer.innerHTML = '<span class="text-morandi-pink text-sm">讀取發生錯誤</span>';
+            }
+        }
+
+        // ==========================================
+        // 🌟 呼叫 GAS 推播 API 
+        // ==========================================
+        function triggerWeeklyReport(target) {
+            if(!confirm(`確定要結算本週榮譽榜，並發送 LINE 訊息給全班【${target === 'parent' ? '家長' : '學生'}】嗎？`)) return;
+            
+            const btnId = target === 'parent' ? 'btn-send-weekly-parent' : 'btn-send-weekly-student';
+            const btn = document.getElementById(btnId);
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 發送中...';
+            btn.disabled = true;
+
+            const gasUrl = target === 'parent' ? PARENT_GAS_URL : STUDENT_GAS_URL;
+            
+            fetch(gasUrl, {
+                method: 'POST',
+                body: JSON.stringify({ action: "sendWeeklyReport" })
+            })
+            .then(response => response.text())
+            .then(result => {
+                alert(result);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            })
+            .catch(error => {
+                alert("連線發生錯誤：" + error);
+                btn.innerHTML = originalHtml;
+                btn.disabled = false;
+            });
+        }
 
         function handleSmartExcelUpload(e) { 
             const file = e.target.files[0]; if (!file) return; 
@@ -1285,148 +1442,7 @@
         }
 
         // ==========================================
-        // 🌟 核心修復：跨 5 天結算演算法 (每週報表)
-        // ==========================================
-        async function calculateWeeklyReport() {
-            const tbody = document.getElementById('weekly-table-body');
-            const honorContainer = document.getElementById('honor-list-container');
-            if(!tbody || !honorContainer) return;
-            
-            // 顯示載入動畫
-            tbody.innerHTML = '<tr><td colspan="6" class="p-8 text-brand-400 font-bold text-center"><i class="fas fa-spinner fa-spin mr-2"></i>正在從資料庫抓取本週 5 天的紀錄，請稍候...</td></tr>';
-            honorContainer.innerHTML = '<span class="text-brand-400 text-sm font-bold"><i class="fas fa-spinner fa-spin mr-2"></i>計算中...</span>';
-
-            const today = new Date();
-            const dayOfWeek = today.getDay(); // 0 是週日, 1 是週一...
-            const monday = new Date(today);
-            monday.setDate(today.getDate() - (dayOfWeek === 0 ? 6 : dayOfWeek - 1));
-            
-            const weekDates = [];
-            for (let i = 0; i < 5; i++) {
-                const d = new Date(monday);
-                d.setDate(monday.getDate() + i);
-                const tzOffset = d.getTimezoneOffset() * 60000; 
-                const localISOTime = (new Date(d - tzOffset)).toISOString().slice(0, -1);
-                weekDates.push(localISOTime.split('T')[0]);
-            }
-
-            let aggregated = {};
-            for(let i=1; i<=24; i++) {
-                aggregated[i] = { lateCount: 0, missingCount: 0, cleanBad: 0, goalDays: 0, trackedDays: 0 };
-            }
-
-            try {
-                // 平行抓取週一到週五的五份點名表
-                const promises = weekDates.map(dateStr => db.collection('daily_records').doc(dateStr).get());
-                const docs = await Promise.all(promises);
-                
-                docs.forEach(doc => {
-                    if(doc.exists) {
-                        const sData = doc.data().studentsData;
-                        if(sData) {
-                            for(let seat=1; seat<=24; seat++) {
-                                let st = sData[seat];
-                                if(st) {
-                                    aggregated[seat].trackedDays++;
-                                    // 扣分條件 1：遲到或未到
-                                    if(st.attendance === '遲到' || st.attendance === '未到') aggregated[seat].lateCount++;
-                                    // 扣分條件 2：作業有缺交
-                                    if(st.missingHW && st.missingHW.length > 0) aggregated[seat].missingCount += st.missingHW.length;
-                                    // 扣分條件 3：常規或打掃待改進
-                                    if(st.clean === '待改進') aggregated[seat].cleanBad++;
-                                    if(st.discipline === '待改進') aggregated[seat].cleanBad++;
-                                    // 加分條件：目標達成
-                                    if(st.goal === '已經做到' || st.goal === '表現優良') aggregated[seat].goalDays++;
-                                }
-                            }
-                        }
-                    }
-                });
-
-                let html = '';
-                let honorList = [];
-                for(let i=1; i<=24; i++) {
-                    let lateCount = aggregated[i].lateCount;
-                    let missingCount = aggregated[i].missingCount;
-                    let cleanBad = aggregated[i].cleanBad;
-                    let goalDays = aggregated[i].goalDays;
-                    let trackedDays = aggregated[i].trackedDays;
-                    let rating = '';
-                    let ratingColor = '';
-
-                    if(trackedDays === 0) {
-                        rating = '無資料';
-                        ratingColor = 'text-brand-300';
-                    } else if(lateCount > 0 || missingCount > 0 || cleanBad > 0) {
-                        // 只要有任何一項大於 0 就不是優良
-                        rating = missingCount >= 2 ? '需留意作業' : '一般';
-                        ratingColor = missingCount >= 2 ? 'text-morandi-pink' : 'text-brand-500';
-                    } else {
-                        // 完美的 0 缺失
-                        rating = '<i class="fas fa-medal mr-1"></i> 表現優良';
-                        ratingColor = 'text-brand-600 font-bold';
-                        honorList.push(String(i).padStart(2,'0'));
-                    }
-
-                    html += `<tr class="hover:bg-brand-50 transition border-b border-brand-100">
-                        <td class="p-3 font-bold text-brand-800 sm:text-center bg-white" data-label="座號">${String(i).padStart(2,'0')}</td>
-                        <td class="p-3 sm:text-center ${lateCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="遲到/未到">${lateCount}</td>
-                        <td class="p-3 sm:text-center ${missingCount > 0 ? 'text-morandi-pink font-bold' : ''}" data-label="作業缺交">${missingCount}</td>
-                        <td class="p-3 sm:text-center ${cleanBad > 0 ? 'text-morandi-blue font-bold' : ''}" data-label="常規待改進">${cleanBad}</td>
-                        <td class="p-3 sm:text-center ${goalDays >= trackedDays && trackedDays > 0 ? 'text-brand-600 font-bold' : ''}" data-label="目標達成天數">${goalDays}/${trackedDays || 5}</td>
-                        <td class="p-3 sm:text-center ${ratingColor}" data-label="綜合評級">${rating}</td>
-                    </tr>`;
-                }
-
-                tbody.innerHTML = html;
-                
-                // 渲染榮譽榜預覽
-                if(honorList.length > 0) {
-                    honorContainer.innerHTML = honorList.map(seat => `<span class="bg-brand-100 text-brand-700 border border-brand-200 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm">${seat} 號</span>`).join('');
-                } else {
-                    honorContainer.innerHTML = '<span class="text-brand-500 text-sm font-medium">本週尚無符合資格的同學</span>';
-                }
-
-            } catch (err) {
-                console.error(err);
-                tbody.innerHTML = `<tr><td colspan="6" class="p-8 text-morandi-pink font-bold text-center">載入失敗：${err.message}</td></tr>`;
-                honorContainer.innerHTML = '<span class="text-morandi-pink text-sm">讀取發生錯誤</span>';
-            }
-        }
-
-        // ==========================================
-        // 🌟 呼叫 GAS 推播 API 
-        // ==========================================
-        function triggerWeeklyReport(target) {
-            if(!confirm(`確定要結算本週榮譽榜，並發送 LINE 訊息給全班【${target === 'parent' ? '家長' : '學生'}】嗎？`)) return;
-            
-            const btnId = target === 'parent' ? 'btn-send-weekly-parent' : 'btn-send-weekly-student';
-            const btn = document.getElementById(btnId);
-            const originalHtml = btn.innerHTML;
-            btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> 發送中...';
-            btn.disabled = true;
-
-            const gasUrl = target === 'parent' ? PARENT_GAS_URL : STUDENT_GAS_URL;
-            
-            fetch(gasUrl, {
-                method: 'POST',
-                body: JSON.stringify({ action: "sendWeeklyReport" })
-            })
-            .then(response => response.text())
-            .then(result => {
-                alert(result);
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            })
-            .catch(error => {
-                alert("連線發生錯誤：" + error);
-                btn.innerHTML = originalHtml;
-                btn.disabled = false;
-            });
-        }
-
-        // ==========================================
-        // 🌟 LINE@ 溝通紀錄專用功能
+        // 🌟 LINE@ 溝通紀錄專用功能 (包含手機版優化)
         // ==========================================
         let currentChatRole = 'parent';
         let currentChatSeat = 1;
@@ -1439,8 +1455,14 @@
 
         function switchChatRole(role) {
             currentChatRole = role;
+            
+            // 處理電腦版標籤切換
             document.getElementById('chat-tab-parent').className = role === 'parent' ? "flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base" : "flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold";
             document.getElementById('chat-tab-student').className = role === 'student' ? "flex-1 py-3 bg-brand-50 text-brand-800 font-bold border-b-2 border-brand-500 transition text-sm sm:text-base" : "flex-1 py-3 bg-white text-brand-500 hover:bg-brand-50 transition text-sm sm:text-base font-bold";
+            
+            // 處理手機版下拉同步
+            document.getElementById('mobile-chat-role').value = role;
+
             currentChatSeat = 1; 
             renderChatList();
             loadChatMessages();
@@ -1453,37 +1475,53 @@
         }
 
         function renderChatList() {
-            let html = '';
+            let desktopHtml = '';
+            let mobileHtml = '';
+            
             for(let i=1; i<=24; i++) {
                 let isActive = (i === currentChatSeat);
-                let bgClass = isActive ? "bg-brand-100 border-l-4 border-brand-500 shadow-sm" : "bg-white hover:bg-brand-50 border-b border-brand-100";
-                html += `
-                <div onclick="selectChatSeat(${i})" class="p-3 cursor-pointer transition flex items-center space-x-3 ${bgClass}">
-                    <div class="w-10 h-10 rounded-xl bg-brand-200 text-brand-800 flex items-center justify-center font-bold shadow-inner shrink-0">${String(i).padStart(2,'0')}</div>
+                let roleStr = currentChatRole === 'parent' ? '家長' : '學生';
+                
+                // 🌟 電腦版高度對比的選取狀態
+                let bgClass = isActive 
+                    ? "bg-brand-500 text-white shadow-md border-transparent transform scale-[1.02]" 
+                    : "bg-white text-brand-800 hover:bg-brand-50 border-b border-brand-100";
+                let iconBgClass = isActive ? "bg-white/20 text-white" : "bg-brand-100 text-brand-600";
+                let textClass = isActive ? "text-white" : "text-brand-800";
+                
+                desktopHtml += `
+                <div onclick="selectChatSeat(${i})" class="p-3 cursor-pointer transition-all duration-200 flex items-center space-x-3 mx-2 my-1.5 rounded-xl ${bgClass}">
+                    <div class="w-10 h-10 rounded-xl ${iconBgClass} flex items-center justify-center font-bold shadow-inner shrink-0">${String(i).padStart(2,'0')}</div>
                     <div class="flex-1 min-w-0">
-                        <div class="text-brand-800 font-bold text-sm truncate">${String(i).padStart(2,'0')}號 ${currentChatRole === 'parent' ? '家長' : '學生'}</div>
+                        <div class="${textClass} font-bold text-sm truncate">${String(i).padStart(2,'0')}號 ${roleStr}</div>
                     </div>
                 </div>`;
+
+                // 🌟 手機版的下拉選項
+                mobileHtml += `<option value="${i}" ${isActive ? 'selected' : ''}>${String(i).padStart(2,'0')} 號 ${roleStr}</option>`;
             }
-            document.getElementById('chat-user-list').innerHTML = html;
-            document.getElementById('chat-title').innerHTML = `<i class="fas fa-user-circle text-brand-400 mr-2 text-xl"></i> ${String(currentChatSeat).padStart(2,'0')}號 ${currentChatRole === 'parent' ? '同學家長' : '同學'}`;
+            
+            document.getElementById('chat-user-list').innerHTML = desktopHtml;
+            document.getElementById('mobile-chat-seat').innerHTML = mobileHtml;
+            document.getElementById('mobile-chat-role').value = currentChatRole;
+            
+            document.getElementById('chat-title').innerHTML = `<i class="fas fa-user-circle text-brand-400 mr-2 text-2xl"></i> ${String(currentChatSeat).padStart(2,'0')}號 ${currentChatRole === 'parent' ? '同學家長' : '同學'}`;
         }
 
         function loadChatMessages() {
             if(chatUnsubscribe) chatUnsubscribe();
             const chatId = `${currentChatRole}_${currentChatSeat}`;
             
-            // 🌟 移除 .orderBy() 避開 Firebase 複合索引限制，改在前端排序
+            // 🌟 避開複合索引，使用純前端排序
             chatUnsubscribe = db.collection("line_messages")
                 .where("chatId", "==", chatId)
                 .onSnapshot(snapshot => {
                     const container = document.getElementById('chat-messages-container');
                     if(snapshot.empty) {
-                        container.innerHTML = '<div class="text-center text-brand-400 font-bold mt-20"><i class="fas fa-comment-slash text-4xl mb-3 block text-brand-300"></i>目前尚無對話紀錄。</div>';
+                        container.innerHTML = '<div class="text-center text-brand-400 font-bold mt-20 flex flex-col items-center justify-center h-full"><i class="fas fa-comment-slash text-4xl mb-3 block text-brand-300"></i>目前尚無對話紀錄。</div>';
                         return;
                     }
                     
-                    // 🌟 新增：把資料拿出來，用 JavaScript 按照時間排序
                     let msgs = [];
                     snapshot.forEach(doc => msgs.push(doc.data()));
                     msgs.sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
@@ -1511,9 +1549,8 @@
                         }
                     });
                     container.innerHTML = html;
-                    // 自動捲動到最底下
                     setTimeout(() => { container.scrollTop = container.scrollHeight; }, 100);
-                }, handleFirestoreError);
+                });
         }
 
         function sendDirectMessage() {
@@ -1538,7 +1575,6 @@
                 btn.disabled = false;
                 if(resText.startsWith("Error") || resText.startsWith("❌")) { alert("發送失敗: " + resText); } 
                 else {
-                    // 同步存入資料庫顯示在畫面上
                     db.collection("line_messages").add({
                         chatId: `${currentChatRole}_${currentChatSeat}`,
                         sender: 'teacher',
@@ -1552,6 +1588,58 @@
                 btn.innerHTML = '<i class="fas fa-paper-plane"></i>';
                 btn.disabled = false;
             });
+        }
+
+        // ==========================================
+        // 🌟 匯出對話紀錄
+        // ==========================================
+        function exportChatHistory() {
+            const chatId = `${currentChatRole}_${currentChatSeat}`;
+            
+            db.collection("line_messages")
+                .where("chatId", "==", chatId)
+                .get()
+                .then(snapshot => {
+                    if (snapshot.empty) {
+                        alert("目前沒有可匯出的對話紀錄。");
+                        return;
+                    }
+                    
+                    let msgs = [];
+                    snapshot.forEach(doc => msgs.push(doc.data()));
+                    msgs.sort((a, b) => parseInt(a.timestamp) - parseInt(b.timestamp));
+                    
+                    let exportText = `=======================================\n`;
+                    let roleName = currentChatRole === 'parent' ? '家長' : '學生';
+                    exportText += ` 班級通訊紀錄：${String(currentChatSeat).padStart(2,'0')}號 ${roleName}\n`;
+                    exportText += ` 匯出時間：${new Date().toLocaleString('zh-TW')}\n`;
+                    exportText += `=======================================\n\n`;
+                    
+                    msgs.forEach(data => {
+                        let dateObj = new Date(parseInt(data.timestamp));
+                        let timeStr = dateObj.toLocaleString('zh-TW', {
+                            year: 'numeric', month: '2-digit', day: '2-digit',
+                            hour: '2-digit', minute:'2-digit', second:'2-digit'
+                        });
+                        
+                        let senderName = data.sender === 'user' ? `[${roleName}]` : '[導師]';
+                        exportText += `${timeStr} ${senderName}:\n${data.text}\n\n`;
+                    });
+                    
+                    const blob = new Blob([exportText], { type: 'text/plain;charset=utf-8' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `通訊紀錄_${String(currentChatSeat).padStart(2,'0')}號_${roleName}.txt`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                })
+                .catch(err => {
+                    console.error("匯出失敗:", err);
+                    alert("匯出紀錄時發生錯誤。");
+                });
         }
     </script>
 </body>
